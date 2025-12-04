@@ -6,34 +6,34 @@ import {
   FaShoppingBasket,
   FaCheck,
 } from "react-icons/fa";
-import { member1, member2, member3, member4, member5 } from "../assets";
+import { member1, member2, member3, member4 } from "../assets";
 
 const teamMembers = [
   {
     id: 1,
     name: "Ganesh Patil",
     pic: member1,
-    linkedin: "https://www.linkedin.com/in/ahadalireach/",
+    linkedin: "https://www.linkedin.com/in/ganesh-patil-749b10318/",
   },
   {
     id: 2,
     name: "Pratik Pawar",
     pic: member2,
-    linkedin: "https://www.linkedin.com/in/mateeb-haider-233b6b254/",
+    linkedin: "https://www.linkedin.com/in/pratik-pawar-632154257/",
   },
 
   {
     id: 3,
     name: "Sanjana More",
     pic: member3,
-    linkedin: "https://www.linkedin.com/in/ali-mahmood-rana-7093322a7/",
+    linkedin: "https://www.linkedin.com/in/sanjana-more-b19548274/",
   },
 
   {
     id: 4,
     name: "Shreya Wankhede",
     pic: member4,
-    linkedin: "https://www.linkedin.com/in/muhammad-basit-nazir-2aba93254/",
+    linkedin: "https://www.linkedin.com/in/shreya-wankhede-b204ba308/",
   },
 ];
 
@@ -56,7 +56,7 @@ const AboutPage = () => {
               <span className="uppercase tracking-wider">Our Story</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold mb-6 text-gray-900">
-              About KisanBazar
+              About FarmLink
             </h1>
             <p className="text-lg md:text-xl text-gray-600 mb-10">
               Connecting local farmers with consumers to promote sustainable
@@ -69,6 +69,7 @@ const AboutPage = () => {
       <div className="container  mx-auto px-4 py-12">
         <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
           <div className="container mx-auto px-4">
+
             <div className="bg-white/70 backdrop-blur-md shadow-xl p-10 rounded-3xl max-w-6xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-12">
                 <div className="md:w-1/2 text-center md:text-left">
@@ -76,7 +77,7 @@ const AboutPage = () => {
                     Our Mission
                   </h2>
                   <p className="text-gray-800 text-lg mb-4">
-                    KisanBazar was founded with a simple yet powerful mission:
+                    FarmLink was founded with a simple yet powerful mission:
                     to create a direct link between local farmers and consumers.
                     We believe everyone deserves access to fresh, locally grown
                     produce and farmers deserve fair compensation.
@@ -218,7 +219,7 @@ const AboutPage = () => {
             Meet Our Team
           </h2>
           <p className="text-center text-gray-600 text-xl mb-16">
-            Passionate people behind KisanBazar
+            Passionate people behind FarmLink
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {teamMembers.map((member) => (
@@ -263,7 +264,7 @@ const AboutPage = () => {
           </h2>
           <p className="text-xl text-gray-500 max-w-3xl mx-auto mb-8">
             Whether you're a farmer looking to expand your customer base or a
-            consumer seeking fresh, local produce, KisanBazar is for you.
+            consumer seeking fresh, local produce, FarmLink is for you.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
