@@ -9,7 +9,10 @@ import { FaComments } from "react-icons/fa";
 
 const MessagesPage = () => {
   const dispatch = useDispatch();
-  const { conversations, loading } = useSelector((state) => state.messages);
+
+  // SAFE fallback: prevent undefined errors  
+  const { conversations = [], loading = false } =
+    useSelector((state) => state.messages || {});
 
   useEffect(() => {
     dispatch(getConversations());
@@ -25,9 +28,9 @@ const MessagesPage = () => {
 
       {conversations.length > 0 ? (
         <div className="space-y-4">
-          {conversations.map((conversation) => (
+          {conversations.map((conversation, index) => (
             <MessageItem
-              key={conversation.user._id}
+              key={conversation?.user?._id || index}
               conversation={conversation}
             />
           ))}
@@ -37,8 +40,8 @@ const MessagesPage = () => {
           <FaComments className="text-green-500 text-5xl mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">No Messages Yet</h3>
           <p className="text-gray-600">
-            You don't have any conversations yet. Start by messaging a farmer or
-            responding to customer inquiries.
+            You don't have any conversations yet. Start messaging a farmer or
+            responding to vendor/customer inquiries.
           </p>
         </div>
       )}
