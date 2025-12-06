@@ -1,6 +1,6 @@
 # FarmLink
 
-**FarmLink** is a full-stack web application developing in Btech for a major project to bridge the gap between farmers and consumers. It enables farmers to showcase their produce, connect with buyers, and build trust — all in one platform.
+**FarmLink** is a full-stack web application that is developing in Btech as a major project to bridge the gap between farmers and consumers. It enables farmers to showcase their produce, connect with buyers, and build trust — all in one platform.
 
 ---
 
