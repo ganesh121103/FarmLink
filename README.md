@@ -1,8 +1,6 @@
 # FarmLink
 
-**FarmLink** is a full-stack web application developed during a hackathon to bridge the gap between farmers and consumers. It enables farmers to showcase their produce, connect with buyers, and build trust — all in one platform.
-
-🚀 **Winner of the Full Stack Web Development Hackathon** at the University of South Asia — built by Team Terminator 🏆
+**FarmLink** is a full-stack web application that is developing in Btech as a major project to bridge the gap between farmers and consumers. It enables farmers to showcase their produce, connect with buyers, and build trust — all in one platform.
 
 ---
 
@@ -175,19 +173,3 @@ api/
     After everything is set up:
     - Open your browser and navigate to [http://localhost:5173](http://localhost:5173) to view the application.
     - Ensure the frontend loads correctly and communicates with the backend server.
-
----
-
-## Live Links
-
-- **Live Web:** [FarmLink.vercel.app](https://FarmLink.vercel.app)
-- **GitHub Repo:** [github.com/ahadalireach/FarmLink](https://github.com/ahadalireach/FarmLink) (Give it a Star!)
-- Live Video Demo: [Watch Now](https://www.youtube.com/watch?v=riaSSccA8uk)
-
-## Contact
-
-For any questions, feedback, or collaboration opportunities, feel free to contact me at [ahadali.reach@gmail.com](mailto:ahadali.reach@gmail.com).
-
----
-
-> Built with ❤️ by Team Terminator | **Full Stack Web Development Hackathon** Winner at the University of South Asia 🏆
