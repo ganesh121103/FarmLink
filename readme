@@ -1,0 +1,4 @@
+1.  open terminal make 2 terminal
+2.  in first terminal run npm run dev
+3.  in second terminal run cd FarmLink_FullStack\FarmLink_FullStack\server and then npm start
+4.  open browser and go to http://localhost:5173/
