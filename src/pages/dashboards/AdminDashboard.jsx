@@ -10,6 +10,7 @@ import { useAppContext } from '../../context/AppContext';
 const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) => {
     const { addToast, t } = useAppContext();
     const [activeTab, setActiveTab] = useState('overview');
+    const [userFilter, setUserFilter] = useState('all');
     const [allUsers, setAllUsers] = useState([]);
     const [allFarmers, setAllFarmers] = useState([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
@@ -132,10 +133,10 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
             {activeTab === 'overview' && (
                 <div className="space-y-8 animate-fade-in-up">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-purple-500"><div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl text-purple-600"><Users size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('totalUsers')}</p><p className="text-3xl font-black text-black dark:text-white">{mergedUsers.length}</p></div></Card>
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-green-500"><div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl text-green-600"><Sprout size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('farmers')}</p><p className="text-3xl font-black text-black dark:text-white">{allFarmers.length}</p></div></Card>
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-yellow-500"><div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl text-yellow-600"><Clock size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">Pending Reviews</p><p className="text-3xl font-black text-black dark:text-white">{pendingVerifications.length}</p></div></Card>
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-blue-500"><div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl text-blue-600"><Package size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('activeProducts')}</p><p className="text-3xl font-black text-black dark:text-white">{products.length}</p></div></Card>
+                        <Card onClick={() => { setActiveTab('users'); setUserFilter('customer'); }} className="p-6 flex items-center gap-5 border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all"><div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl text-purple-600"><Users size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('totalUsers')}</p><p className="text-3xl font-black text-black dark:text-white">{mergedUsers.length}</p></div></Card>
+                        <Card onClick={() => { setActiveTab('users'); setUserFilter('farmer'); }} className="p-6 flex items-center gap-5 border-l-4 border-l-green-500 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all"><div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl text-green-600"><Sprout size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('farmers')}</p><p className="text-3xl font-black text-black dark:text-white">{allFarmers.length}</p></div></Card>
+                        <Card onClick={() => setActiveTab('verifications')} className="p-6 flex items-center gap-5 border-l-4 border-l-yellow-500 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all"><div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl text-yellow-600"><Clock size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">Pending Reviews</p><p className="text-3xl font-black text-black dark:text-white">{pendingVerifications.length}</p></div></Card>
+                        <Card onClick={() => setActiveTab('products')} className="p-6 flex items-center gap-5 border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all"><div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl text-blue-600"><Package size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('activeProducts')}</p><p className="text-3xl font-black text-black dark:text-white">{products.length}</p></div></Card>
                     </div>
 
                     {/* Pending verifications quick-access */}
@@ -228,11 +229,17 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
 
             {/* MANAGE USERS TAB */}
             {activeTab === 'users' && (
-                <div className="animate-fade-in-up overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">User</th><th className="py-3 pr-4">Role</th><th className="py-3 pr-4">Location</th><th className="py-3 pr-4">Status</th><th className="py-3">Action</th></tr></thead>
-                        <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
-                            {mergedUsers.map(user => (
+                <div className="animate-fade-in-up flex flex-col gap-4">
+                    <div className="flex gap-2">
+                        <button onClick={() => setUserFilter('all')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'all' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>All Users</button>
+                        <button onClick={() => setUserFilter('customer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'customer' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Customers & Admins</button>
+                        <button onClick={() => setUserFilter('farmer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'farmer' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Farmers</button>
+                    </div>
+                    <div className="overflow-x-auto rounded-2xl border border-stone-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
+                        <table className="w-full text-left">
+                            <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">User</th><th className="py-3 pr-4">Role</th><th className="py-3 pr-4">Location</th><th className="py-3 pr-4">Status</th><th className="py-3">Action</th></tr></thead>
+                            <tbody className="divide-y divide-stone-100 dark:divide-slate-700/50">
+                                {mergedUsers.filter(u => userFilter === 'all' ? true : userFilter === 'farmer' ? u.role === 'farmer' : u.role !== 'farmer').map(user => (
                                 <tr key={user._id} className="group">
                                     <td className="py-4 pr-4"><div className="font-bold text-black dark:text-white">{user.name}</div><p className="text-xs text-stone-500">{user.email}</p></td>
                                     <td className="py-4 pr-4"><Badge color={user.role === 'farmer' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-400'}>{user.role}</Badge></td>
@@ -258,6 +265,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
 

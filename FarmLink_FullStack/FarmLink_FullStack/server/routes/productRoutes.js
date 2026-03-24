@@ -108,4 +108,42 @@ router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res)
   }
 });
 
+/* DELETE review from a product - admin only */
+router.delete("/:id/reviews/:reviewId", verifyToken, checkRole("admin"), async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    const reviewIndex = product.reviews.findIndex(
+      (r) => r._id.toString() === req.params.reviewId
+    );
+
+    if (reviewIndex === -1) {
+      return res.status(404).json({ message: "Review not found." });
+    }
+
+    // Remove the review
+    product.reviews.splice(reviewIndex, 1);
+
+    // Recalculate average and total count
+    product.reviewsCount = product.reviews.length;
+    if (product.reviews.length > 0) {
+      const totalRating = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+      product.rating = totalRating / product.reviews.length;
+    } else {
+      product.rating = 0;
+    }
+
+    product.markModified('reviews');
+    await product.save();
+    
+    res.status(200).json(product);
+  } catch (err) {
+    console.error("DELETE REVIEW ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

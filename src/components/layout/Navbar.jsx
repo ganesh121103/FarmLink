@@ -21,13 +21,13 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
     };
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950 backdrop-blur-md border-b border-gray-800 shadow-sm">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between gap-4">
                     {/* Logo */}
                     <button
                         onClick={() => navigate('home')}
-                        className="flex items-center gap-2 font-black text-xl text-green-400 flex-shrink-0 hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-2 font-black text-xl text-green-600 dark:text-green-400 flex-shrink-0 hover:opacity-80 transition-opacity"
                     >
                         <Leaf size={24} className="fill-current" />
                         <span>FarmLink</span>
@@ -40,8 +40,8 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                 key={link.key}
                                 onClick={() => handleNavClick(link.key)}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${view === link.key
-                                        ? 'bg-green-900/40 text-green-400'
-                                        : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
                                     }`}
                             >
                                 {link.label}
@@ -53,12 +53,12 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                     <div className="flex items-center gap-2">
                         {/* Language Selector */}
                         <div className="relative hidden sm:block group pb-2">
-                            <div className="flex items-center gap-1 p-2 rounded-lg hover:bg-gray-800 cursor-pointer" title="Change Language">
-                                <Globe size={18} className="text-gray-300" />
-                                <span className="text-xs font-bold text-gray-300 uppercase">{language}</span>
+                            <div className="flex items-center gap-1 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" title="Change Language">
+                                <Globe size={18} className="text-gray-600 dark:text-gray-300" />
+                                <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">{language}</span>
                                 <ChevronDown size={14} className="text-gray-400 transition-transform group-hover:-rotate-180" />
                             </div>
-                            <div className="absolute right-0 top-[80%] pt-2 w-36 bg-gray-900 rounded-xl shadow-lg border border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                            <div className="absolute right-0 top-[80%] pt-2 w-36 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
                                 {[
                                     { code: 'en', label: 'English (EN)' },
                                     { code: 'hi', label: 'हिंदी (HI)' },
@@ -67,7 +67,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                     <button 
                                         key={lang.code}
                                         onClick={() => setLanguage(lang.code)}
-                                        className={`px-4 py-3 text-sm text-left font-bold transition-colors ${language === lang.code ? 'bg-green-900/40 text-green-400' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+                                        className={`px-4 py-3 text-sm text-left font-bold transition-colors ${language === lang.code ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'}`}
                                     >
                                         {lang.label}
                                     </button>
@@ -78,20 +78,20 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         {/* Dark Mode Toggle */}
                         <button
                             onClick={toggleDarkMode}
-                            className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
-                            {isDarkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-300" />}
+                            {isDarkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
                         </button>
 
                         {/* Cart Button */}
                         {(!user || user?.role !== 'admin') && (
                             <button
                                 onClick={() => navigate('activity')}
-                                className="relative p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 aria-label={`Cart: ${cartCount} items`}
                             >
-                                <ShoppingBasket size={22} className="text-gray-300" />
+                                <ShoppingBasket size={22} className="text-gray-600 dark:text-gray-300" />
                                 {cartCount > 0 && (
                                     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-green-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
                                         {cartCount}
@@ -105,26 +105,26 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                             <div className="hidden md:flex items-center gap-2">
                                 <button
                                     onClick={() => navigate('dashboard')}
-                                    className="px-3 py-2 text-sm font-bold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors rounded-lg"
+                                    className="px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-lg"
                                 >
                                     Dashboard
                                 </button>
                                 <button
                                     onClick={() => navigate('profile')}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 >
-                                    <div className="w-8 h-8 bg-green-900/40 rounded-full flex items-center justify-center text-green-400 overflow-hidden">
+                                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 overflow-hidden">
                                         {user.image
                                             ? <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                                             : <User size={16} />
                                         }
                                     </div>
-                                    <span className="text-sm font-bold text-white max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
-                                    {user.role === 'admin' && <Badge color="bg-purple-900/40 text-purple-400">Admin</Badge>}
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
+                                    {user.role === 'admin' && <Badge color="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">Admin</Badge>}
                                 </button>
                                 <button
                                     onClick={handleLogout}
-                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                     aria-label="Logout"
                                 >
                                     <LogOut size={20} />
@@ -134,7 +134,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                             <div className="hidden md:flex items-center gap-2">
                                 <button
                                     onClick={() => navigate('login')}
-                                    className="px-4 py-2 text-sm font-bold text-gray-300 hover:text-white transition-colors"
+                                    className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                                 >
                                     {t('login')}
                                 </button>
@@ -150,10 +150,10 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         {/* Mobile Menu Toggle */}
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             aria-label="Toggle Menu"
                         >
-                            {isMenuOpen ? <X size={22} className="text-gray-300" /> : <Menu size={22} className="text-gray-300" />}
+                            {isMenuOpen ? <X size={22} className="text-gray-600 dark:text-gray-300" /> : <Menu size={22} className="text-gray-600 dark:text-gray-300" />}
                         </button>
                     </div>
                 </div>
@@ -161,35 +161,35 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="md:hidden bg-gray-950 border-t border-gray-800 px-4 py-4 space-y-1 animate-fade-in-down">
+                <div className="md:hidden bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-4 py-4 space-y-1 animate-fade-in-down">
                     {navLinks.map(link => (
                         <button
                             key={link.key}
                             onClick={() => handleNavClick(link.key)}
                             className={`w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition-colors ${view === link.key
-                                    ? 'bg-green-900/40 text-green-400'
-                                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                         >
                             {link.label}
                         </button>
                     ))}
-                    <div className="pt-3 border-t border-gray-800 space-y-1">
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-800 space-y-1">
                         {user ? (
                             <>
-                                <button onClick={() => { navigate('dashboard'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-300 hover:bg-gray-800 hover:text-white">
+                                <button onClick={() => { navigate('dashboard'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                     Dashboard
                                 </button>
-                                <button onClick={() => { navigate('profile'); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-300 hover:bg-gray-800 hover:text-white">
+                                <button onClick={() => { navigate('profile'); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                     <User size={18} /> Profile
                                 </button>
-                                <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-400 hover:bg-red-900/20">
+                                <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
                                     <LogOut size={18} /> {t('logout')}
                                 </button>
                             </>
                         ) : (
                             <>
-                                <button onClick={() => { navigate('login'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-300 hover:bg-gray-800 hover:text-white">
+                                <button onClick={() => { navigate('login'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                     {t('login')}
                                 </button>
                                 <button onClick={() => { navigate('register'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold bg-green-600 text-white hover:bg-green-500">
@@ -198,13 +198,13 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                             </>
                         )}
                         <div className="w-full text-left px-4 py-2">
-                            <div className="flex items-center gap-2 mb-2 text-sm font-bold text-gray-400"><Globe size={16} /> Language</div>
+                            <div className="flex items-center gap-2 mb-2 text-sm font-bold text-gray-500 dark:text-gray-400"><Globe size={16} /> Language</div>
                             <div className="flex gap-2">
                                 {[ {code: 'en', label: 'EN'}, {code: 'hi', label: 'HI'}, {code: 'mr', label: 'MR'} ].map(lang => (
                                     <button 
                                         key={lang.code} 
                                         onClick={() => setLanguage(lang.code)} 
-                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${language === lang.code ? 'bg-green-900/60 text-green-300' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${language === lang.code ? 'bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                                     >
                                         {lang.label}
                                     </button>

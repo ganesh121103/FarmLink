@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2 } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -172,6 +172,21 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         setSubmittingReview(false);
     };
 
+    const handleDeleteReview = async (reviewId) => {
+        if (!window.confirm("Are you sure you want to delete this review?")) return;
+        try {
+            const { data } = await apiCall(`/products/${selectedProduct._id}/reviews/${reviewId}`, "DELETE");
+            setSelectedProduct(data);
+            if (setProducts) {
+                setProducts(prev => prev.map(p => p._id === data._id ? data : p));
+            }
+            addToast("Review deleted successfully!");
+        } catch (err) {
+            console.error(err);
+            alert(err.message || "Failed to delete review");
+        }
+    };
+
     const fetchAIRecs = useCallback(async (product) => {
         if (!product || products.length < 2) return;
         setAiRecsLoading(true);
@@ -213,7 +228,7 @@ ${productList}`;
         recognition.lang = 'en-IN';
         recognition.onstart = () => setIsListening(true);
         recognition.onend = () => setIsListening(false);
-        recognition.onresult = (e) => setLocalSearch(e.results[0][0].transcript);
+        recognition.onresult = (e) => setLocalSearch(e.results[0][0].transcript.replace(/\.$/, ''));
         recognition.start();
     };
 
@@ -408,8 +423,15 @@ ${productList}`;
                                                 <p className="text-xs font-bold text-stone-400 dark:text-slate-500 mt-1">{new Date(r.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                             </div>
                                         </div>
-                                        <div className="flex bg-stone-50 dark:bg-slate-700 px-3 py-1.5 rounded-xl border border-stone-100 dark:border-slate-600">
-                                            {[...Array(5)].map((_, i) => <Star key={i} size={14} className={i < r.rating ? "text-yellow-400 fill-current" : "text-stone-200 dark:text-slate-600"} />)}
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex bg-stone-50 dark:bg-slate-700 px-3 py-1.5 rounded-xl border border-stone-100 dark:border-slate-600">
+                                                {[...Array(5)].map((_, i) => <Star key={i} size={14} className={i < r.rating ? "text-yellow-400 fill-current" : "text-stone-200 dark:text-slate-600"} />)}
+                                            </div>
+                                            {user?.role === 'admin' && (
+                                                <button onClick={() => handleDeleteReview(r._id)} className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Review">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <p className="text-sm font-medium text-stone-700 dark:text-slate-200 leading-relaxed ml-1">{r.comment}</p>
