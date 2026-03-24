@@ -284,18 +284,84 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
 
             {/* ORDERS TAB */}
             {activeTab === 'orders' && (
-                <div className="animate-fade-in-up space-y-4">
-                    {orders?.length === 0 ? <p className="text-stone-500 text-center py-12">No orders on the platform yet.</p> : orders?.map((o, i) => (
-                        <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-800 p-5 rounded-xl border border-stone-100 dark:border-slate-700 gap-4">
-                            <div><p className="font-bold text-black dark:text-white">#{o._id}</p><p className="text-xs text-stone-500">{o.date}</p></div>
-                            <p className="text-sm text-stone-600 dark:text-slate-400 flex-1 hidden md:block">{o.userName}</p>
-                            <p className="font-black text-green-700 dark:text-green-400">₹{o.total}</p>
-                            <Badge color={o.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>{o.status}</Badge>
-                            <div className="flex gap-2">
-                                <button onClick={() => { setOrders(prev => prev.map(ord => ord._id === o._id ? { ...ord, status: o.status === 'Placed' ? 'Shipped' : 'Delivered' } : ord)); addToast("Order status updated!"); }} disabled={o.status === 'Delivered'} className="text-xs py-1.5 px-3 font-bold border border-stone-200 text-stone-600 dark:text-slate-300 rounded-lg hover:border-green-400 transition-colors disabled:opacity-40">Advance →</button>
-                            </div>
-                        </div>
-                    ))}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-stone-100 dark:border-slate-700 overflow-hidden animate-fade-in-up">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-stone-200 dark:border-slate-700 text-xs font-bold uppercase text-stone-500 tracking-wider">
+                                    <th className="p-5">Order ID</th>
+                                    <th className="p-5">Customer</th>
+                                    <th className="p-5">Items</th>
+                                    <th className="p-5">Total</th>
+                                    <th className="p-5">Tracking Status</th>
+                                    <th className="p-5">Update Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100 dark:divide-slate-700/50">
+                                {orders?.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="text-stone-500 text-center py-12">No orders on the platform yet.</td>
+                                    </tr>
+                                ) : orders?.map((o, i) => (
+                                    <tr key={i} className="hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-5">
+                                            <span className="font-bold text-stone-800 dark:text-stone-200">#{o._id?.startsWith('ord_') ? o._id : 'ord_' + o._id?.slice(-5)}</span>
+                                        </td>
+                                        <td className="p-5">
+                                            <p className="font-bold text-black dark:text-white">{o.userName || 'Customer'}</p>
+                                            <p className="text-xs text-stone-500 mt-0.5">{o.address?.substring(0, 30) || 'Address not provided'}{o.address?.length > 30 ? '...' : ''}</p>
+                                        </td>
+                                        <td className="p-5">
+                                            <div className="flex flex-col gap-2">
+                                                {o.items?.slice(0, 2).map((item, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <img src={item.image || item.images?.[0] || 'https://via.placeholder.com/24'} className="w-6 h-6 rounded-md object-cover" alt="" />
+                                                        <span className="text-sm font-medium text-stone-700 dark:text-stone-300">{item.name} <span className="text-stone-400 text-xs font-bold ml-1">x{item.quantity}</span></span>
+                                                    </div>
+                                                ))}
+                                                {o.items?.length > 2 && <span className="text-xs font-bold text-purple-600">+{o.items.length - 2} more items</span>}
+                                            </div>
+                                        </td>
+                                        <td className="p-5">
+                                            <span className="font-black text-green-700 dark:text-green-400">₹{o.total}</span>
+                                        </td>
+                                        <td className="p-5">
+                                            <Badge color={
+                                                o.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                                o.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                            }>
+                                                {o.status?.toUpperCase() || 'PLACED'}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-5">
+                                            <select
+                                                className="border border-stone-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm font-bold bg-white dark:bg-slate-700 text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer"
+                                                value={o.status || 'Placed'}
+                                                onChange={async (e) => {
+                                                    const newStatus = e.target.value;
+                                                    try {
+                                                        const cleanId = o._id.startsWith('ord_') ? o._id.replace('ord_', '') : o._id;
+                                                        if (cleanId.length === 24) {
+                                                            await apiCall(`/orders/${cleanId}`, 'PUT', { status: newStatus });
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("Failed to update status on backend:", err);
+                                                    }
+                                                    setOrders(prev => prev.map(ord => ord._id === o._id ? { ...ord, status: newStatus } : ord));
+                                                    addToast("Order status updated!");
+                                                }}
+                                            >
+                                                <option value="Placed">Placed</option>
+                                                <option value="Shipped">Shipped</option>
+                                                <option value="Delivered">Delivered</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 

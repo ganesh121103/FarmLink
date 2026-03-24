@@ -64,8 +64,7 @@ export const AppProvider = ({ children }) => {
     const removeFromWishlist = (product) => { setWishlist(prev => prev.filter(item => item._id !== product._id)); addToast(t('removedFromWishlist')); };
 
     const addToCart = (product) => {
-        if (!user) { addToast("Please login to add to cart."); navigate('login'); return; }
-        if (user.role === 'farmer' || user.role === 'admin') return;
+        if (user && user.role === 'admin') return;
         setCart(prev => {
             const idx = prev.findIndex(item => item._id === product._id);
             if (idx > -1) { const updated = [...prev]; updated[idx].quantity = (updated[idx].quantity || 1) + 1; return updated; }

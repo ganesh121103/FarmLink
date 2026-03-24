@@ -6,7 +6,15 @@ const Order = require("../models/Order");
 /* GET orders – authenticated users */
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const filter = req.user.role === "admin" ? {} : { userId: req.user.id };
+    let filter = {};
+    if (req.user.role !== "admin") {
+      filter = {
+        $or: [
+          { userId: req.user.id },
+          { "items.farmer": req.user.id }
+        ]
+      };
+    }
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
@@ -14,10 +22,16 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-/* POST order – customers only */
-router.post("/", verifyToken, checkRole("customer"), async (req, res) => {
+/* POST order – authenticated users */
+router.post("/", verifyToken, async (req, res) => {
   try {
-    const order = await Order.create({ ...req.body, userId: req.user.id });
+    // Add date field to match frontend expectation
+    const orderData = {
+      ...req.body,
+      userId: req.user.id,
+      date: new Date().toLocaleDateString()
+    };
+    const order = await Order.create(orderData);
     res.status(201).json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });

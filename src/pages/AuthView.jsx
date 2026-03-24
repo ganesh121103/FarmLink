@@ -132,10 +132,11 @@ const AuthView = ({ initialMode = 'login' }) => {
                             <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Email</label>
                             <input
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="Enter email"
                                 value={formData.email}
                                 onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
                                 className={inputBase}
+                                autoComplete="off"
                             />
                             {errors.email && <p className={errorText}>{errors.email}</p>}
                         </div>
@@ -146,10 +147,11 @@ const AuthView = ({ initialMode = 'login' }) => {
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
+                                    placeholder="Enter password"
                                     value={formData.password}
                                     onChange={e => setFormData(f => ({ ...f, password: e.target.value }))}
                                     className={`${inputBase} pr-12`}
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"

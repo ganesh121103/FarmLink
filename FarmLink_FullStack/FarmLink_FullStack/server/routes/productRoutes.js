@@ -43,4 +43,69 @@ router.delete("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res
   }
 });
 
+const User = require("../models/Customer");
+const Order = require("../models/Order");
+
+/* ADD review to a product */
+router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    if (!rating || !comment) {
+      return res.status(400).json({ message: "Rating and comment are required." });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    // REAL Verified Purchase Check
+    const hasOrdered = await Order.findOne({
+      userId: req.user.id,
+      "items.productId": req.params.id
+    });
+
+    // FIND existing review from this user
+    const existingIndex = product.reviews.findIndex(
+      (r) => r.user && r.user.toString() === req.user.id.toString()
+    );
+
+    if (existingIndex > -1) {
+      // UPDATE existing review
+      console.log("Updating existing review for User:", req.user.id);
+      product.reviews[existingIndex].rating = Number(rating);
+      product.reviews[existingIndex].comment = String(comment);
+      product.reviews[existingIndex].isVerified = !!hasOrdered;
+      product.reviews[existingIndex].date = Date.now();
+    } else {
+      // ADD new review
+      console.log("Adding new review for User:", req.user.id);
+      const review = {
+        user: req.user.id,
+        userName: user.name,
+        rating: Number(rating),
+        comment: String(comment),
+        isVerified: !!hasOrdered,
+        date: Date.now(),
+      };
+      product.reviews.push(review);
+    }
+
+    // Recalculate average and total count
+    product.reviewsCount = product.reviews.length;
+    const totalRating = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+    product.rating = totalRating / product.reviews.length;
+
+    // Use markModified if updating a nested array element
+    product.markModified('reviews');
+
+    await product.save();
+    res.status(existingIndex > -1 ? 200 : 201).json(product);
+  } catch (err) {
+    console.error("REVIEW ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

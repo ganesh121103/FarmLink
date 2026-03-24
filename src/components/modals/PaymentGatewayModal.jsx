@@ -7,14 +7,20 @@ import { Landmark, Wallet, ScanLine } from '../ui/CustomIcons';
 import { useAppContext } from '../../context/AppContext';
 
 const PaymentGatewayModal = ({ isCheckoutOpen, setIsCheckoutOpen, handlePlaceOrder, cartTotal }) => {
-    const { t, addToast } = useAppContext();
+    const { user, navigate, t, addToast } = useAppContext();
     const [step, setStep] = useState(1);
     const [details, setDetails] = useState({ address: '', paymentMethod: 'upi' });
 
     if (!isCheckoutOpen) return null;
 
     const processPayment = () => {
-        if (!details.address.trim()) { addToast(t('enterAddress')); return; }
+        if (!details.address.trim()) { addToast(t('enterAddress') || 'Please enter delivery address'); return; }
+        if (!user) {
+            addToast('Please login to complete your payment');
+            setIsCheckoutOpen(false);
+            navigate('login');
+            return;
+        }
         setStep(2);
         setTimeout(async () => {
             await handlePlaceOrder(details);

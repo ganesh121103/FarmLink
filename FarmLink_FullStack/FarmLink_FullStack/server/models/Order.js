@@ -2,13 +2,14 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-    customerName: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    userName: { type: String, required: true },
     address: { type: String, required: true },
     
+    date: { type: String }, // To explicitly store the formatted date from frontend
     items: [
       {
-        product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
         name: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, default: 1 },

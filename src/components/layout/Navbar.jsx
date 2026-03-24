@@ -85,7 +85,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         </button>
 
                         {/* Cart Button */}
-                        {user?.role === 'customer' && (
+                        {(!user || user?.role !== 'admin') && (
                             <button
                                 onClick={() => navigate('activity')}
                                 className="relative p-2 rounded-lg hover:bg-gray-800 transition-colors"

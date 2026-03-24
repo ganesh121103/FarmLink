@@ -9,8 +9,20 @@ import ReceiptModal from '../components/modals/ReceiptModal';
 import { useAppContext } from '../context/AppContext';
 
 const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen }) => {
-    const { t, wishlist, removeFromWishlist, cart, removeFromCart, updateCartQuantity, navigate } = useAppContext();
-    const [activeTab, setActiveTab] = useState('orders');
+    const { user, addToast, t, wishlist, removeFromWishlist, cart, removeFromCart, updateCartQuantity, navigate } = useAppContext();
+    const [activeTab, setActiveTab] = useState(() => {
+        const hash = window.location.hash;
+        if (hash === '#cart') return 'cart';
+        if (hash === '#wishlist') return 'wishlist';
+        return 'orders';
+    });
+
+    React.useEffect(() => {
+        if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, []);
+
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [receiptOrder, setReceiptOrder] = useState(null);

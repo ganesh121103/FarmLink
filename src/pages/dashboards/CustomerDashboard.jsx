@@ -52,7 +52,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                     <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl text-green-700 dark:text-green-400 group-hover:scale-110 transition-transform"><Package size={28} /></div>
                     <div><h3 className="font-bold text-black dark:text-white">{t('orderHistory')}</h3><p className="text-sm text-stone-500">{orders.length} orders</p></div>
                 </div>
-                <div onClick={() => navigate('activity')} className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex items-center gap-4 group">
+                <div onClick={() => { window.location.hash = 'wishlist'; navigate('activity'); }} className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex items-center gap-4 group">
                     <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-500 group-hover:scale-110 transition-transform"><Heart size={28} /></div>
                     <div><h3 className="font-bold text-black dark:text-white">{t('wishlist')}</h3><p className="text-sm text-stone-500">{wishlist.length} items saved</p></div>
                 </div>

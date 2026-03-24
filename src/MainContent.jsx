@@ -118,6 +118,7 @@ const MainContent = () => {
                         BackBtn={BackBtn}
                         farmers={farmers}
                         products={products}
+                        setProducts={setProducts}
                         isLoading={isLoadingProducts}
                     />
                 )}
@@ -129,11 +130,12 @@ const MainContent = () => {
                         BackBtn={BackBtn}
                         farmers={farmers}
                         products={products}
+                        setProducts={setProducts}
                         isLoading={isLoadingProducts}
                     />
                 )}
                 {(view === 'login' || view === 'register') && <AuthView initialMode={view} />}
-                {view === 'activity' && user?.role === 'customer' && (
+                {view === 'activity' && (!user || user?.role !== 'admin') && (
                     <CustomerActivityView orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} />
                 )}
                 {view === 'profile' && <ProfileView BackBtn={BackBtn} setFarmers={setFarmers} />}
