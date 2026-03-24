@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star } from 'lucide-react';
+import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,10 +11,12 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
     const { addToast, t } = useAppContext();
     const [activeTab, setActiveTab] = useState('overview');
     const [allUsers, setAllUsers] = useState([]);
+    const [allFarmers, setAllFarmers] = useState([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
     const [reviewingUser, setReviewingUser] = useState(null);
     const [previewProduct, setPreviewProduct] = useState(null);
 
+    // Fetch all users (customers + admins)
     useEffect(() => {
         const fetchAllUsers = async () => {
             try {
@@ -24,16 +26,42 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 const mockCustomers = [
                     { _id: 'c1', name: 'Amit Patel', email: 'amit.p@gmail.com', role: 'customer', location: 'Pune', status: 'Active' },
                     { _id: 'c2', name: 'Neha Sharma', email: 'neha.s@yahoo.com', role: 'customer', location: 'Mumbai', status: 'Active' },
-                    { _id: 'c3', name: 'Rahul Desai', email: 'rahul.d@hotmail.com', role: 'customer', location: 'Nashik', status: 'Suspended' }
                 ];
-                const enrichedFarmers = farmers.map(f => ({ ...f, role: 'farmer', status: 'Active' }));
+                const enrichedFarmers = (farmers || []).map(f => ({ ...f, role: 'farmer', status: 'Active' }));
                 setAllUsers([...enrichedFarmers, ...mockCustomers]);
             } finally {
                 setIsLoadingUsers(false);
             }
         };
         fetchAllUsers();
-    }, [farmers]);
+    }, []);
+
+    // Fetch all farmers (including verificationStatus + documents)
+    useEffect(() => {
+        const fetchFarmers = async () => {
+            try {
+                const { data } = await apiCall('/farmers');
+                setAllFarmers(data);
+            } catch {
+                // Fallback to prop farmers
+                setAllFarmers((farmers || []).map(f => ({ ...f, role: 'farmer' })));
+            }
+        };
+        fetchFarmers();
+    }, []);
+
+    // Merge allFarmers into allUsers for the Manage Users tab
+    const mergedUsers = useMemo(() => {
+        const farmerEmails = new Set(allFarmers.map(f => f.email));
+        const nonFarmerUsers = allUsers.filter(u => !farmerEmails.has(u.email));
+        return [...allFarmers, ...nonFarmerUsers];
+    }, [allUsers, allFarmers]);
+
+    // Pending verifications
+    const pendingVerifications = useMemo(
+        () => allFarmers.filter(f => f.verificationStatus === 'Pending'),
+        [allFarmers]
+    );
 
     const insights = useMemo(() => {
         const cat = {};
@@ -41,19 +69,26 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
         const topCat = Object.keys(cat).length > 0 ? Object.keys(cat).reduce((a, b) => cat[a] > cat[b] ? a : b) : 'Produce';
         const topCatPct = products.length ? Math.round((cat[topCat] / products.length) * 100) : 0;
         const locCounts = {};
-        allUsers.forEach(u => { if (u.location) locCounts[u.location] = (locCounts[u.location] || 0) + 1; });
+        mergedUsers.forEach(u => { if (u.location) locCounts[u.location] = (locCounts[u.location] || 0) + 1; });
         const topLoc = Object.keys(locCounts).length > 0 ? Object.keys(locCounts).reduce((a, b) => locCounts[a] > locCounts[b] ? a : b) : 'Local';
         return [
             { id: 1, title: `High Demand: ${topCat}`, desc: `${topCat} accounts for ${topCatPct}% of listings. Consider notifying farmers to stock more.`, color: "text-yellow-400" },
             { id: 2, title: "Farmer Retention", desc: "Farmers using AI Crop Scanner have 3x higher 30-day retention. Promote the feature.", color: "text-green-400" },
             { id: 3, title: "Logistics Alert", desc: `Average delivery in ${topLoc} increased by 1.2h. Flagged for review.`, color: "text-red-400" },
         ];
-    }, [products, allUsers]);
+    }, [products, mergedUsers]);
 
-    const handleVerifyUser = (id, approve) => {
-        setAllUsers(prev => prev.map(u => u._id === id ? { ...u, verified: approve, verificationStatus: approve ? 'Verified' : 'Rejected' } : u));
-        addToast(approve ? "Farmer Verified!" : "Verification Revoked");
-        setReviewingUser(null);
+    const handleVerifyUser = async (id, approve) => {
+        try {
+            await apiCall(`/farmers/${id}/verify`, 'PUT', { approve });
+            const updated = { verified: approve, verificationStatus: approve ? 'Verified' : 'Rejected' };
+            setAllFarmers(prev => prev.map(u => u._id === id ? { ...u, ...updated } : u));
+            setAllUsers(prev => prev.map(u => u._id === id ? { ...u, ...updated } : u));
+            addToast(approve ? "✅ Farmer Verified!" : "❌ Verification Rejected");
+            setReviewingUser(null);
+        } catch (error) {
+            addToast(error.message || "Failed to update verification status");
+        }
     };
 
     const handleDeleteProduct = (id) => { setProducts(prev => prev.filter(p => p._id !== id)); addToast(t('productDeleted')); };
@@ -75,24 +110,53 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 </div>
             </div>
 
+            {/* Tabs */}
             <div className="flex gap-4 mb-8 border-b border-stone-200 dark:border-slate-700 overflow-x-auto pb-1">
                 <button onClick={() => setActiveTab('overview')} className={tabClass('overview')}>Overview & Stats</button>
+                <button onClick={() => setActiveTab('verifications')} className={`${tabClass('verifications')} flex items-center gap-2`}>
+                    Verifications
+                    {pendingVerifications.length > 0 && (
+                        <span className="min-w-[20px] h-5 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center px-1 animate-pulse">
+                            {pendingVerifications.length}
+                        </span>
+                    )}
+                </button>
                 <button onClick={() => setActiveTab('users')} className={`${tabClass('users')} flex items-center gap-2`}>
-                    {t('manageUsers')} ({allUsers.length})
-                    {allUsers.some(u => u.verificationStatus === 'Pending') && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                    {t('manageUsers')} ({mergedUsers.length})
                 </button>
                 <button onClick={() => setActiveTab('products')} className={tabClass('products')}>{t('manageProducts')} ({products.length})</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>Orders ({orders?.length || 0})</button>
             </div>
 
+            {/* OVERVIEW */}
             {activeTab === 'overview' && (
                 <div className="space-y-8 animate-fade-in-up">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-purple-500"><div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl text-purple-600"><Users size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('totalUsers')}</p><p className="text-3xl font-black text-black dark:text-white">{allUsers.length}</p></div></Card>
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-green-500"><div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl text-green-600"><Sprout size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('farmers')}</p><p className="text-3xl font-black text-black dark:text-white">{allUsers.filter(u => u.role === 'farmer').length}</p></div></Card>
+                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-purple-500"><div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl text-purple-600"><Users size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('totalUsers')}</p><p className="text-3xl font-black text-black dark:text-white">{mergedUsers.length}</p></div></Card>
+                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-green-500"><div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl text-green-600"><Sprout size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('farmers')}</p><p className="text-3xl font-black text-black dark:text-white">{allFarmers.length}</p></div></Card>
+                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-yellow-500"><div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl text-yellow-600"><Clock size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">Pending Reviews</p><p className="text-3xl font-black text-black dark:text-white">{pendingVerifications.length}</p></div></Card>
                         <Card className="p-6 flex items-center gap-5 border-l-4 border-l-blue-500"><div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl text-blue-600"><Package size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('activeProducts')}</p><p className="text-3xl font-black text-black dark:text-white">{products.length}</p></div></Card>
-                        <Card className="p-6 flex items-center gap-5 border-l-4 border-l-yellow-500"><div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-xl text-yellow-600"><Activity size={28} /></div><div><p className="text-xs font-bold uppercase mb-1 text-stone-500">{t('systemHealth')}</p><p className="text-2xl font-black text-green-600">Optimal</p></div></Card>
                     </div>
+
+                    {/* Pending verifications quick-access */}
+                    {pendingVerifications.length > 0 && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-2xl p-5">
+                            <h3 className="font-black text-amber-800 dark:text-amber-400 mb-3 flex items-center gap-2">
+                                <Clock size={18} /> {pendingVerifications.length} Farmer(s) Awaiting Verification
+                            </h3>
+                            <div className="flex flex-wrap gap-3">
+                                {pendingVerifications.map(f => (
+                                    <button key={f._id}
+                                        onClick={() => { setReviewingUser(f); }}
+                                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-yellow-200 dark:border-yellow-700 rounded-xl px-4 py-2 text-sm font-bold text-amber-800 dark:text-amber-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 transition-colors">
+                                        <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                                        {f.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-stone-900 dark:bg-slate-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
                         <h3 className="text-2xl font-bold mb-2 relative z-10 flex items-center gap-2"><Sparkles className="text-purple-400" /> AI Platform Insights</h3>
@@ -108,22 +172,81 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 </div>
             )}
 
+            {/* VERIFICATIONS TAB */}
+            {activeTab === 'verifications' && (
+                <div className="animate-fade-in-up space-y-4">
+                    {allFarmers.filter(f => f.verificationStatus === 'Pending' || f.documents?.idProof).length === 0 ? (
+                        <div className="text-center py-16 text-stone-400">
+                            <CheckCircle size={48} className="mx-auto mb-4 text-green-400" />
+                            <p className="font-bold text-lg">No pending verifications</p>
+                            <p className="text-sm mt-1">All farmer verification requests will appear here.</p>
+                        </div>
+                    ) : (
+                        allFarmers
+                            .filter(f => f.verificationStatus === 'Pending' || f.documents?.idProof)
+                            .map(farmer => (
+                                <div key={farmer._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-stone-100 dark:border-slate-700 shadow-sm">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-400 font-black text-lg">
+                                            {farmer.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-black dark:text-white">{farmer.name}</p>
+                                            <p className="text-xs text-stone-500">{farmer.email}</p>
+                                            <p className="text-xs text-stone-400 mt-0.5">{farmer.location || farmer.address || 'Location not set'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        {farmer.verificationStatus === 'Pending' && (
+                                            <Badge color="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                                ⏳ Pending Review
+                                            </Badge>
+                                        )}
+                                        {farmer.verificationStatus === 'Verified' && (
+                                            <Badge color="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                ✅ Verified
+                                            </Badge>
+                                        )}
+                                        {farmer.verificationStatus === 'Rejected' && (
+                                            <Badge color="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                ❌ Rejected
+                                            </Badge>
+                                        )}
+                                        <Button
+                                            className="text-sm py-2 px-4"
+                                            variant={farmer.verificationStatus === 'Pending' ? 'primary' : 'outline'}
+                                            onClick={() => setReviewingUser(farmer)}
+                                        >
+                                            {farmer.verificationStatus === 'Pending' ? '🔍 Review Docs' : 'View Docs'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                    )}
+                </div>
+            )}
+
+            {/* MANAGE USERS TAB */}
             {activeTab === 'users' && (
                 <div className="animate-fade-in-up overflow-x-auto">
                     <table className="w-full text-left">
                         <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">User</th><th className="py-3 pr-4">Role</th><th className="py-3 pr-4">Location</th><th className="py-3 pr-4">Status</th><th className="py-3">Action</th></tr></thead>
                         <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
-                            {allUsers.map(user => (
+                            {mergedUsers.map(user => (
                                 <tr key={user._id} className="group">
                                     <td className="py-4 pr-4"><div className="font-bold text-black dark:text-white">{user.name}</div><p className="text-xs text-stone-500">{user.email}</p></td>
                                     <td className="py-4 pr-4"><Badge color={user.role === 'farmer' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-400'}>{user.role}</Badge></td>
-                                    <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{user.location || 'N/A'}</td>
+                                    <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{user.location || user.address || 'N/A'}</td>
                                     <td className="py-4 pr-4 text-sm">
-                                        {user.verificationStatus === 'Pending' ? <Badge color="bg-yellow-100 text-yellow-800">Pending Review</Badge> : user.verified ? <Badge color="bg-green-100 text-green-800">Verified</Badge> : <Badge color={user.status === 'Suspended' ? 'bg-red-100 text-red-800' : 'bg-stone-100 text-stone-600'}>{user.status || 'Active'}</Badge>}
+                                        {user.verificationStatus === 'Pending'
+                                            ? <Badge color="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Pending Review</Badge>
+                                            : user.verified || user.verificationStatus === 'Verified'
+                                                ? <Badge color="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Verified</Badge>
+                                                : <Badge color={user.status === 'Suspended' ? 'bg-red-100 text-red-800' : 'bg-stone-100 text-stone-600'}>{user.status || 'Active'}</Badge>}
                                     </td>
                                     <td className="py-4">
                                         <div className="flex gap-2 items-center">
-                                            {user.role === 'farmer' && user.documents && (
+                                            {user.role === 'farmer' && (user.documents?.idProof || user.verificationStatus === 'Pending') && (
                                                 <Button className="text-xs py-1.5 px-3" variant={user.verificationStatus === 'Pending' ? 'primary' : 'outline'} onClick={() => setReviewingUser(user)}>
                                                     {user.verificationStatus === 'Pending' ? t('reviewDocs') : 'View Docs'}
                                                 </Button>
@@ -138,6 +261,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 </div>
             )}
 
+            {/* PRODUCTS TAB */}
             {activeTab === 'products' && (
                 <div className="animate-fade-in-up overflow-x-auto">
                     <table className="w-full text-left">
@@ -158,6 +282,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 </div>
             )}
 
+            {/* ORDERS TAB */}
             {activeTab === 'orders' && (
                 <div className="animate-fade-in-up space-y-4">
                     {orders?.length === 0 ? <p className="text-stone-500 text-center py-12">No orders on the platform yet.</p> : orders?.map((o, i) => (

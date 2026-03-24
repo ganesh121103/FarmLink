@@ -1,13 +1,15 @@
 const express = require("express");
 const router = express.Router();
+const { verifyToken } = require("../middleware/authMiddleware");
 
 const {
   registerUser,
   loginUser,
-  getUsers
+  getUsers,
+  updateUser
 } = require("../controllers/userController");
 
-// 🔥 GET ALL USERS OR FILTER BY ROLE (?role=farmer)
+// GET all users or filter by role – public for now (farmers list on homepage)
 router.get("/", getUsers);
 
 // REGISTER
@@ -15,5 +17,8 @@ router.post("/register", registerUser);
 
 // LOGIN
 router.post("/login", loginUser);
+
+// UPDATE user (own profile) – must be logged in
+router.put("/:id", verifyToken, updateUser);
 
 module.exports = router;

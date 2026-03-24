@@ -18,9 +18,8 @@ const farmerSchema = new mongoose.Schema({
     default: 'Unverified'
   },
   documents: {
-    aadharCard: String,
-    panCard: String,
-    passbook: String
+    idProof: String,
+    landRecord: String
   },
   rating: { type: Number, default: 0 },
   numReviews: { type: Number, default: 0 }

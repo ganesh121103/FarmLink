@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationModal';
 import CropScannerModal from '../../components/modals/CropScannerModal';
+import VerificationModal from '../../components/modals/VerificationModal';
 import { CATEGORIES, LOCATIONS } from '../../constants';
+
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
@@ -19,6 +21,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuggestingPrice, setIsSuggestingPrice] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [isVerificationOpen, setIsVerificationOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
 
@@ -83,9 +86,9 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const handleAISuggestPrice = async () => {
         if (!newProduct.name) { addToast("Enter a product name first."); return; }
         setIsSuggestingPrice(true);
-        const apiKey = "";
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: `Suggest a SINGLE fair wholesale price in Indian Rupees per kilogram for ${newProduct.name} in Maharashtra, India. Return ONLY the number. Example: 45` }] }] })
             });
@@ -132,6 +135,30 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 </div>
             </div>
 
+            {!user?.verified && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl p-5 mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 className="font-bold text-yellow-800 dark:text-yellow-500 flex items-center gap-2 mb-1">
+                            <Shield className="w-5 h-5" />
+                            {user?.verificationStatus === 'Pending' ? 'Verification Pending' : 'Unverified Profile'}
+                        </h3>
+                        <p className="text-yellow-700 dark:text-yellow-600/80 text-sm">
+                            {user?.verificationStatus === 'Pending' 
+                                ? 'Your documents are currently under review by our team. This usually takes 1-2 business days.' 
+                                : 'Upload your official documents to get verified and build trust with customers.'}
+                        </p>
+                    </div>
+                    {user?.verificationStatus !== 'Pending' && (
+                        <button 
+                            onClick={() => setIsVerificationOpen(true)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded-lg transition-colors whitespace-nowrap whitespace-nowrap"
+                        >
+                            Get Verified
+                        </button>
+                    )}
+                </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                 <Card className="p-5 border-l-4 border-l-green-500 text-center"><div className="text-3xl font-black text-black dark:text-white">{myProducts.length}</div><p className="text-xs text-stone-500 font-bold uppercase mt-1">{t('activeProducts')}</p></Card>
                 <Card className="p-5 border-l-4 border-l-yellow-500 text-center"><div className="text-3xl font-black text-green-700 dark:text-green-400">₹{totalRevenue}</div><p className="text-xs text-stone-500 font-bold uppercase mt-1">{t('totalRevenue')}</p></Card>
@@ -151,7 +178,9 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                         <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-stone-300 dark:border-slate-600">
                             <Sprout size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
                             <h3 className="text-xl font-bold text-stone-500 mb-4">{t('noProducts')}</h3>
-                            <Button onClick={() => setIsAddProductOpen(true)}><PlusCircle size={20} /> {t('listFirstProduct')}</Button>
+                            <div className="flex justify-center">
+                                <Button onClick={() => setIsAddProductOpen(true)}><PlusCircle size={20} /> {t('listFirstProduct')}</Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -260,6 +289,13 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
             <DeleteConfirmationModal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={handleDeleteProduct} isLoading={isLoading} />
             <CropScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+            <VerificationModal 
+                isOpen={isVerificationOpen} 
+                onClose={() => setIsVerificationOpen(false)} 
+                onVerificationSubmit={() => {
+                   // Optional: refresh user or show some update
+                }} 
+            />
         </div>
     );
 };

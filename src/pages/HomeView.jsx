@@ -53,12 +53,12 @@ const HomeView = () => {
                     { icon: ShoppingBasket, title: t('forCustomers'), desc: t('forCustomersDesc'), color: 'bg-yellow-500', action: 'products' },
                     { icon: TrendingUp, title: t('hyperLocal'), desc: t('hyperLocalDesc'), color: 'bg-sky-500', action: 'about' },
                 ].map(({ icon: Icon, title, desc, color, action }) => (
-                    <div key={title} onClick={() => navigate(action)} className="bg-white/5 dark:bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-left hover:bg-white/10 transition-all cursor-pointer group hover:scale-105">
+                    <div key={title} onClick={() => navigate(action)} className="bg-white/40 dark:bg-white/5 backdrop-blur border border-stone-200 dark:border-white/10 rounded-2xl p-6 text-left hover:bg-white/60 dark:hover:bg-white/10 transition-all cursor-pointer group hover:scale-105 shadow-sm dark:shadow-none">
                         <div className={`w-12 h-12 ${color} text-white rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                             <Icon size={24} />
                         </div>
-                        <h3 className="text-white font-bold text-lg mb-2">{title}</h3>
-                        <p className="text-stone-300 text-sm leading-relaxed">{desc}</p>
+                        <h3 className="text-stone-800 dark:text-white font-bold text-lg mb-2">{title}</h3>
+                        <p className="text-stone-600 dark:text-stone-300 text-sm leading-relaxed">{desc}</p>
                     </div>
                 ))}
             </div>

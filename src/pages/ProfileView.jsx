@@ -3,43 +3,54 @@ import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Ed
 import Badge from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import EditProfileModal from '../components/modals/EditProfileModal';
-import FarmerVerificationModal from '../components/modals/FarmerVerificationModal';
+import VerificationModal from '../components/modals/VerificationModal';
 import { ShieldAlert } from '../components/ui/CustomIcons';
 import { useAppContext } from '../context/AppContext';
+import { apiCall } from '../api/apiCall';
 
 const ProfileView = ({ BackBtn, setFarmers }) => {
-    const { user, setUser, t, handleLogout } = useAppContext();
+    const { user, setUser, t, handleLogout, addToast } = useAppContext();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleSaveProfile = (newData) => {
+    const handleSaveProfile = async (newData) => {
         setIsSaving(true);
-        setTimeout(() => {
-            setUser({ ...user, ...newData });
-            setIsSaving(false);
+        try {
+            const { data } = await apiCall(`/users/${user._id}`, 'PUT', newData);
+            const updatedUser = { ...user, ...data, token: user.token };
+            setUser(updatedUser);
+            localStorage.setItem('farmlink_user', JSON.stringify(updatedUser));
+            addToast('Profile updated successfully!');
             setIsEditModalOpen(false);
-        }, 1000);
+        } catch (err) {
+            addToast(err.message || 'Failed to update profile');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const handleVerificationSubmit = (docs) => {
-        setUser({ ...user, verificationStatus: 'Pending', documents: docs });
+    const handleVerificationSubmit = () => {
+        setUser({ ...user, verificationStatus: 'Pending' });
         if (setFarmers) {
-            setFarmers(prev => prev.map(f => (f._id === user._id || f.name === user.name) ? { ...f, verificationStatus: 'Pending', documents: docs } : f));
+            setFarmers(prev => prev.map(f => (f._id === user._id || f.name === user.name) ? { ...f, verificationStatus: 'Pending' } : f));
         }
     };
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-4xl mx-auto">
             <BackBtn />
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-stone-100 dark:border-slate-700">
-                <div className="h-32 md:h-48 bg-gradient-to-r from-green-700 to-green-500 relative"></div>
-                <div className="px-8 pb-8 relative">
-                    <div className="flex justify-between items-end -mt-16 mb-6">
-                        <div className="w-32 h-32 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-lg border-4 border-white dark:border-slate-800">
-                            <User size={64} className="text-stone-300 dark:text-slate-600" />
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-stone-100 dark:border-slate-700 p-8 md:p-10">
+                <div className="flex flex-col">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="w-32 h-32 bg-stone-50 dark:bg-slate-900 rounded-full flex items-center justify-center shadow-inner border-4 border-white dark:border-slate-800 overflow-hidden relative group">
+                            {user?.image ? (
+                                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={64} className="text-stone-300 dark:text-slate-600" />
+                            )}
                         </div>
-                        <Button onClick={() => setIsEditModalOpen(true)} variant="outline" className="mb-4 bg-white dark:bg-slate-800"><Edit size={16} /> {t('editProfile')}</Button>
+                        <Button onClick={() => setIsEditModalOpen(true)} variant="outline" className="bg-white dark:bg-slate-800"><Edit size={16} /> {t('editProfile')}</Button>
                     </div>
 
                     <div className="mb-8">
@@ -51,23 +62,45 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
                     </div>
 
                     {user?.role === 'farmer' && (
-                        <div className="mb-8">
-                            {!user?.verified && user?.verificationStatus !== 'Pending' && (
-                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="mb-10">
+                            {/* Verified ✅ */}
+                            {(user?.verified || user?.verificationStatus === 'Verified') && (
+                                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-2xl p-5 flex items-center gap-4">
+                                    <CheckCircle className="text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
                                     <div>
-                                        <h4 className="font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2"><ShieldAlert size={18} /> Unverified Profile</h4>
-                                        <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">Upload your official documents to get verified and build trust with customers.</p>
+                                        <h4 className="font-bold text-green-800 dark:text-green-400">Profile Verified ✅</h4>
+                                        <p className="text-sm text-green-700 dark:text-green-500 mt-1">Your profile has been verified by the admin. Customers can trust your listings.</p>
                                     </div>
-                                    <Button onClick={() => setIsVerifyModalOpen(true)} variant="secondary" className="shrink-0">{t('getVerified')}</Button>
                                 </div>
                             )}
-                            {user?.verificationStatus === 'Pending' && (
+                            {/* Pending ⏳ */}
+                            {user?.verificationStatus === 'Pending' && !user?.verified && (
                                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-5 flex items-center gap-4">
                                     <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
                                     <div>
                                         <h4 className="font-bold text-blue-800 dark:text-blue-400">{t('verificationPending')}</h4>
                                         <p className="text-sm text-blue-700 dark:text-blue-500 mt-1">Your documents are currently under review by our Admin team.</p>
                                     </div>
+                                </div>
+                            )}
+                            {/* Rejected ❌ */}
+                            {user?.verificationStatus === 'Rejected' && !user?.verified && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div>
+                                        <h4 className="font-bold text-red-800 dark:text-red-400 flex items-center gap-2">❌ Verification Rejected</h4>
+                                        <p className="text-sm text-red-700 dark:text-red-500 mt-1">Your documents were rejected. Please re-upload clear, valid documents.</p>
+                                    </div>
+                                    <Button onClick={() => setIsVerifyModalOpen(true)} variant="secondary" className="shrink-0 font-bold px-8 shadow-md">Re-Submit</Button>
+                                </div>
+                            )}
+                            {/* Not started */}
+                            {!user?.verified && user?.verificationStatus !== 'Pending' && user?.verificationStatus !== 'Verified' && user?.verificationStatus !== 'Rejected' && (
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div>
+                                        <h4 className="font-bold text-amber-800 dark:text-amber-500 flex items-center gap-2"><ShieldAlert size={18} /> Unverified Profile</h4>
+                                        <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">Upload your official documents to get verified and build trust with customers.</p>
+                                    </div>
+                                    <Button onClick={() => setIsVerifyModalOpen(true)} variant="secondary" className="shrink-0 font-bold px-8 shadow-md">Get Verified</Button>
                                 </div>
                             )}
                         </div>
@@ -86,9 +119,9 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
                         {user?.role === 'farmer' && (
                             <div>
                                 <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-2">Farm Information</h3>
-                                <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-100 dark:border-green-900/30 space-y-3">
-                                    <div className="flex items-start gap-3"><Sprout size={18} className="text-green-600 mt-1" /><div className="font-medium text-sm"><span className="block text-green-800 dark:text-green-400 mb-1">{t('specialization')}</span>{user?.specialization || 'Mixed Crops'}</div></div>
-                                    <div className="flex items-start gap-3"><LocateFixed size={18} className="text-green-600 mt-1" /><div className="font-medium text-sm"><span className="block text-green-800 dark:text-green-400 mb-1">{t('bio')}</span>{user?.bio || 'No description provided.'}</div></div>
+                                <div className="bg-[#f0fdf4] dark:bg-green-900/20 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-start gap-3"><Sprout size={18} className="text-green-700 mt-1" /><div className="font-medium text-sm"><span className="block text-green-800 dark:text-green-400 mt-0.5 mb-1">Specialization</span><span className="text-black dark:text-white font-bold">{user?.specialization || 'Mixed Crops'}</span></div></div>
+                                    <div className="flex items-start gap-3"><LocateFixed size={18} className="text-green-700 mt-1" /><div className="font-medium text-sm"><span className="block text-green-800 dark:text-green-400 mt-0.5 mb-1">Bio / Description</span><span className="text-black dark:text-white font-bold">{user?.bio || 'No description provided.'}</span></div></div>
                                 </div>
                             </div>
                         )}
@@ -100,7 +133,7 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
                 </div>
             </div>
             <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleSaveProfile} isLoading={isSaving} />
-            <FarmerVerificationModal isOpen={isVerifyModalOpen} onClose={() => setIsVerifyModalOpen(false)} onSave={handleVerificationSubmit} />
+            <VerificationModal isOpen={isVerifyModalOpen} onClose={() => setIsVerifyModalOpen(false)} onVerificationSubmit={handleVerificationSubmit} />
         </div>
     );
 };

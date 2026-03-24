@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf } from 'lucide-react';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -8,6 +8,8 @@ import { ProductSkeleton } from '../components/ui/Skeletons';
 import { mockReviews, CATEGORIES, LOCATIONS } from '../constants';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAppContext } from '../context/AppContext';
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
 
 const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, farmers, products, isLoading }) => {
     const { user, t, navigate, toggleWishlist, wishlist, setActiveChat } = useAppContext();
@@ -20,6 +22,39 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
     const [isListening, setIsListening] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [showMap, setShowMap] = useState(false);
+    const [aiRecs, setAiRecs] = useState([]);
+    const [aiRecsLoading, setAiRecsLoading] = useState(false);
+
+    const fetchAIRecs = useCallback(async (product) => {
+        if (!product || products.length < 2) return;
+        setAiRecsLoading(true);
+        setAiRecs([]);
+        try {
+            const others = products.filter(p => p._id !== product._id).slice(0, 20);
+            const productList = others.map(p => `ID:${p._id} Name:${p.name} Category:${p.category} Price:₹${p.price}/kg`).join('\n');
+            const prompt = `A customer is viewing "${product.name}" (${product.category}, ₹${product.price}/kg).
+From this product list, pick exactly 4 IDs that would be best recommendations. Return ONLY a JSON array of 4 IDs, example: ["id1","id2","id3","id4"]
+
+Products:
+${productList}`;
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json();
+            let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]';
+            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const ids = JSON.parse(text);
+            const recommended = ids.map(id => others.find(p => p._id === id)).filter(Boolean).slice(0, 4);
+            setAiRecs(recommended.length >= 2 ? recommended : others.slice(0, 4));
+        } catch {
+            // fallback: show same-category products
+            setAiRecs(products.filter(p => p._id !== product._id && p.category === product.category).slice(0, 4));
+        } finally {
+            setAiRecsLoading(false);
+        }
+    }, [products]);
 
     const debouncedSearch = useDebounce(localSearch, 400);
     const currentFarmer = selectedFarmer || (filterByLocation ? null : null);
@@ -43,7 +78,7 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         );
     };
 
-    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); window.scrollTo(0, 0); };
+    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); window.scrollTo(0, 0); fetchAIRecs(p); };
 
     let filteredProducts = products;
     if (currentFarmer) filteredProducts = filteredProducts.filter(p => p.farmer === currentFarmer._id || p.farmerName === currentFarmer.name);
@@ -179,20 +214,37 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
                     <div className="flex items-center gap-3 mb-6">
                         <Sparkles className="text-purple-500" size={24} />
                         <h2 className="text-2xl font-black bg-gradient-to-r from-purple-600 to-green-600 bg-clip-text text-transparent">AI Recommendations</h2>
+                        {aiRecsLoading && <Loader2 size={18} className="animate-spin text-purple-500" />}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {products.filter(p => p._id !== selectedProduct._id && p.category === selectedProduct.category).slice(0, 4).map(p => (
-                            <Card key={p._id} onClick={() => handleSelectProduct(p)} className="overflow-hidden group border-transparent hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer">
-                                <div className="h-36 overflow-hidden">
-                                    <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    {aiRecsLoading ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="rounded-2xl overflow-hidden bg-stone-100 dark:bg-slate-800 animate-pulse">
+                                    <div className="h-36 bg-stone-200 dark:bg-slate-700" />
+                                    <div className="p-3 space-y-2">
+                                        <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded w-3/4" />
+                                        <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded w-1/2" />
+                                    </div>
                                 </div>
-                                <div className="p-3">
-                                    <h4 className="font-bold text-sm mb-1">{p.name}</h4>
-                                    <p className="text-green-700 dark:text-green-400 font-black">₹{p.price}</p>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : aiRecs.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {aiRecs.map(p => (
+                                <Card key={p._id} onClick={() => handleSelectProduct(p)} className="overflow-hidden group border-transparent hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer">
+                                    <div className="h-36 overflow-hidden">
+                                        <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                    <div className="p-3">
+                                        <h4 className="font-bold text-sm mb-1">{p.name}</h4>
+                                        <p className="text-green-700 dark:text-green-400 font-black">₹{p.price}/kg</p>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-stone-400 text-sm">No recommendations available.</p>
+                    )}
                 </div>
             </div>
         );
