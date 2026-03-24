@@ -3,10 +3,16 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiCall } from '../api/apiCall';
 
-const AuthView = () => {
+const AuthView = ({ initialMode = 'login' }) => {
     const { navigate, setUser, addToast } = useAppContext();
 
-    const [mode, setMode] = useState('login');
+    const [mode, setMode] = useState(initialMode);
+    
+    // Sync mode when initialMode prop changes (e.g., clicking Register from Navbar while on Login)
+    React.useEffect(() => {
+        setMode(initialMode);
+    }, [initialMode]);
+
     const [role, setRole] = useState('customer');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -71,32 +77,32 @@ const AuthView = () => {
     ];
 
     const inputBase =
-        'w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition text-sm text-gray-800 placeholder-gray-400';
+        'w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400';
     const errorText = 'text-red-500 text-xs mt-1';
 
     return (
-        <div className="min-h-screen pt-16 flex items-center justify-center px-4 bg-white">
+        <div className="min-h-screen pt-16 flex items-center justify-center px-4 bg-white dark:bg-slate-900 transition-colors duration-300">
 
             <div className="w-full max-w-md">
                 {/* Card */}
-                <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-10">
+                <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 sm:p-10 transition-colors duration-300">
 
                     {/* Title */}
-                    <h2 className="text-3xl font-extrabold text-center text-gray-900 mb-6 tracking-tight">
+                    <h2 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-6 tracking-tight">
                         {mode === 'login' ? 'Login' : 'Register'}
                     </h2>
 
                     {/* Role Tabs */}
-                    <div className="flex bg-gray-100 rounded-2xl p-1 mb-6 gap-1">
+                    <div className="flex bg-gray-100 dark:bg-slate-700 rounded-2xl p-1 mb-6 gap-1 transition-colors duration-300">
                         {roles.map(r => (
                             <button
                                 key={r.id}
                                 type="button"
                                 onClick={() => setRole(r.id)}
-                                className={`flex-1 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                                className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
                                     role === r.id
-                                        ? 'bg-white text-green-700 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white dark:bg-slate-600 text-green-700 dark:text-green-400 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                 }`}
                             >
                                 {r.label}
@@ -109,7 +115,7 @@ const AuthView = () => {
                         {/* Full Name (register only) */}
                         {mode === 'register' && (
                             <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">Full Name</label>
+                                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Full Name</label>
                                 <input
                                     type="text"
                                     placeholder="John Doe"
@@ -123,7 +129,7 @@ const AuthView = () => {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-800 mb-1">Email</label>
+                            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Email</label>
                             <input
                                 type="email"
                                 placeholder="you@example.com"
@@ -136,7 +142,7 @@ const AuthView = () => {
 
                         {/* Password */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-800 mb-1">Password</label>
+                            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Password</label>
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
@@ -159,7 +165,7 @@ const AuthView = () => {
                         {/* Confirm Password (register only) */}
                         {mode === 'register' && (
                             <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">Confirm Password</label>
+                                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Confirm Password</label>
                                 <input
                                     type="password"
                                     placeholder="••••••••"
@@ -174,12 +180,12 @@ const AuthView = () => {
                         {/* Profile Image (register only) */}
                         {mode === 'register' && (
                             <div>
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">Profile Picture (optional)</label>
+                                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Profile Picture (optional)</label>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={e => handleImage(e.target.files[0])}
-                                    className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 file:font-semibold hover:file:bg-green-100"
+                                    className="w-full text-sm text-gray-500 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-slate-700/50 file:text-green-700 dark:file:text-green-400 file:font-semibold hover:file:bg-green-100 dark:hover:file:bg-slate-700 transition"
                                 />
                             </div>
                         )}
@@ -211,7 +217,7 @@ const AuthView = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="relative w-full py-3.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-base rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-60"
+                                className="relative z-10 w-full py-3.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-base rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-60"
                             >
                                 {isLoading
                                     ? <><Loader2 size={18} className="animate-spin" /> Please wait...</>
@@ -225,9 +231,9 @@ const AuthView = () => {
                     {mode === 'login' && (
                         <>
                             <div className="flex items-center gap-3 my-6">
-                                <div className="flex-1 h-px bg-gray-200" />
-                                <span className="text-xs text-gray-400 font-medium whitespace-nowrap">Or continue with</span>
-                                <div className="flex-1 h-px bg-gray-200" />
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                                <span className="text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">Or continue with</span>
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
                             </div>
 
                             <div className="space-y-3">
@@ -235,7 +241,7 @@ const AuthView = () => {
                                 <button
                                     type="button"
                                     onClick={() => addToast('Google login coming soon!')}
-                                    className="w-full flex items-center justify-center gap-3 py-3 border border-gray-200 rounded-2xl hover:bg-gray-50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700"
+                                    className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300"
                                 >
                                     <svg width="18" height="18" viewBox="0 0 48 48">
                                         <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
@@ -250,7 +256,7 @@ const AuthView = () => {
                                 <button
                                     type="button"
                                     onClick={() => addToast('Facebook login coming soon!')}
-                                    className="w-full flex items-center justify-center gap-3 py-3 border border-gray-200 rounded-2xl hover:bg-gray-50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700"
+                                    className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300"
                                 >
                                     <svg width="18" height="18" viewBox="0 0 48 48">
                                         <path fill="#1877F2" d="M48 24C48 10.7 37.3 0 24 0S0 10.7 0 24c0 12 8.8 21.9 20.2 23.7V30.9h-6.1V24h6.1v-5.3c0-6.1 3.6-9.4 9.1-9.4 2.6 0 5.4.5 5.4.5v5.9h-3c-3 0-3.9 1.9-3.9 3.8V24h6.6l-1.1 6.9h-5.6v16.8C39.2 45.9 48 36 48 24z"/>
@@ -263,12 +269,12 @@ const AuthView = () => {
                     )}
 
                     {/* Toggle mode */}
-                    <p className="text-center text-sm text-gray-500 mt-6">
+                    <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 relative z-10">
                         {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                         <button
                             type="button"
                             onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErrors({}); }}
-                            className="text-green-600 font-semibold hover:text-green-800 transition"
+                            className="text-green-600 dark:text-green-500 font-semibold hover:text-green-800 dark:hover:text-green-400 transition ml-1"
                         >
                             {mode === 'login' ? 'Register' : 'Login'}
                         </button>
@@ -276,7 +282,7 @@ const AuthView = () => {
                 </div>
 
                 {/* Bottom branding */}
-                <p className="text-center text-xs text-gray-500 mt-6">
+                <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6 relative z-10">
                     🌿 FarmLink – Connecting farmers directly with communities
                 </p>
             </div>

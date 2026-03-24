@@ -132,7 +132,7 @@ const MainContent = () => {
                         isLoading={isLoadingProducts}
                     />
                 )}
-                {(view === 'login' || view === 'register') && <AuthView />}
+                {(view === 'login' || view === 'register') && <AuthView initialMode={view} />}
                 {view === 'activity' && user?.role === 'customer' && (
                     <CustomerActivityView orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} />
                 )}
