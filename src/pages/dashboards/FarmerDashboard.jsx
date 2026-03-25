@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -13,8 +13,10 @@ import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
 const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
-    const { user, addToast, t } = useAppContext();
+    const { user, addToast, t, openChat } = useAppContext();
     const [activeTab, setActiveTab] = useState('inventory');
+    const [conversations, setConversations] = useState([]);
+    const [loadingConversations, setLoadingConversations] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '' });
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -36,6 +38,29 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 .catch(err => console.error("Failed to fetch expenses:", err));
         }
     }, [user?._id]);
+
+    useEffect(() => {
+        if (activeTab === 'messages' && user?._id) {
+            setLoadingConversations(true);
+            apiCall(`/chat/conversations?userId=${user._id}`)
+                .then(res => setConversations(res.data || []))
+                .catch(err => console.error("Failed to fetch conversations:", err))
+                .finally(() => setLoadingConversations(false));
+        }
+    }, [activeTab, user?._id]);
+
+    const deleteConversation = async (conversationId, e) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to delete this chat history?")) return;
+        try {
+            await apiCall(`/chat/conversation/${conversationId}?userId=${user._id}`, 'DELETE');
+            setConversations(prev => prev.filter(c => c._id !== conversationId));
+            addToast("Chat deleted successfully");
+        } catch(err) {
+            console.error(err);
+            addToast("Failed to delete chat");
+        }
+    };
 
     const myProducts = products.filter(p => p.farmer === user?._id || p.farmerName === user?.name);
     const myOrders = orders.filter(o => o.items?.some(item => item.farmerName === user?.name || item.farmer === user?._id));
@@ -226,6 +251,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
             <div className="flex overflow-x-auto gap-4 mb-8 border-b border-stone-200 dark:border-slate-700 hide-scrollbar pb-1">
                 <button onClick={() => setActiveTab('inventory')} className={tabClass('inventory')}>{t('myStock')}</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>{t('orders')} ({myOrders.length})</button>
+                <button onClick={() => setActiveTab('messages')} className={tabClass('messages')}>Messages</button>
                 <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>Financials <BarChart3 size={16} className="inline ml-1 mb-1"/></button>
                 <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>Weather & Forecast</button>
             </div>
@@ -273,7 +299,13 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                             <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-stone-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
                                 <div>
                                     <p className="font-bold text-black dark:text-white">Order #{o._id} — <span className="text-stone-500 font-medium">{o.userName}</span></p>
-                                    <p className="text-sm text-stone-500 mt-1">{o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => `${i.name} x${i.quantity}`).join(', ')}</p>
+                                    <p className="text-sm text-stone-500 mt-1 mb-3">{o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => `${i.name} x${i.quantity}`).join(', ')}</p>
+                                    <button 
+                                        onClick={() => openChat({ _id: o.userId, name: o.userName, role: 'customer' })}
+                                        className="text-xs font-bold flex items-center gap-1.5 text-green-700 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 transition-colors w-max"
+                                    >
+                                        <MessageSquare size={14} /> Chat with Customer
+                                    </button>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <p className="font-black text-green-700 dark:text-green-400">₹{o.total}</p>
@@ -281,6 +313,70 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 </div>
                             </div>
                         ))}
+                </div>
+            )}
+
+            {activeTab === 'messages' && (
+                <div className="space-y-4 animate-fade-in-up">
+                    {loadingConversations ? (
+                        <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-green-600" /></div>
+                    ) : conversations.length === 0 ? (
+                        <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-stone-300 dark:border-slate-600">
+                            <MessageSquare size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
+                            <h3 className="text-xl font-bold text-stone-500">No messages yet</h3>
+                            <p className="text-sm text-stone-400 mt-2">When customers ask about your products, they'll appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {conversations.map(conv => {
+                                // Find who the other person is
+                                const otherId = conv.senderId === user._id ? conv.receiverId : conv.senderId;
+                                const otherName = conv.senderId === user._id ? 'Customer' : conv.senderName;
+                                const otherRole = conv.senderId === user._id ? 'customer' : conv.senderRole;
+                                const otherImage = conv.otherUserImage;
+                                
+                                return (
+                                    <Card 
+                                        key={conv._id} 
+                                        className="p-5 cursor-pointer hover:border-green-400 transition-colors relative group"
+                                        onClick={() => openChat({ _id: otherId, name: otherName, role: otherRole, image: otherImage })}
+                                    >
+                                        <button
+                                            className="absolute top-3 right-3 p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            onClick={(e) => deleteConversation(conv._id, e)}
+                                            title="Delete Conversation"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                        {conv.unreadCount > 0 && (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-md">
+                                                {conv.unreadCount}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <div className="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 font-black text-lg overflow-hidden flex-shrink-0">
+                                                {otherImage ? (
+                                                    <img src={otherImage} alt={otherName} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    otherName.charAt(0).toUpperCase()
+                                                )}
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <h4 className="font-bold text-black dark:text-white truncate">{otherName}</h4>
+                                                <p className="text-[10px] text-stone-400 uppercase font-bold">{otherRole}</p>
+                                            </div>
+                                            <div className="text-[10px] text-stone-400 whitespace-nowrap">
+                                                {new Date(conv.lastTime).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-stone-600 dark:text-slate-300 line-clamp-2 italic bg-stone-50 dark:bg-slate-900/50 p-3 rounded-xl border border-stone-100 dark:border-slate-700">
+                                            "{conv.lastMessage}"
+                                        </p>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 

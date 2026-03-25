@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { TRANSLATIONS } from '../constants';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { TRANSLATIONS, API_BASE_URL } from '../constants';
 import { apiCall } from '../api/apiCall';
+import { io } from 'socket.io-client';
 
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -19,6 +20,41 @@ export const AppProvider = ({ children }) => {
 
     const [isDarkMode, setIsDarkMode] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)')?.matches || false);
     const [toasts, setToasts] = useState([]);
+    const socketRef = useRef(null);
+    // Global state refs for socket event handlers
+    const activeChatRef = useRef(activeChat);
+    useEffect(() => { activeChatRef.current = activeChat; }, [activeChat]);
+
+    // Socket.IO connection management
+    useEffect(() => {
+        if (user?._id) {
+            const SOCKET_URL = API_BASE_URL.replace('/api', '');
+            const socket = io(SOCKET_URL, { query: { userId: user._id }, transports: ['websocket', 'polling'] });
+            
+            socket.on('receive_message', (msg) => {
+                // If the user isn't actively chatting with the sender, show a toast!
+                const isWatchingConversation = activeChatRef.current?.id === msg.senderId;
+                if (!isWatchingConversation && msg.senderId !== user._id) {
+                    addToast(`New message from ${msg.senderName}`);
+                }
+            });
+
+            socketRef.current = socket;
+            return () => { socket.disconnect(); socketRef.current = null; };
+        } else {
+            if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; }
+        }
+    }, [user?._id]);
+
+    const openChat = (chatUser) => {
+        if (!user) { addToast('Please login to chat.'); navigate('login'); return; }
+        setActiveChat({ 
+            id: chatUser._id || chatUser.id, 
+            name: chatUser.name, 
+            role: chatUser.role || 'farmer',
+            image: chatUser.image
+        });
+    };
 
     useEffect(() => { localStorage.setItem('farmlink_user', JSON.stringify(user)); }, [user]);
     useEffect(() => { localStorage.setItem('farmlink_cart', JSON.stringify(cart)); }, [cart]);
@@ -76,7 +112,7 @@ export const AppProvider = ({ children }) => {
     const updateCartQuantity = (id, quantity) => { if (quantity < 1) return; setCart(prev => prev.map(item => item._id === id ? { ...item, quantity } : item)); };
     const removeFromCart = (id) => setCart(prev => prev.filter(item => item._id !== id));
 
-    const handleLogout = () => { setUser(null); setCart([]); setWishlist([]); setHistory(['home']); setView('home'); localStorage.removeItem('farmlink_user'); localStorage.removeItem('farmlink_cart'); localStorage.removeItem('farmlink_wishlist'); };
+    const handleLogout = () => { if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; } setUser(null); setCart([]); setWishlist([]); setHistory(['home']); setView('home'); localStorage.removeItem('farmlink_user'); localStorage.removeItem('farmlink_cart'); localStorage.removeItem('farmlink_wishlist'); };
 
     const contextValue = {
         user, setUser, cart, setCart, wishlist, setWishlist,
@@ -86,7 +122,7 @@ export const AppProvider = ({ children }) => {
         view, setView, history, setHistory, navigate,
         handleLogout,
         toggleWishlist, removeFromWishlist, addToCart, removeFromCart, updateCartQuantity,
-        activeChat, setActiveChat,
+        activeChat, setActiveChat, openChat, socket: socketRef,
     };
 
     return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;

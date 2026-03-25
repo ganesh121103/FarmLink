@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { useAppContext } from '../context/AppContext';
 
 const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, isLoading }) => {
-    const { t, navigate, addToast } = useAppContext();
+    const { t, navigate, addToast, openChat } = useAppContext();
     const [search, setSearch] = useState('');
     const filtered = farmers.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.location?.toLowerCase().includes(search.toLowerCase()));
 
@@ -67,8 +67,12 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                     {filtered.map(farmer => (
                         <Card key={farmer._id} className="p-6 flex flex-col gap-4 h-full">
                             <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-2xl font-black text-green-700 dark:text-green-500 flex-shrink-0">
-                                    {farmer.name.charAt(0)}
+                                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-2xl font-black text-green-700 dark:text-green-500 flex-shrink-0 overflow-hidden">
+                                    {farmer.image ? (
+                                        <img src={farmer.image} alt={farmer.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        farmer.name.charAt(0).toUpperCase()
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -100,7 +104,7 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                                 <Button
                                     variant="outline"
                                     className="py-2.5 px-3 flex items-center gap-2 justify-center"
-                                    onClick={() => handleWhatsAppChat(farmer.name, farmer.phone)}
+                                    onClick={(e) => { e.stopPropagation(); openChat(farmer); }}
                                     aria-label="Chat with farmer"
                                 >
                                     <MessageSquare size={18} /> Chat

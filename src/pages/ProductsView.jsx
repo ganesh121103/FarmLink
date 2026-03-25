@@ -125,7 +125,7 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
 
 const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, farmers, products, setProducts, isLoading }) => {
-    const { user, t, navigate, toggleWishlist, wishlist, setActiveChat, addToast } = useAppContext();
+    const { user, t, navigate, toggleWishlist, wishlist, openChat, addToast } = useAppContext();
     const [localSearch, setLocalSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [activeLocation, setActiveLocation] = useState('All');
@@ -357,7 +357,7 @@ ${productList}`;
                                     </button>
                                 )}
                                 {farmerInfo && (
-                                    <button onClick={() => handleWhatsAppChat(farmerInfo.name, farmerInfo.phone)} className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-stone-400 transition-colors">
+                                    <button onClick={(e) => { e.stopPropagation(); openChat(farmerInfo); }} className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-green-400 hover:text-green-600 transition-colors">
                                         <MessageSquare size={18} /> Chat
                                     </button>
                                 )}
@@ -594,8 +594,12 @@ ${productList}`;
                     {currentFarmer ? (
                         <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-stone-100 dark:border-slate-700 mt-4">
                             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                                <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-400 flex-shrink-0">
-                                    <User size={40} />
+                                <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-400 flex-shrink-0 overflow-hidden">
+                                    {currentFarmer.image ? (
+                                        <img src={currentFarmer.image} alt={currentFarmer.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User size={40} />
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -604,7 +608,7 @@ ${productList}`;
                                     </div>
                                     <p className="text-stone-600 dark:text-slate-300 mb-4 max-w-2xl text-sm">{currentFarmer.bio || "Dedicated local farmer providing fresh, high-quality produce directly to your table."}</p>
                                 </div>
-                                <Button className="py-3" onClick={() => handleWhatsAppChat(currentFarmer.name, currentFarmer.phone)}>
+                                <Button className="py-3" onClick={() => openChat(currentFarmer)}>
                                     <MessageSquare size={18} /> Chat Now
                                 </Button>
                             </div>
