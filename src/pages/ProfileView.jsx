@@ -20,6 +20,9 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
             const { data } = await apiCall(`/users/${user._id}`, 'PUT', newData);
             const updatedUser = { ...user, ...data, token: user.token };
             setUser(updatedUser);
+            if (setFarmers) {
+                setFarmers(prev => prev.map(f => f._id === user._id ? { ...f, ...data } : f));
+            }
             localStorage.setItem('farmlink_user', JSON.stringify(updatedUser));
             addToast('Profile updated successfully!');
             setIsEditModalOpen(false);

@@ -120,22 +120,34 @@ exports.updateUser = async (req, res) => {
       return res.status(400).json({ message: "No data provided for update" });
     }
 
+    const updateFields = {
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      address: req.body.address,
+      bio: req.body.bio,
+      specialization: req.body.specialization,
+      image: req.body.image,
+    };
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      {
-        name: req.body.name,
-        email: req.body.email,
-        phone: req.body.phone,
-        address: req.body.address,
-        bio: req.body.bio,
-        specialization: req.body.specialization,
-        image: req.body.image,
-      },
+      updateFields,
       { new: true }
     );
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // If the user is a farmer, also sync to the Farmer collection
+    if (updatedUser.role === 'farmer') {
+      const Farmer = require('../models/Farmer');
+      await Farmer.findOneAndUpdate(
+        { email: updatedUser.email },
+        { phone: req.body.phone, name: req.body.name, bio: req.body.bio, specialization: req.body.specialization, image: req.body.image },
+        { new: true }
+      );
     }
 
     res.json(updatedUser);

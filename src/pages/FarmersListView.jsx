@@ -6,14 +6,37 @@ import Card from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useAppContext } from '../context/AppContext';
 
-const FarmersListView = ({ BackBtn, farmers, setSelectedFarmer, isLoading }) => {
-    const { t, navigate, setActiveChat } = useAppContext();
+const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, isLoading }) => {
+    const { t, navigate, addToast } = useAppContext();
     const [search, setSearch] = useState('');
     const filtered = farmers.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.location?.toLowerCase().includes(search.toLowerCase()));
+
+    const handleWhatsAppChat = (farmerName, phone) => {
+        if (!phone) {
+            addToast(`Phone number not registered for ${farmerName}.`);
+            return;
+        }
+        let cleanPhone = String(phone).replace(/[^0-9]/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    };
 
     const handleViewProducts = (farmer) => {
         setSelectedFarmer(farmer);
         navigate('farmer-details');
+    };
+
+    const getFarmerRating = (farmer) => {
+        if (!products || products.length === 0) return farmer.rating || 0; // fallback
+        const farmerProducts = products.filter(p => p.farmer === farmer._id || p.farmerName === farmer.name);
+        const ratedProducts = farmerProducts.filter(p => p.rating > 0);
+        
+        if (ratedProducts.length === 0) {
+            return farmer.rating || 0; // fallback to 0 instead of fake 4.5
+        }
+        
+        const totalRating = ratedProducts.reduce((sum, p) => sum + p.rating, 0);
+        return (totalRating / ratedProducts.length).toFixed(1);
     };
 
     return (
@@ -63,7 +86,7 @@ const FarmersListView = ({ BackBtn, farmers, setSelectedFarmer, isLoading }) => 
                             </p>
 
                             <div className="flex gap-4 text-sm font-bold text-stone-700 dark:text-slate-300 border-t border-stone-100 dark:border-slate-700 pt-4">
-                                <div className="flex items-center gap-1"><Star size={14} className="text-yellow-500 fill-current" /> {farmer.rating || 4.5}</div>
+                                <div className="flex items-center gap-1"><Star size={14} className="text-yellow-500 fill-current" /> {getFarmerRating(farmer)}</div>
                                 {farmer.phone && <div className="flex items-center gap-1"><Phone size={14} className="text-green-600" /> {farmer.phone}</div>}
                             </div>
 
@@ -76,11 +99,11 @@ const FarmersListView = ({ BackBtn, farmers, setSelectedFarmer, isLoading }) => 
                                 </Button>
                                 <Button
                                     variant="outline"
-                                    className="py-2.5 px-3"
-                                    onClick={() => setActiveChat({ name: farmer.name, id: farmer._id })}
+                                    className="py-2.5 px-3 flex items-center gap-2 justify-center"
+                                    onClick={() => handleWhatsAppChat(farmer.name, farmer.phone)}
                                     aria-label="Chat with farmer"
                                 >
-                                    <MessageSquare size={18} />
+                                    <MessageSquare size={18} /> Chat
                                 </Button>
                             </div>
                         </Card>

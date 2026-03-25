@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -24,6 +24,18 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [isVerificationOpen, setIsVerificationOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
+
+    const [expenses, setExpenses] = useState([]);
+    const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+    const [newExpense, setNewExpense] = useState({ cropName: '', amount: '', description: '' });
+
+    useEffect(() => {
+        if (user?._id) {
+            apiCall(`/expenses/farmer/${user._id}`)
+                .then(res => setExpenses(res.data))
+                .catch(err => console.error("Failed to fetch expenses:", err));
+        }
+    }, [user?._id]);
 
     const myProducts = products.filter(p => p.farmer === user?._id || p.farmerName === user?.name);
     const myOrders = orders.filter(o => o.items?.some(item => item.farmerName === user?.name || item.farmer === user?._id));
@@ -113,14 +125,59 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         }
     };
 
+    const handleSaveExpense = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const { data } = await apiCall('/expenses', 'POST', { ...newExpense, farmer: user._id });
+            setExpenses(prev => [data, ...prev]);
+            addToast("Expense added!");
+            setIsAddExpenseOpen(false);
+            setNewExpense({ cropName: '', amount: '', description: '' });
+        } catch (err) {
+            addToast(err.message || "Failed to add expense");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteExpense = async (id) => {
+        try {
+            await apiCall(`/expenses/${id}`, 'DELETE');
+            setExpenses(prev => prev.filter(e => e._id !== id));
+            addToast("Expense deleted");
+        } catch (err) {
+            addToast("Failed to delete expense");
+        }
+    };
+
     const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '' }); setEditingId(p._id); setIsAddProductOpen(true); };
     const openDelete = (id) => { setProductToDelete(id); setDeleteModalOpen(true); };
     const tabClass = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
-    const totalRevenue = myOrders.reduce((sum, o) => {
+    const totalRevenue = useMemo(() => myOrders.reduce((sum, o) => {
         const farmerItems = o.items?.filter(item => item.farmerName === user?.name || item.farmer === user?._id) || [];
         return sum + farmerItems.reduce((s, item) => s + (parseInt(item.price || 0) * (item.quantity || 1)), 0);
-    }, 0);
+    }, 0), [myOrders, user]);
+
+    const cropFinancials = useMemo(() => {
+        const data = {};
+        myOrders.forEach(o => {
+            const farmerItems = o.items?.filter(item => item.farmerName === user?.name || item.farmer === user?._id) || [];
+            farmerItems.forEach(item => {
+                if(!data[item.name]) data[item.name] = { revenue: 0, expense: 0 };
+                data[item.name].revenue += (parseInt(item.price || 0) * (item.quantity || 1));
+            });
+        });
+        expenses.forEach(e => {
+            if(!data[e.cropName]) data[e.cropName] = { revenue: 0, expense: 0 };
+            data[e.cropName].expense += e.amount;
+        });
+        return data;
+    }, [myOrders, expenses, user]);
+
+    const totalExpense = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
+    const netProfit = totalRevenue - totalExpense;
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-7xl mx-auto">
@@ -166,9 +223,10 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 <Card className="p-5 border-l-4 border-l-red-500 text-center"><div className="text-3xl font-black text-black dark:text-white">{myProducts.filter(p => p.stock < 20).length}</div><p className="text-xs text-stone-500 font-bold uppercase mt-1">{t('lowStock')}</p></Card>
             </div>
 
-            <div className="flex gap-4 mb-8 border-b border-stone-200 dark:border-slate-700">
+            <div className="flex overflow-x-auto gap-4 mb-8 border-b border-stone-200 dark:border-slate-700 hide-scrollbar pb-1">
                 <button onClick={() => setActiveTab('inventory')} className={tabClass('inventory')}>{t('myStock')}</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>{t('orders')} ({myOrders.length})</button>
+                <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>Financials <BarChart3 size={16} className="inline ml-1 mb-1"/></button>
                 <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>Weather & Forecast</button>
             </div>
 
@@ -243,6 +301,72 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 </div>
             )}
 
+            {activeTab === 'financials' && (
+                <div className="animate-fade-in-up space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="p-6 border-l-4 border-l-blue-500">
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Earnings</p>
+                            <div className="text-3xl font-black text-blue-700 dark:text-blue-400">₹{totalRevenue}</div>
+                        </Card>
+                        <Card className="p-6 border-l-4 border-l-red-500">
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Expenses</p>
+                            <div className="text-3xl font-black text-red-700 dark:text-red-400">₹{totalExpense}</div>
+                        </Card>
+                        <Card className="p-6 border-l-4 border-l-green-500">
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Net Profit</p>
+                            <div className={`text-3xl font-black ${netProfit >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>₹{netProfit}</div>
+                        </Card>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <Card className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg text-black dark:text-white">Crop-wise Profit</h3>
+                            </div>
+                            {Object.keys(cropFinancials).length === 0 ? (
+                                <p className="text-stone-500 text-sm">No data available.</p>
+                            ) : (
+                                <div className="space-y-4">
+                                    {Object.entries(cropFinancials).map(([crop, data]) => (
+                                        <div key={crop} className="flex justify-between items-center p-3 bg-stone-50 dark:bg-slate-800 rounded-lg">
+                                            <span className="font-bold">{crop}</span>
+                                            <div className="text-right">
+                                                <div className="text-xs text-stone-500">Rev: ₹{data.revenue} | Exp: ₹{data.expense}</div>
+                                                <div className={`font-black ${data.revenue - data.expense >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                    ₹{data.revenue - data.expense}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg text-black dark:text-white">Expense Tracking</h3>
+                                <Button size="sm" onClick={() => setIsAddExpenseOpen(true)} className="flex items-center gap-1"><PlusCircle size={16}/> Add</Button>
+                            </div>
+                            {expenses.length === 0 ? (
+                                <p className="text-stone-500 text-sm">No expenses recorded yet.</p>
+                            ) : (
+                                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                    {expenses.map(e => (
+                                        <div key={e._id} className="flex justify-between items-center p-3 border border-stone-100 dark:border-slate-700 rounded-lg">
+                                            <div>
+                                                <p className="font-bold text-sm">{e.cropName} - <span className="text-red-500 font-black">₹{e.amount}</span></p>
+                                                <p className="text-xs text-stone-500">{e.description} | {new Date(e.date).toLocaleDateString()}</p>
+                                            </div>
+                                            <button onClick={() => handleDeleteExpense(e._id)} className="text-red-400 hover:text-red-600 transition-colors p-2"><Trash2 size={16}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+            )}
+
             {/* Add/Edit Product Modal */}
             {isAddProductOpen && (
                 <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
@@ -282,6 +406,33 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                             </div>
                             <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-black dark:text-slate-300">{t('description')}</label><textarea className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white" rows="3" placeholder={t('productDescPlaceholder')} value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} /></div>
                             <Button type="submit" className="w-full py-3.5 mt-2" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" size={20} /> : editingId ? t('updateProduct') : t('addProduct')}</Button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Expense Modal */}
+            {isAddExpenseOpen && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAddExpenseOpen(false)} />
+                    <div className="bg-white dark:bg-slate-800 w-full max-w-md p-6 md:p-8 rounded-3xl shadow-2xl relative z-10 animate-fade-in-up">
+                        <button onClick={() => setIsAddExpenseOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-stone-100 dark:hover:bg-slate-700"><X size={20} className="text-stone-500" /></button>
+                        <h3 className="text-2xl font-black mb-6 text-black dark:text-white">Add Expense</h3>
+                        <form onSubmit={handleSaveExpense} className="space-y-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-bold text-black dark:text-slate-300">Crop Name</label>
+                                <select value={newExpense.cropName} onChange={(e) => setNewExpense({ ...newExpense, cropName: e.target.value })} className="w-full px-4 py-3 border border-stone-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white" required>
+                                    <option value="">Select a crop</option>
+                                    {Array.from(new Set([...myProducts.map(p => p.name), ...myOrders.flatMap(o => o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => i.name))].filter(Boolean))).map(c => <option key={c} value={c}>{c}</option>)}
+                                    <option value="General">General/Other</option>
+                                </select>
+                            </div>
+                            <Input label="Amount (₹)" type="number" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} required />
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-bold text-black dark:text-slate-300">Description</label>
+                                <textarea className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white" rows="2" placeholder="e.g. Fertilizers, Seeds" value={newExpense.description} onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })} />
+                            </div>
+                            <Button type="submit" className="w-full py-3.5 mt-2" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" size={20} /> : "Save Expense"}</Button>
                         </form>
                     </div>
                 </div>

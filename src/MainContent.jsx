@@ -33,7 +33,7 @@ const MainContent = () => {
 
     const fetchFarmers = async () => {
         try {
-            const { data } = await apiCall('/users?role=farmer');
+            const { data } = await apiCall('/farmers');
             setFarmers(data || []);
         } catch {
             setFarmers(mockFarmers);
@@ -109,7 +109,7 @@ const MainContent = () => {
             <main className="flex-grow">
                 {view === 'home' && <HomeView />}
                 {view === 'about' && <AboutView BackBtn={BackBtn} farmers={farmers} />}
-                {view === 'farmers' && <FarmersListView BackBtn={BackBtn} farmers={farmers} setSelectedFarmer={setSelectedFarmer} isLoading={isLoadingFarmers} />}
+                {view === 'farmers' && <FarmersListView BackBtn={BackBtn} farmers={farmers} products={products} setSelectedFarmer={setSelectedFarmer} isLoading={isLoadingFarmers} />}
                 {view === 'products' && (
                     <ProductsView
                         selectedFarmer={null}

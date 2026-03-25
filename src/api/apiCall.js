@@ -45,7 +45,7 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
 
         clearTimeout(timeoutId);
 
-        if (response.status === 401) {
+        if (response.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
             document.dispatchEvent(new CustomEvent('auth-expired'));
             throw new Error('Session expired. Please log in again.');
         }

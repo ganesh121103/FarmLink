@@ -139,6 +139,16 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
     const [showMap, setShowMap] = useState(false);
     const [aiRecs, setAiRecs] = useState([]);
     const [aiRecsLoading, setAiRecsLoading] = useState(false);
+
+    const handleWhatsAppChat = (farmerName, phone) => {
+        if (!phone) {
+            addToast(`Phone number not registered for ${farmerName}.`);
+            return;
+        }
+        let cleanPhone = String(phone).replace(/[^0-9]/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    };
     
     // Review States
     const [newReviewRating, setNewReviewRating] = useState(5);
@@ -347,7 +357,7 @@ ${productList}`;
                                     </button>
                                 )}
                                 {farmerInfo && (
-                                    <button onClick={() => setActiveChat({ name: farmerInfo.name, id: farmerInfo._id })} className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-stone-400 transition-colors">
+                                    <button onClick={() => handleWhatsAppChat(farmerInfo.name, farmerInfo.phone)} className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-stone-400 transition-colors">
                                         <MessageSquare size={18} /> Chat
                                     </button>
                                 )}
@@ -594,7 +604,7 @@ ${productList}`;
                                     </div>
                                     <p className="text-stone-600 dark:text-slate-300 mb-4 max-w-2xl text-sm">{currentFarmer.bio || "Dedicated local farmer providing fresh, high-quality produce directly to your table."}</p>
                                 </div>
-                                <Button className="py-3" onClick={() => setActiveChat({ name: currentFarmer.name, id: currentFarmer._id })}>
+                                <Button className="py-3" onClick={() => handleWhatsAppChat(currentFarmer.name, currentFarmer.phone)}>
                                     <MessageSquare size={18} /> Chat Now
                                 </Button>
                             </div>
