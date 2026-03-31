@@ -61,8 +61,11 @@ export const AppProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('farmlink_wishlist', JSON.stringify(wishlist)); }, [wishlist]);
     useEffect(() => { if (isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDarkMode]);
 
+    const viewRef = useRef(view);
+    useEffect(() => { viewRef.current = view; }, [view]);
+
     const navigate = (newView) => {
-        if (newView === view) return;
+        if (newView === viewRef.current) return;
         setView(newView);
         setHistory(prev => [...prev, newView]);
         window.scrollTo(0, 0);

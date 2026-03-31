@@ -60,6 +60,12 @@ router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res)
       return res.status(404).json({ message: "Product not found." });
     }
 
+    // Fetch the reviewer's full profile to get their name
+    const reviewer = await User.findById(req.user.id).select("name");
+    if (!reviewer) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
     // REAL Verified Purchase Check
     const hasOrdered = await Order.findOne({
       userId: req.user.id,
@@ -83,7 +89,7 @@ router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res)
       console.log("Adding new review for User:", req.user.id);
       const review = {
         user: req.user.id,
-        userName: user.name,
+        userName: reviewer.name,
         rating: Number(rating),
         comment: String(comment),
         isVerified: !!hasOrdered,
