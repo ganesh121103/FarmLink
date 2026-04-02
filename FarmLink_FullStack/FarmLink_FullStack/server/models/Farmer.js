@@ -3,10 +3,12 @@ const mongoose = require("mongoose");
 const farmerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, default: "" },
+  firebaseUid: { type: String, default: "" },
   role: { type: String, default: "farmer" },
-  phone: String,
-  location: String,
+  phone: { type: String, default: "" },
+  address: { type: String, default: "" },
+  location: { type: String, default: "" },
   
   // Farmer specific fields
   specialization: { type: String, default: 'Mixed Crops' },

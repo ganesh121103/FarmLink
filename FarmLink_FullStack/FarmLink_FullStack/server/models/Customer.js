@@ -6,7 +6,11 @@ const customerSchema = new mongoose.Schema({
   // ❌ REMOVE unique (important for your case)
   email: { type: String, required: true },
 
-  password: { type: String, required: true },
+  // Password is optional for Google/Firebase-authenticated users
+  password: { type: String, default: "" },
+
+  // Firebase UID for Google sign-in users
+  firebaseUid: { type: String, default: "" },
 
   role: { type: String, default: "customer" },
 
@@ -21,18 +25,6 @@ const customerSchema = new mongoose.Schema({
 
   // ✅ PROFILE IMAGE
   image: { type: String, default: "" },
-
-  // ✅ VERIFICATION (for farmers registered via AuthView)
-  verified: { type: Boolean, default: false },
-  verificationStatus: {
-    type: String,
-    enum: ['Unverified', 'Pending', 'Verified', 'Rejected'],
-    default: 'Unverified'
-  },
-  documents: {
-    idProof: { type: String, default: '' },
-    landRecord: { type: String, default: '' }
-  }
 
 }, { timestamps: true });
 

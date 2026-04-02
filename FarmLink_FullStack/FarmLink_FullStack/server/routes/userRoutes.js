@@ -6,7 +6,8 @@ const {
   registerUser,
   loginUser,
   getUsers,
-  updateUser
+  updateUser,
+  firebaseAuth
 } = require("../controllers/userController");
 
 // GET all users or filter by role – public for now (farmers list on homepage)
@@ -17,6 +18,9 @@ router.post("/register", registerUser);
 
 // LOGIN
 router.post("/login", loginUser);
+
+// FIREBASE / GOOGLE AUTH (find-or-create by firebaseUid)
+router.post("/firebase-auth", firebaseAuth);
 
 // UPDATE user (own profile) – must be logged in
 router.put("/:id", verifyToken, updateUser);

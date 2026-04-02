@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiCall } from '../api/apiCall';
+import { registerWithEmail, loginWithEmail, loginWithGoogle } from '../auth/firebaseAuth';
 
 const AuthView = ({ initialMode = 'login' }) => {
     const { navigate, setUser, addToast } = useAppContext();
@@ -16,6 +17,7 @@ const AuthView = ({ initialMode = 'login' }) => {
     const [role, setRole] = useState('customer');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -45,6 +47,47 @@ const AuthView = ({ initialMode = 'login' }) => {
         return e;
     };
 
+    // Helper: build user data from Firebase user + sync with backend
+    const syncFirebaseUserWithBackend = async (firebaseUser, extraData = {}) => {
+        const userData = {
+            firebaseUid: firebaseUser.uid,
+            name: extraData.name || firebaseUser.displayName || 'User',
+            email: firebaseUser.email,
+            role: extraData.role || role,
+            image: extraData.image || firebaseUser.photoURL || '',
+            password: extraData.password || undefined,
+        };
+
+        try {
+            // Determine the right endpoint:
+            // - /register for email/password registration
+            // - /login for email/password login
+            // - /firebase-auth for Google sign-in (find-or-create by firebaseUid)
+            let endpoint;
+            if (extraData.isRegister) {
+                endpoint = '/users/register';
+            } else if (extraData.password) {
+                endpoint = '/users/login';
+            } else {
+                endpoint = '/users/firebase-auth';
+            }
+
+            const { data } = await apiCall(endpoint, 'POST', userData);
+            return data;
+        } catch {
+            // If backend is down, use Firebase user data as fallback
+            return {
+                _id: firebaseUser.uid,
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                image: userData.image,
+                firebaseUser: true,
+            };
+        }
+    };
+
+    // ─── Email/Password Submit ─────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
         const validationErrors = validate();
@@ -53,20 +96,79 @@ const AuthView = ({ initialMode = 'login' }) => {
 
         setIsLoading(true);
         try {
-            const endpoint = mode === 'login' ? '/users/login' : '/users/register';
-            const payload = mode === 'login'
-                ? { email: formData.email, password: formData.password, role }
-                : { name: formData.name, email: formData.email, password: formData.password, role, image: formData.image };
+            let firebaseResult;
 
-            const { data } = await apiCall(endpoint, 'POST', payload);
-            setUser(data);
-            localStorage.setItem('farmlink_user', JSON.stringify(data));
-            addToast(`Welcome, ${data.name}!`);
-            navigate('dashboard');
+            if (mode === 'register') {
+                // Step 1: Register with Firebase
+                firebaseResult = await registerWithEmail(formData.email, formData.password, formData.name);
+                if (firebaseResult.error) {
+                    setErrors({ form: firebaseResult.error });
+                    return;
+                }
+                // Step 2: Sync with backend
+                const userData = await syncFirebaseUserWithBackend(firebaseResult.user, {
+                    name: formData.name,
+                    role,
+                    image: formData.image,
+                    password: formData.password,
+                    isRegister: true,
+                });
+                setUser(userData);
+                localStorage.setItem('farmlink_user', JSON.stringify(userData));
+                addToast(`Welcome, ${userData.name}! 🎉`);
+                navigate('dashboard');
+            } else {
+                // Step 1: Login with Firebase
+                firebaseResult = await loginWithEmail(formData.email, formData.password);
+                if (firebaseResult.error) {
+                    setErrors({ form: firebaseResult.error });
+                    return;
+                }
+                // Step 2: Sync with backend
+                const userData = await syncFirebaseUserWithBackend(firebaseResult.user, { role, password: formData.password });
+                setUser(userData);
+                localStorage.setItem('farmlink_user', JSON.stringify(userData));
+                addToast(`Welcome back, ${userData.name}! 👋`);
+                navigate('dashboard');
+            }
         } catch (err) {
             setErrors({ form: err.message || 'Authentication failed' });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const [showRoleModal, setShowRoleModal] = useState(false);
+
+    // ─── Google Sign-In ────────────────────────────────────────────────────
+    const handleGoogleSignInClick = () => {
+        // explicitly ask the user for their role before popping up Google
+        setShowRoleModal(true);
+    };
+
+    const confirmGoogleSignIn = async (selectedRole) => {
+        setShowRoleModal(false);
+        setIsGoogleLoading(true);
+        setErrors({});
+        try {
+            const { user: firebaseUser, error } = await loginWithGoogle();
+            if (error) {
+                setErrors({ form: error });
+                return;
+            }
+            if (!firebaseUser) return; // User closed popup
+
+            // Google sign-in uses the explicitly selected role
+            const userData = await syncFirebaseUserWithBackend(firebaseUser, { role: selectedRole });
+            // If the user already has an account, the backend will return their actual role
+            setUser(userData);
+            localStorage.setItem('farmlink_user', JSON.stringify(userData));
+            addToast(`Welcome, ${userData.name}! 🎉`);
+            navigate('dashboard');
+        } catch (err) {
+            setErrors({ form: err.message || 'Google sign-in failed' });
+        } finally {
+            setIsGoogleLoading(false);
         }
     };
 
@@ -218,7 +320,7 @@ const AuthView = ({ initialMode = 'login' }) => {
                             <div className="absolute inset-0 rounded-2xl bg-green-500 blur-md opacity-40 translate-y-2 pointer-events-none" />
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || isGoogleLoading}
                                 className="relative z-10 w-full py-3.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-base rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-60"
                             >
                                 {isLoading
@@ -229,22 +331,25 @@ const AuthView = ({ initialMode = 'login' }) => {
                         </div>
                     </form>
 
-                    {/* Social login (login mode only) */}
-                    {mode === 'login' && (
-                        <>
-                            <div className="flex items-center gap-3 my-6">
-                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                                <span className="text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">Or continue with</span>
-                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                            </div>
+                    {/* Social login divider */}
+                    <div className="flex items-center gap-3 my-6">
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">Or continue with</span>
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                    </div>
 
-                            <div className="space-y-3">
-                                {/* Google */}
-                                <button
-                                    type="button"
-                                    onClick={() => addToast('Google login coming soon!')}
-                                    className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300"
-                                >
+                    {/* Google Sign-In Button */}
+                    <div className="space-y-3">
+                        <button
+                            type="button"
+                            onClick={handleGoogleSignInClick}
+                            disabled={isLoading || isGoogleLoading}
+                            className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300 disabled:opacity-60"
+                        >
+                            {isGoogleLoading ? (
+                                <><Loader2 size={18} className="animate-spin" /> Signing in...</>
+                            ) : (
+                                <>
                                     <svg width="18" height="18" viewBox="0 0 48 48">
                                         <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
                                         <path fill="#4285F4" d="M46.5 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.7 7.2l7.5 5.8c4.4-4.1 7-10.1 7-17z"/>
@@ -252,23 +357,10 @@ const AuthView = ({ initialMode = 'login' }) => {
                                         <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.3-4.5 2.1-7.7 2.1-6.2 0-11.5-3.8-13.4-9.2l-7.9 6.1C6.7 42.6 14.7 48 24 48z"/>
                                     </svg>
                                     Continue with Google
-                                </button>
-
-                                {/* Facebook */}
-                                <button
-                                    type="button"
-                                    onClick={() => addToast('Facebook login coming soon!')}
-                                    className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300"
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 48 48">
-                                        <path fill="#1877F2" d="M48 24C48 10.7 37.3 0 24 0S0 10.7 0 24c0 12 8.8 21.9 20.2 23.7V30.9h-6.1V24h6.1v-5.3c0-6.1 3.6-9.4 9.1-9.4 2.6 0 5.4.5 5.4.5v5.9h-3c-3 0-3.9 1.9-3.9 3.8V24h6.6l-1.1 6.9h-5.6v16.8C39.2 45.9 48 36 48 24z"/>
-                                        <path fill="#fff" d="M33.4 30.9l1.1-6.9h-6.6v-4.5c0-1.9.9-3.8 3.9-3.8h3v-5.9s-2.7-.5-5.4-.5c-5.5 0-9.1 3.3-9.1 9.4V24h-6.1v6.9h6.1v16.8c1.2.2 2.5.3 3.8.3s2.5-.1 3.8-.3V30.9h5.5z"/>
-                                    </svg>
-                                    Continue with Facebook
-                                </button>
-                            </div>
-                        </>
-                    )}
+                                </>
+                            )}
+                        </button>
+                    </div>
 
                     {/* Toggle mode */}
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 relative z-10">
@@ -288,6 +380,48 @@ const AuthView = ({ initialMode = 'login' }) => {
                     🌿 FarmLink – Connecting farmers directly with communities
                 </p>
             </div>
+
+            {/* Google Role Selection Modal */}
+            {showRoleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+                            Select Your Role
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                            How do you want to use FarmLink?
+                        </p>
+                        
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => confirmGoogleSignIn('customer')}
+                                className="w-full py-3.5 px-4 bg-green-50 hover:bg-green-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-green-700 dark:text-white font-semibold rounded-2xl transition"
+                            >
+                                Shop as Customer
+                            </button>
+                            <button
+                                onClick={() => confirmGoogleSignIn('farmer')}
+                                className="w-full py-3.5 px-4 bg-orange-50 hover:bg-orange-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-orange-700 dark:text-white font-semibold rounded-2xl transition"
+                            >
+                                Sell as Farmer
+                            </button>
+                            <button
+                                onClick={() => confirmGoogleSignIn('admin')}
+                                className="w-full py-3.5 px-4 bg-blue-50 hover:bg-blue-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-blue-700 dark:text-white font-semibold rounded-2xl transition"
+                            >
+                                Enter as Admin
+                            </button>
+                        </div>
+                        
+                        <button
+                            onClick={() => setShowRoleModal(false)}
+                            className="mt-6 w-full py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

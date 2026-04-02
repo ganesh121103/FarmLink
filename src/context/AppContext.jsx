@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { TRANSLATIONS, API_BASE_URL } from '../constants';
 import { apiCall } from '../api/apiCall';
 import { io } from 'socket.io-client';
+import { onAuthChange, logoutFirebase } from '../auth/firebaseAuth';
 
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -45,6 +46,18 @@ export const AppProvider = ({ children }) => {
             if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; }
         }
     }, [user?._id]);
+
+    // Firebase Auth State Listener — track user sessions
+    useEffect(() => {
+        const unsubscribe = onAuthChange((firebaseUser) => {
+            if (firebaseUser) {
+                console.log('🔥 Firebase session active:', firebaseUser.email);
+            } else {
+                console.log('🔥 Firebase session ended');
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const openChat = (chatUser) => {
         if (!user) { addToast('Please login to chat.'); navigate('login'); return; }
@@ -115,7 +128,7 @@ export const AppProvider = ({ children }) => {
     const updateCartQuantity = (id, quantity) => { if (quantity < 1) return; setCart(prev => prev.map(item => item._id === id ? { ...item, quantity } : item)); };
     const removeFromCart = (id) => setCart(prev => prev.filter(item => item._id !== id));
 
-    const handleLogout = () => { if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; } setUser(null); setCart([]); setWishlist([]); setHistory(['home']); setView('home'); localStorage.removeItem('farmlink_user'); localStorage.removeItem('farmlink_cart'); localStorage.removeItem('farmlink_wishlist'); };
+    const handleLogout = async () => { logoutFirebase(); if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; } setUser(null); setCart([]); setWishlist([]); setHistory(['home']); setView('home'); localStorage.removeItem('farmlink_user'); localStorage.removeItem('farmlink_cart'); localStorage.removeItem('farmlink_wishlist'); };
 
     const contextValue = {
         user, setUser, cart, setCart, wishlist, setWishlist,
