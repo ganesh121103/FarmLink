@@ -39,11 +39,19 @@ const AuthView = ({ initialMode = 'login' }) => {
     const validate = () => {
         const e = {};
         if (mode === 'register' && !formData.name.trim()) e.name = 'Name is required';
-        if (!formData.email.trim()) e.email = 'Email is required';
+        
+        if (!formData.email.trim()) {
+            e.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            e.email = 'Please enter a valid email address (e.g. user@example.com)';
+        }
+
         if (!formData.password) e.password = 'Password is required';
         else if (formData.password.length < 6) e.password = 'Minimum 6 characters';
+        
         if (mode === 'register' && formData.password !== formData.confirmPassword)
             e.confirmPassword = 'Passwords do not match';
+            
         return e;
     };
 

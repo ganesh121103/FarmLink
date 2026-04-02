@@ -107,7 +107,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                     onClick={() => navigate('dashboard')}
                                     className="px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-lg"
                                 >
-                                    Dashboard
+                                    {t('dashboard')}
                                 </button>
                                 <button
                                     onClick={() => navigate('profile')}
@@ -178,10 +178,10 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         {user ? (
                             <>
                                 <button onClick={() => { navigate('dashboard'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
-                                    Dashboard
+                                    {t('dashboard')}
                                 </button>
                                 <button onClick={() => { navigate('profile'); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
-                                    <User size={18} /> Profile
+                                    <User size={18} /> {t('myProfile')}
                                 </button>
                                 <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
                                     <LogOut size={18} /> {t('logout')}

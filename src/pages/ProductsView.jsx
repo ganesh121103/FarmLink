@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2 } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -210,7 +210,7 @@ From this product list, pick exactly 4 IDs that would be best recommendations. R
 Products:
 ${productList}`;
 
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
@@ -374,8 +374,7 @@ ${productList}`;
                             <div className="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-xl font-black text-green-700 flex-shrink-0">{farmerInfo.name.charAt(0)}</div>
                             <div>
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                    <h4 className="font-black text-lg">{farmerInfo.name}</h4>
-                                    {farmerInfo.verified && <Badge>✓ Verified</Badge>}
+                                    <h4 className="font-black text-lg flex items-center gap-1.5">{farmerInfo.name} {farmerInfo.verified && <BadgeCheck size={18} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h4>
                                 </div>
                                 <p className="text-stone-500 dark:text-slate-400 text-sm mb-2 flex items-center gap-1"><MapPin size={12} /> {farmerInfo.location}</p>
                                 <p className="text-stone-600 dark:text-slate-300 text-sm">{farmerInfo.bio}</p>
@@ -603,8 +602,7 @@ ${productList}`;
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex flex-wrap items-center gap-3 mb-2">
-                                        <h1 className="text-3xl md:text-4xl font-black text-black dark:text-white">{currentFarmer.name}</h1>
-                                        {currentFarmer.verified && <Badge>{t('verifiedFarmer')}</Badge>}
+                                        <h1 className="text-3xl md:text-4xl font-black text-black dark:text-white flex items-center gap-2">{currentFarmer.name} {currentFarmer.verified && <BadgeCheck size={28} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h1>
                                     </div>
                                     <p className="text-stone-600 dark:text-slate-300 mb-4 max-w-2xl text-sm">{currentFarmer.bio || "Dedicated local farmer providing fresh, high-quality produce directly to your table."}</p>
                                 </div>

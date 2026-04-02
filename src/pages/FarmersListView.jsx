@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, MessageSquare, Phone, Mail } from 'lucide-react';
+import { Search, MapPin, Star, MessageSquare, Phone, Mail, BadgeCheck } from 'lucide-react';
 import { FarmerSkeleton } from '../components/ui/Skeletons';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
@@ -76,8 +76,7 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                                        <h3 className="font-black text-lg leading-tight text-black dark:text-white">{farmer.name}</h3>
-                                        {farmer.verified && <Badge>{t('verifiedFarmer')}</Badge>}
+                                        <h3 className="font-black text-lg leading-tight text-black dark:text-white flex items-center gap-1.5">{farmer.name} {farmer.verified && <BadgeCheck size={18} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h3>
                                     </div>
                                     <div className="flex items-center gap-1 text-xs text-stone-500 dark:text-slate-400 font-medium">
                                         <MapPin size={12} /> {farmer.location}

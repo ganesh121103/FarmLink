@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock, BadgeCheck, Search } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,6 +11,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
     const { addToast, t } = useAppContext();
     const [activeTab, setActiveTab] = useState('overview');
     const [userFilter, setUserFilter] = useState('all');
+    const [userSearch, setUserSearch] = useState('');
     const [allUsers, setAllUsers] = useState([]);
     const [allFarmers, setAllFarmers] = useState([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
@@ -230,18 +231,33 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
             {/* MANAGE USERS TAB */}
             {activeTab === 'users' && (
                 <div className="animate-fade-in-up flex flex-col gap-4">
-                    <div className="flex gap-2">
-                        <button onClick={() => setUserFilter('all')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'all' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>All Users</button>
-                        <button onClick={() => setUserFilter('customer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'customer' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Customers & Admins</button>
-                        <button onClick={() => setUserFilter('farmer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'farmer' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Farmers</button>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex gap-2">
+                            <button onClick={() => setUserFilter('all')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'all' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>All Users</button>
+                            <button onClick={() => setUserFilter('customer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'customer' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Customers & Admins</button>
+                            <button onClick={() => setUserFilter('farmer')} className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${userFilter === 'farmer' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}>Farmers</button>
+                        </div>
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-2.5 text-stone-400" size={16} />
+                            <input 
+                                type="text" 
+                                placeholder="Search by name or email..." 
+                                value={userSearch}
+                                onChange={(e) => setUserSearch(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium text-black dark:text-white"
+                            />
+                        </div>
                     </div>
                     <div className="overflow-x-auto rounded-2xl border border-stone-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
                         <table className="w-full text-left">
                             <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">User</th><th className="py-3 pr-4">Role</th><th className="py-3 pr-4">Location</th><th className="py-3 pr-4">Status</th><th className="py-3">Action</th></tr></thead>
                             <tbody className="divide-y divide-stone-100 dark:divide-slate-700/50">
-                                {mergedUsers.filter(u => userFilter === 'all' ? true : userFilter === 'farmer' ? u.role === 'farmer' : u.role !== 'farmer').map(user => (
+                                {mergedUsers
+                                    .filter(u => userFilter === 'all' ? true : userFilter === 'farmer' ? u.role === 'farmer' : u.role !== 'farmer')
+                                    .filter(u => userSearch === '' || u.name?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase()))
+                                    .map(user => (
                                 <tr key={user._id} className="group">
-                                    <td className="py-4 pr-4"><div className="font-bold text-black dark:text-white">{user.name}</div><p className="text-xs text-stone-500">{user.email}</p></td>
+                                    <td className="py-4 pr-4"><div className="font-bold text-black dark:text-white flex items-center gap-1.5">{user.name} {user.role === 'farmer' && user.verified && <BadgeCheck size={16} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</div><p className="text-xs text-stone-500">{user.email}</p></td>
                                     <td className="py-4 pr-4"><Badge color={user.role === 'farmer' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-sky-100 text-sky-800 dark:bg-sky-900/20 dark:text-sky-400'}>{user.role}</Badge></td>
                                     <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{user.location || user.address || 'N/A'}</td>
                                     <td className="py-4 pr-4 text-sm">
@@ -252,14 +268,23 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                                                 : <Badge color={user.status === 'Suspended' ? 'bg-red-100 text-red-800' : 'bg-stone-100 text-stone-600'}>{user.status || 'Active'}</Badge>}
                                     </td>
                                     <td className="py-4">
-                                        <div className="flex gap-2 items-center">
-                                            {user.role === 'farmer' && (user.documents?.idProof || user.verificationStatus === 'Pending') && (
-                                                <Button className="text-xs py-1.5 px-3" variant={user.verificationStatus === 'Pending' ? 'primary' : 'outline'} onClick={() => setReviewingUser(user)}>
-                                                    {user.verificationStatus === 'Pending' ? t('reviewDocs') : 'View Docs'}
-                                                </Button>
-                                            )}
-                                            {user.role !== 'admin' && <button onClick={() => handleSuspendUser(user._id)} className={`text-xs py-1.5 px-3 font-bold rounded-lg border transition-colors ${user.status === 'Suspended' ? 'border-green-300 text-green-700 hover:bg-green-50' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>{user.status === 'Suspended' ? 'Reinstate' : t('suspendUser')}</button>}
-                                        </div>
+                                            <div className="flex gap-2 items-center">
+                                                {user.role === 'farmer' && (
+                                                    <Button 
+                                                        className="text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-3 whitespace-nowrap" 
+                                                        variant={user.verificationStatus === 'Verified' ? 'outline' : 'primary'} 
+                                                        onClick={() => handleVerifyUser(user._id, user.verificationStatus !== 'Verified')}
+                                                    >
+                                                        {user.verificationStatus === 'Verified' ? 'Remove Badge' : 'Give Badge'}
+                                                    </Button>
+                                                )}
+                                                {user.role === 'farmer' && (user.documents?.idProof || user.verificationStatus === 'Pending') && (
+                                                    <Button className="text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-3 whitespace-nowrap" variant="outline" onClick={() => setReviewingUser(user)}>
+                                                        {user.verificationStatus === 'Pending' ? t('reviewDocs') : 'View Docs'}
+                                                    </Button>
+                                                )}
+                                                {user.role !== 'admin' && <button onClick={() => handleSuspendUser(user._id)} className={`text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-3 font-bold rounded-lg border transition-colors whitespace-nowrap ${user.status === 'Suspended' ? 'border-green-300 text-green-700 hover:bg-green-50' : 'border-red-200 text-red-600 hover:bg-red-50'}`}>{user.status === 'Suspended' ? 'Reinstate' : t('suspendUser')}</button>}
+                                            </div>
                                     </td>
                                 </tr>
                             ))}
@@ -276,13 +301,13 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                         <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">Product</th><th className="py-3 pr-4">Farmer</th><th className="py-3 pr-4">Category</th><th className="py-3 pr-4">Price</th><th className="py-3 pr-4">Stock</th><th className="py-3">Action</th></tr></thead>
                         <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
                             {products.map(product => (
-                                <tr key={product._id} className="group">
-                                    <td className="py-4 pr-4 flex items-center gap-3"><img src={product.images?.[0] || product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /><div className="font-bold text-black dark:text-white text-sm">{product.name}</div></td>
+                                <tr key={product._id} className="group hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => setPreviewProduct(product)}>
+                                    <td className="py-4 pr-4 flex items-center gap-3"><img src={product.images?.[0] || product.image || 'https://via.placeholder.com/40'} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /><div className="font-bold text-black dark:text-white text-sm">{product.name}</div></td>
                                     <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{product.farmerName}</td>
                                     <td className="py-4 pr-4"><Badge>{product.category}</Badge></td>
                                     <td className="py-4 pr-4 font-bold text-sm">₹{product.price}/kg</td>
                                     <td className="py-4 pr-4"><span className={`text-sm font-bold ${product.stock < 20 ? 'text-red-500' : 'text-green-600'}`}>{product.stock}kg</span></td>
-                                    <td className="py-4"><button onClick={() => handleDeleteProduct(product._id)} className="text-xs py-1.5 px-3 font-bold border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">{t('removeProduct')}</button></td>
+                                    <td className="py-4" onClick={(e) => e.stopPropagation()}><button onClick={() => handleDeleteProduct(product._id)} className="text-xs py-1.5 px-3 font-bold border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">{t('removeProduct')}</button></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -374,6 +399,73 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
             )}
 
             <AdminDocumentReviewModal isOpen={!!reviewingUser} onClose={() => setReviewingUser(null)} selectedUser={reviewingUser} onVerify={handleVerifyUser} />
+
+            {/* Product Details Modal */}
+            {previewProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-slide-up my-auto no-scrollbar">
+                        <button onClick={() => setPreviewProduct(null)} className="absolute top-4 right-4 p-2 bg-stone-100/20 hover:bg-white/40 dark:bg-slate-800/80 text-white hover:text-black dark:hover:text-white rounded-full transition-colors z-20 backdrop-blur-sm border border-white/20">
+                            <X size={20} />
+                        </button>
+                        
+                        <div className="relative h-48 sm:h-64 w-full bg-stone-100 dark:bg-slate-800">
+                            <img src={previewProduct.images?.[0] || previewProduct.image || 'https://via.placeholder.com/600x400'} alt={previewProduct.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                            <div className="absolute bottom-6 left-6 right-6 text-white">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Badge color="bg-white/20 text-white backdrop-blur-md border border-white/30">{previewProduct.category}</Badge>
+                                    {(previewProduct.organic || previewProduct.isOrganic) && <Badge color="bg-green-500/80 text-white backdrop-blur-md border border-green-400">100% Organic</Badge>}
+                                </div>
+                                <h2 className="text-2xl sm:text-3xl font-black">{previewProduct.name}</h2>
+                                <p className="text-stone-300 flex items-center gap-2 mt-1">
+                                    <Sprout size={16} /> By {previewProduct.farmerName || 'Unknown Farmer'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-5 sm:p-6 space-y-6">
+                            <div className="flex flex-wrap items-center justify-between gap-4 bg-stone-50 dark:bg-slate-800/50 p-4 sm:p-5 rounded-2xl border border-stone-100 dark:border-slate-700">
+                                <div>
+                                    <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase mb-1">Price</p>
+                                    <p className="text-xl sm:text-2xl font-black text-green-600 dark:text-green-400">₹{previewProduct.price}<span className="text-xs sm:text-sm text-stone-500 font-bold ml-1">/ {previewProduct.unit || 'kg'}</span></p>
+                                </div>
+                                <div className="h-10 w-px bg-stone-200 dark:bg-slate-700 hidden sm:block" />
+                                <div>
+                                    <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase mb-1">Available Stock</p>
+                                    <p className={`text-xl sm:text-2xl font-black ${previewProduct.stock < 10 ? 'text-orange-500' : 'text-black dark:text-white'}`}>{previewProduct.stock} <span className="text-sm font-bold ml-1">{previewProduct.unit || 'kg'}</span></p>
+                                </div>
+                                <div className="h-10 w-px bg-stone-200 dark:bg-slate-700 hidden sm:block" />
+                                <div>
+                                    <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase mb-1">Status</p>
+                                    <Badge color={previewProduct.stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>{previewProduct.stock > 0 ? 'In Stock' : 'Out of Stock'}</Badge>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-black dark:text-white mb-2 flex items-center gap-2">
+                                    <FileText className="text-purple-500" size={18} /> Product Description
+                                </h3>
+                                <p className="text-stone-600 dark:text-slate-400 leading-relaxed text-sm">
+                                    {previewProduct.description || "No detailed description provided by the farmer for this product."}
+                                </p>
+                            </div>
+
+                            <div className="pt-4 border-t border-stone-100 dark:border-slate-700 flex justify-end gap-3 pb-1">
+                                <Button variant="outline" onClick={() => setPreviewProduct(null)}>Close</Button>
+                                <Button 
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={() => {
+                                        handleDeleteProduct(previewProduct._id);
+                                        setPreviewProduct(null);
+                                    }}
+                                >
+                                    <X size={18} className="mr-2" /> Remove Product
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

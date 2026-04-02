@@ -8,8 +8,10 @@ const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
 
 export const AppProvider = ({ children }) => {
-    const [language, setLanguage] = useState('en');
+    const [language, setLanguage] = useState(() => { try { return localStorage.getItem('farmlink_language') || 'en'; } catch { return 'en'; } });
     const t = (key) => TRANSLATIONS[language]?.[key] || key;
+    
+    useEffect(() => { localStorage.setItem('farmlink_language', language); }, [language]);
 
     const [view, setView] = useState('home');
     const [history, setHistory] = useState(['home']);

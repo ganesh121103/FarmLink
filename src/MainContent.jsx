@@ -108,7 +108,7 @@ const MainContent = () => {
 
             <main className="flex-grow">
                 {view === 'home' && <HomeView />}
-                {view === 'about' && <AboutView BackBtn={BackBtn} farmers={farmers} />}
+                {view === 'about' && <AboutView BackBtn={BackBtn} farmers={farmers} setSelectedFarmer={setSelectedFarmer} />}
                 {view === 'farmers' && <FarmersListView BackBtn={BackBtn} farmers={farmers} products={products} setSelectedFarmer={setSelectedFarmer} isLoading={isLoadingFarmers} />}
                 {view === 'products' && (
                     <ProductsView

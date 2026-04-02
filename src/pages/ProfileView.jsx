@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Edit, Loader2 } from 'lucide-react';
+import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Edit, Loader2, BadgeCheck } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import EditProfileModal from '../components/modals/EditProfileModal';
@@ -59,7 +59,7 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
                     <div className="mb-8">
                         <h1 className="text-3xl font-black text-black dark:text-white mb-2 flex items-center gap-3">
                             {user?.name}
-                            {user?.verified && <CheckCircle size={24} className="text-blue-500" title="Verified Farmer" />}
+                            {user?.verified && <BadgeCheck size={28} className="text-blue-500 fill-blue-50 dark:fill-blue-950" title="Verified Farmer" />}
                         </h1>
                         <Badge color="bg-stone-100 text-stone-600 dark:bg-slate-700 dark:text-slate-300">{user?.role === 'farmer' ? t('farmer') : t('customer')}</Badge>
                     </div>

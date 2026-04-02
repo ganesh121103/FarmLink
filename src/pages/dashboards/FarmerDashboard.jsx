@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -125,7 +125,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         setIsSuggestingPrice(true);
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: `Suggest a SINGLE fair wholesale price in Indian Rupees per kilogram for ${newProduct.name} in Maharashtra, India. Return ONLY the number. Example: 45` }] }] })
             });

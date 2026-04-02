@@ -1,0 +1,9 @@
+
+--- gemini-flash-latest ---
+Success: Hello! How can I help you today?
+--- gemini-2.0-flash-lite ---
+Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on
+--- gemma-3-1b-it ---
+Success: Hello there! How's your day going so far? 😊 
+
+Is 
