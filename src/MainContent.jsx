@@ -136,7 +136,7 @@ const MainContent = () => {
                 )}
                 {(view === 'login' || view === 'register') && <AuthView initialMode={view} />}
                 {view === 'activity' && (!user || user?.role !== 'admin') && (
-                    <CustomerActivityView orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} />
+                    <CustomerActivityView orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} farmers={farmers} />
                 )}
                 {view === 'profile' && <ProfileView BackBtn={BackBtn} setFarmers={setFarmers} />}
                 {view === 'dashboard' && user?.role === 'farmer' && (

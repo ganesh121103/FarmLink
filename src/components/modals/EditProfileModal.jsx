@@ -72,8 +72,8 @@ const EditProfileModal = ({ isOpen, onClose, onSave, isLoading }) => {
                         )}
                     </div>
 
-                    <label className="cursor-pointer bg-green-100 px-4 py-2 rounded-full text-sm">
-                        Upload Picture
+                    <label className="cursor-pointer bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 font-bold transition-colors px-5 py-2.5 rounded-full text-sm">
+                        {t('uploadImage') || 'Upload Picture'}
                         <input
                             type="file"
                             className="hidden"
@@ -103,13 +103,16 @@ const EditProfileModal = ({ isOpen, onClose, onSave, isLoading }) => {
                                 value={formData.specialization}
                                 onChange={(e) => setFormData({ ...formData, specialization: e.target.value })} />
 
-                            <textarea
-                                className="w-full border p-2 rounded"
-                                rows="3"
-                                placeholder="Bio"
-                                value={formData.bio}
-                                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                            />
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-bold text-black dark:text-slate-300">{t('bio')}</label>
+                                <textarea
+                                    className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white"
+                                    rows="3"
+                                    placeholder={t('bio') || "Bio"}
+                                    value={formData.bio}
+                                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                                />
+                            </div>
                         </>
                     )}
 

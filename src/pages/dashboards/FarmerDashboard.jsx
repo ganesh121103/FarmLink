@@ -125,7 +125,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         setIsSuggestingPrice(true);
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: `Suggest a SINGLE fair wholesale price in Indian Rupees per kilogram for ${newProduct.name} in Maharashtra, India. Return ONLY the number. Example: 45` }] }] })
             });

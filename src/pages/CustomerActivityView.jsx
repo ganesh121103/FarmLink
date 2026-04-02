@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Heart, HeartOff, ShoppingBasket, X, Minus, Plus, User, Trash2, ArrowRight, FileText, Star } from 'lucide-react';
+import { Package, Heart, HeartOff, ShoppingBasket, X, Minus, Plus, User, Trash2, ArrowRight, FileText, Star, BadgeCheck } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { Button, AddToCartButton } from '../components/ui/Button';
@@ -8,7 +8,7 @@ import ReviewModal from '../components/modals/ReviewModal';
 import ReceiptModal from '../components/modals/ReceiptModal';
 import { useAppContext } from '../context/AppContext';
 
-const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen }) => {
+const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) => {
     const { user, addToast, t, wishlist, removeFromWishlist, cart, removeFromCart, updateCartQuantity, navigate } = useAppContext();
     const [activeTab, setActiveTab] = useState(() => {
         const hash = window.location.hash;
@@ -108,7 +108,10 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                                     </div>
                                     <div className="p-4 flex-1 flex flex-col">
                                         <h3 className="font-bold text-base mb-1">{product.name}</h3>
-                                        <p className="text-xs text-stone-500 uppercase font-bold mb-3">{product.farmerName}</p>
+                                        <p className="text-xs text-stone-500 uppercase font-bold mb-3 flex items-center gap-1">
+                                            {product.farmerName}
+                                            {farmers?.find(f => f.name === product.farmerName || f._id === product.farmer)?.verified && <BadgeCheck size={14} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}
+                                        </p>
                                         <div className="mt-auto flex items-center justify-between">
                                             <span className="text-lg font-black text-green-800 dark:text-green-400">₹{product.price}</span>
                                             <AddToCartButton product={product} />
@@ -137,7 +140,10 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                                         <img src={item.images?.[0] || item.image} alt={item.name} loading="lazy" className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
                                         <div className="flex-1">
                                             <h4 className="font-bold text-lg text-black dark:text-slate-100">{item.name}</h4>
-                                            <p className="text-xs text-stone-500 dark:text-slate-400 uppercase font-semibold mt-1 mb-2">{item.farmerName}</p>
+                                            <p className="text-xs text-stone-500 dark:text-slate-400 uppercase font-semibold mt-1 mb-2 flex items-center gap-1">
+                                                {item.farmerName}
+                                                {farmers?.find(f => f.name === item.farmerName || f._id === item.farmer)?.verified && <BadgeCheck size={14} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}
+                                            </p>
                                             <p className="text-green-700 dark:text-green-400 font-black text-lg">₹{item.price}</p>
                                         </div>
                                         <div className="flex flex-col items-end gap-3">

@@ -27,6 +27,7 @@ export default function App() {
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
       `}</style>
         </AppProvider>
     );

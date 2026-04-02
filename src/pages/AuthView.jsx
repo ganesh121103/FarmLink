@@ -16,6 +16,7 @@ const AuthView = ({ initialMode = 'login' }) => {
 
     const [role, setRole] = useState('customer');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
@@ -278,13 +279,22 @@ const AuthView = ({ initialMode = 'login' }) => {
                         {mode === 'register' && (
                             <div>
                                 <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Confirm Password</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    value={formData.confirmPassword}
-                                    onChange={e => setFormData(f => ({ ...f, confirmPassword: e.target.value }))}
-                                    className={inputBase}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        placeholder="••••••••"
+                                        value={formData.confirmPassword}
+                                        onChange={e => setFormData(f => ({ ...f, confirmPassword: e.target.value }))}
+                                        className={`${inputBase} pr-12`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(v => !v)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                                 {errors.confirmPassword && <p className={errorText}>{errors.confirmPassword}</p>}
                             </div>
                         )}

@@ -210,7 +210,7 @@ From this product list, pick exactly 4 IDs that would be best recommendations. R
 Products:
 ${productList}`;
 
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
@@ -707,7 +707,10 @@ ${productList}`;
                                 </div>
                                 <div className="p-5 flex-1 flex flex-col">
                                     <h3 className="font-bold text-lg leading-tight group-hover:text-green-700 transition-colors mb-0.5">{product.name}</h3>
-                                    <p className="text-xs text-stone-500 uppercase font-bold mb-2 tracking-wide">{product.farmerName}</p>
+                                    <p className="text-xs text-stone-500 uppercase font-bold mb-2 tracking-wide flex items-center gap-1">
+                                        {product.farmerName}
+                                        {farmers?.find(f => f.name === product.farmerName || f._id === product.farmer)?.verified && <BadgeCheck size={14} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}
+                                    </p>
                                     
                                     <div className="flex items-center gap-1.5 mb-4">
                                         <div className="flex bg-stone-50 dark:bg-slate-900/50 px-1.5 py-0.5 rounded-md border border-stone-100 dark:border-slate-700">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Leaf, TrendingUp } from 'lucide-react';
+import { Users, Leaf, TrendingUp, BadgeCheck } from 'lucide-react';
 import { BackButton } from '../components/ui/BackButton';
 import { FarmerSkeleton } from '../components/ui/Skeletons';
 import Badge from '../components/ui/Badge';
@@ -48,7 +48,10 @@ const AboutView = ({ BackBtn, farmers, setSelectedFarmer }) => {
                             <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-500 mb-3 text-2xl font-black flex-shrink-0">
                                 {farmer.name.charAt(0)}
                             </div>
-                            <h3 className="font-bold text-base mb-1">{farmer.name}</h3>
+                            <h3 className="font-bold text-base mb-1 flex items-center justify-center gap-1.5">
+                                {farmer.name} 
+                                {farmer.verified && <BadgeCheck size={16} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}
+                            </h3>
                             {farmer.verified && <Badge className="text-[10px] mb-1">{t('verifiedFarmer')}</Badge>}
                             <p className="text-xs text-stone-500 dark:text-slate-400">{farmer.location}</p>
                         </Card>
