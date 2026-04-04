@@ -56,7 +56,14 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) =
                             <div className="flex-1">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <p className="text-sm text-stone-500 font-bold mb-1">Order #{order._id}</p>
+                                        <p className="text-sm text-stone-500 font-bold mb-1 flex items-center flex-wrap gap-2">
+                                            <span>Order #{order._id}</span>
+                                            {order.blockchainTxHash && (
+                                                <a href={`https://polygonscan.com/tx/${order.blockchainTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full hover:bg-purple-200 transition-colors dark:bg-purple-900 dark:text-purple-300">
+                                                    🛡️ Verified on Blockchain
+                                                </a>
+                                            )}
+                                        </p>
                                         <p className="text-xs text-stone-400">{order.date}</p>
                                     </div>
                                     <Badge color={order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>{order.status}</Badge>

@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const { logOrderToBlockchain } = require("../utils/blockchainLogger");
 
 // CREATE ORDER
 exports.createOrder = async (req, res) => {
@@ -16,6 +17,14 @@ exports.createOrder = async (req, res) => {
       address,
       paymentMethod
     });
+
+    // --- SIMPLE BLOCKCHAIN ADDITION ---
+    const txHash = await logOrderToBlockchain(order._id.toString(), order.total);
+    if (txHash) {
+        order.blockchainTxHash = txHash;
+        await order.save();
+    }
+    // ----------------------------------
 
     res.status(201).json(order);
   } catch (err) {

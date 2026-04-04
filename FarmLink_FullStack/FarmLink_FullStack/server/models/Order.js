@@ -25,7 +25,8 @@ const orderSchema = new mongoose.Schema(
         type: String, 
         enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
         default: "Placed" 
-    }
+    },
+    blockchainTxHash: { type: String }
   },
   { timestamps: true }
 );
