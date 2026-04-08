@@ -12,6 +12,7 @@ import CustomerActivityView from './pages/CustomerActivityView';
 import ProfileView from './pages/ProfileView';
 import AuthView from './pages/AuthView';
 import { PrivacyView, TermsView } from './pages/LegalPages';
+import NotificationsPage from './pages/NotificationsPage';
 import FarmerDashboard from './pages/dashboards/FarmerDashboard';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import CustomerDashboard from './pages/dashboards/CustomerDashboard';
@@ -150,6 +151,7 @@ const MainContent = () => {
                 )}
                 {view === 'privacy' && <PrivacyView BackBtn={BackBtn} />}
                 {view === 'terms' && <TermsView BackBtn={BackBtn} />}
+                {view === 'notifications' && <NotificationsPage BackBtn={BackBtn} />}
             </main>
 
             <Footer />

@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, Trash2, ShoppingBag, Star, Package, Info, ArrowRight } from 'lucide-react';
+import {
+    Bell, CheckCheck, Trash2, ShoppingBag, Star, Package, Info,
+    ArrowRight, Leaf, TrendingDown, AlertTriangle, Sparkles, ChevronRight
+} from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
-/* ── Helpers ─────────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────────────── */
 const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
@@ -13,22 +16,30 @@ const timeAgo = (dateStr) => {
     return `${Math.floor(h / 24)}d ago`;
 };
 
-const typeConfig = {
-    Wishlist:       { icon: Star,        color: 'text-pink-500',   bg: 'bg-pink-50 dark:bg-pink-900/20' },
-    Recommendation: { icon: ShoppingBag, color: 'text-green-600',  bg: 'bg-green-50 dark:bg-green-900/20' },
-    Order:          { icon: Package,     color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    System:         { icon: Info,        color: 'text-gray-500',   bg: 'bg-gray-100 dark:bg-gray-800' },
+export const typeConfig = {
+    Wishlist:       { icon: Star,          color: 'text-pink-500',    bg: 'bg-pink-50 dark:bg-pink-900/20',    label: 'Wishlist' },
+    Recommendation: { icon: ShoppingBag,   color: 'text-green-600',   bg: 'bg-green-50 dark:bg-green-900/20',  label: 'Recommendation' },
+    NewArrival:     { icon: Sparkles,       color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'New Arrival' },
+    OutOfStock:     { icon: AlertTriangle,  color: 'text-red-500',     bg: 'bg-red-50 dark:bg-red-900/20',      label: 'Out of Stock' },
+    PriceDrop:      { icon: TrendingDown,   color: 'text-amber-600',   bg: 'bg-amber-50 dark:bg-amber-900/20',  label: 'Price Drop' },
+    Order:          { icon: Package,        color: 'text-blue-500',    bg: 'bg-blue-50 dark:bg-blue-900/20',    label: 'Order' },
+    System:         { icon: Info,           color: 'text-gray-500',    bg: 'bg-gray-100 dark:bg-gray-800',      label: 'System' },
 };
 
-/* ── Component ───────────────────────────────────────── */
+/* ── Component ────────────────────────────────────────────────── */
 const NotificationBell = ({ onProductClick }) => {
-    const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead, clearAllNotifications } = useAppContext();
+    const {
+        notifications, unreadCount,
+        markNotificationRead, markAllNotificationsRead, clearAllNotifications,
+        navigate
+    } = useAppContext();
     const [open, setOpen] = useState(false);
     const panelRef = useRef(null);
 
-    // Close on outside click
     useEffect(() => {
-        const handler = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false); };
+        const handler = (e) => {
+            if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false);
+        };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
@@ -39,6 +50,14 @@ const NotificationBell = ({ onProductClick }) => {
         setOpen(false);
     };
 
+    const handleSeeAll = () => {
+        setOpen(false);
+        navigate('notifications');
+    };
+
+    // Show only most recent 5 in dropdown
+    const previewNotifs = notifications.slice(0, 5);
+
     return (
         <div className="relative" ref={panelRef}>
             {/* Bell button */}
@@ -48,7 +67,13 @@ const NotificationBell = ({ onProductClick }) => {
                 className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label={`Notifications: ${unreadCount} unread`}
             >
-                <Bell size={22} className={unreadCount > 0 ? 'text-green-600 dark:text-green-400 animate-[wiggle_0.6s_ease-in-out]' : 'text-gray-600 dark:text-gray-300'} />
+                <Bell
+                    size={22}
+                    className={unreadCount > 0
+                        ? 'text-green-600 dark:text-green-400 animate-[wiggle_0.6s_ease-in-out]'
+                        : 'text-gray-600 dark:text-gray-300'
+                    }
+                />
                 {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 animate-bounce-short">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -60,7 +85,7 @@ const NotificationBell = ({ onProductClick }) => {
             {open && (
                 <div
                     id="notification-panel"
-                    className="absolute right-0 top-[calc(100%+8px)] w-[360px] max-h-[520px] flex flex-col bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[999] animate-slide-down"
+                    className="absolute right-0 top-[calc(100%+8px)] w-[380px] max-h-[540px] flex flex-col bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[999] animate-slide-down"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
@@ -95,16 +120,16 @@ const NotificationBell = ({ onProductClick }) => {
                         </div>
                     </div>
 
-                    {/* List */}
+                    {/* Notification list */}
                     <div className="overflow-y-auto flex-1 divide-y divide-gray-100 dark:divide-gray-800">
-                        {notifications.length === 0 ? (
+                        {previewNotifs.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400 dark:text-gray-600">
                                 <Bell size={36} strokeWidth={1.5} />
                                 <p className="text-sm font-semibold">You're all caught up!</p>
                                 <p className="text-xs text-center px-8">We'll notify you when there's activity relevant to you.</p>
                             </div>
                         ) : (
-                            notifications.map((notif) => {
+                            previewNotifs.map((notif) => {
                                 const cfg = typeConfig[notif.type] || typeConfig.System;
                                 const Icon = cfg.icon;
                                 return (
@@ -137,7 +162,7 @@ const NotificationBell = ({ onProductClick }) => {
                                             </p>
                                             <div className="flex items-center justify-between mt-1.5">
                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
-                                                    {notif.type}
+                                                    {cfg.label}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 dark:text-gray-600">
                                                     {timeAgo(notif.createdAt)}
@@ -154,14 +179,17 @@ const NotificationBell = ({ onProductClick }) => {
                         )}
                     </div>
 
-                    {/* Footer */}
-                    {notifications.length > 0 && (
-                        <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 text-center">
-                            <p className="text-[11px] text-gray-400 dark:text-gray-600">
-                                Showing {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-                            </p>
-                        </div>
-                    )}
+                    {/* Footer — "See all notifications" */}
+                    <div className="border-t border-gray-100 dark:border-gray-800">
+                        <button
+                            onClick={handleSeeAll}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                        >
+                            <Leaf size={14} />
+                            See all notifications
+                            <ChevronRight size={14} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

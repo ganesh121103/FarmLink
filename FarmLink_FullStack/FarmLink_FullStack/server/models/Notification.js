@@ -13,7 +13,7 @@ const notificationSchema = new mongoose.Schema(
     link: { type: String, default: "" }, // product _id to navigate to
     type: {
       type: String,
-      enum: ["Wishlist", "Recommendation", "Order", "System"],
+      enum: ["Wishlist", "Recommendation", "Order", "System", "NewArrival", "OutOfStock", "PriceDrop"],
       default: "System",
     },
     isRead: { type: Boolean, default: false },
