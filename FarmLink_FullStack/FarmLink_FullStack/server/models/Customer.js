@@ -26,6 +26,12 @@ const customerSchema = new mongoose.Schema({
   // ✅ PROFILE IMAGE
   image: { type: String, default: "" },
 
+  // Firebase Cloud Messaging Device Token for Push Notifications
+  fcmToken: { type: String, default: "" },
+
+  // ✅ WISHLIST — array of Product ObjectIds
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+
 }, { timestamps: true });
 
 // Index for fast login lookups

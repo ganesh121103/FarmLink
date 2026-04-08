@@ -1,0 +1,74 @@
+[dotenv@17.2.3] injecting env (9) from .env -- tip: ??? audit secrets and track compliance: https://dotenvx.com/ops
+node : DB Error: 
+MongoParseError: options 
+usenewurlparser, 
+useunifiedtopology are 
+not supported
+At line:1 char:1
++ node testPush.js 2>&1 | 
+Out-File -Encoding ASCII 
+asciiLog.txt; Get-Co ...
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (D  
+  B Error: Mongo...e no   
+ t supported:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+    at parseOptions (C:\Us
+ers\ganes\Downloads\farmli
+nk-app\FarmLink_FullStack\
+FarmLink_FullStack\server\
+node_modules\mongodb\lib\c
+onnection_string.js:272:15
+)
+    at new MongoClient (C:
+\Users\ganes\Downloads\far
+mlink-app\FarmLink_FullSta
+ck\FarmLink_FullStack\serv
+er\node_modules\mongodb\li
+b\mongo_client.js:67:61)
+    at NativeConnection.cr
+eateClient (C:\Users\ganes
+\Downloads\farmlink-app\Fa
+rmLink_FullStack\FarmLink_
+FullStack\server\node_modu
+les\mongoose\lib\drivers\n
+ode-mongodb-native\connect
+ion.js:334:14)
+    at 
+NativeConnection.openUri (
+C:\Users\ganes\Downloads\f
+armlink-app\FarmLink_FullS
+tack\FarmLink_FullStack\se
+rver\node_modules\mongoose
+\lib\connection.js:1075:34
+)
+    at Mongoose.connect (C
+:\Users\ganes\Downloads\fa
+rmlink-app\FarmLink_FullSt
+ack\FarmLink_FullStack\ser
+ver\node_modules\mongoose\
+lib\mongoose.js:451:15)
+    at Object.<anonymous> 
+(C:\Users\ganes\Downloads\
+farmlink-app\FarmLink_Full
+Stack\FarmLink_FullStack\s
+erver\testPush.js:6:10)
+    at Module._compile (no
+de:internal/modules/cjs/lo
+ader:1760:14)
+    at Object..js (node:in
+ternal/modules/cjs/loader:
+1893:10)
+    at Module.load (node:i
+nternal/modules/cjs/loader
+:1480:32)
+    at Module._load (node:
+internal/modules/cjs/loade
+r:1299:12) {
+  errorLabelSet: Set(0) {}
+}

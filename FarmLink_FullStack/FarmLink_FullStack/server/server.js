@@ -25,6 +25,7 @@ app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/farmers", require("./routes/farmerRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 // --- Socket.IO Real-Time Chat ---
 const onlineUsers = new Map(); // userId -> socketId

@@ -1,1 +1,23 @@
 body { margin: 0; font-family: sans-serif; }
+
+/* ── Notification Bell animations ── */
+@keyframes wiggle {
+  0%,100% { transform: rotate(0deg); }
+  20%      { transform: rotate(-14deg); }
+  40%      { transform: rotate(14deg); }
+  60%      { transform: rotate(-8deg); }
+  80%      { transform: rotate(8deg); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes bounce-short {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.25); }
+}
+
+.animate-slide-down   { animation: slide-down   0.2s ease-out forwards; }
+.animate-bounce-short { animation: bounce-short 0.5s ease-in-out 1; }

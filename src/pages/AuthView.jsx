@@ -22,6 +22,7 @@ const AuthView = ({ initialMode = 'login' }) => {
 
     const [formData, setFormData] = useState({
         name: '',
+        phone: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -47,6 +48,11 @@ const AuthView = ({ initialMode = 'login' }) => {
             e.email = 'Please enter a valid email address (e.g. user@example.com)';
         }
 
+        const indianPhoneRegex = /^(?:\+91|91)?(?:[6789]\d{9})$/;
+        if (formData.phone && !indianPhoneRegex.test(formData.phone.replace(/[\-\s]/g, ''))) {
+            e.phone = 'Please enter a valid 10-digit Indian phone number';
+        }
+
         if (!formData.password) e.password = 'Password is required';
         else if (formData.password.length < 6) e.password = 'Minimum 6 characters';
         
@@ -61,6 +67,7 @@ const AuthView = ({ initialMode = 'login' }) => {
         const userData = {
             firebaseUid: firebaseUser.uid,
             name: extraData.name || firebaseUser.displayName || 'User',
+            phone: extraData.phone || '',
             email: firebaseUser.email,
             role: extraData.role || role,
             image: extraData.image || firebaseUser.photoURL || '',
@@ -117,6 +124,7 @@ const AuthView = ({ initialMode = 'login' }) => {
                 // Step 2: Sync with backend
                 const userData = await syncFirebaseUserWithBackend(firebaseResult.user, {
                     name: formData.name,
+                    phone: formData.phone,
                     role,
                     image: formData.image,
                     password: formData.password,
@@ -235,6 +243,21 @@ const AuthView = ({ initialMode = 'login' }) => {
                                     className={inputBase}
                                 />
                                 {errors.name && <p className={errorText}>{errors.name}</p>}
+                            </div>
+                        )}
+
+                        {/* Phone Number (register only - optional) */}
+                        {mode === 'register' && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Phone Number (Optional)</label>
+                                <input
+                                    type="tel"
+                                    placeholder="+1 234 567 8900"
+                                    value={formData.phone}
+                                    onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
+                                    className={inputBase}
+                                />
+                                {errors.phone && <p className={errorText}>{errors.phone}</p>}
                             </div>
                         )}
 

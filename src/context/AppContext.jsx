@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { TRANSLATIONS, API_BASE_URL } from '../constants';
 import { apiCall } from '../api/apiCall';
 import { io } from 'socket.io-client';
 import { onAuthChange, logoutFirebase } from '../auth/firebaseAuth';
+import { requestForToken, onMessageListener } from '../firebase';
 
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -21,6 +22,92 @@ export const AppProvider = ({ children }) => {
     const [cart, setCart] = useState(() => { try { return JSON.parse(localStorage.getItem('farmlink_cart')) || []; } catch { return []; } });
     const [wishlist, setWishlist] = useState(() => { try { return JSON.parse(localStorage.getItem('farmlink_wishlist')) || []; } catch { return []; } });
 
+    // ── Notification state ──────────────────────────────────────────────
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const notificationPollRef = useRef(null);
+
+    const fetchNotifications = useCallback(async () => {
+        if (!user?.token) return;
+        try {
+            const { data } = await apiCall('/notifications', 'GET');
+            if (Array.isArray(data)) {
+                setNotifications(data);
+                setUnreadCount(data.filter(n => !n.isRead).length);
+            }
+        } catch (e) {
+            // silently fail — notifications are non-critical
+        }
+    }, [user?.token]);
+
+    // Poll every 30 seconds while logged in
+    useEffect(() => {
+        if (user?.token) {
+            fetchNotifications();
+            notificationPollRef.current = setInterval(fetchNotifications, 30000);
+        } else {
+            setNotifications([]);
+            setUnreadCount(0);
+            if (notificationPollRef.current) clearInterval(notificationPollRef.current);
+        }
+        return () => { if (notificationPollRef.current) clearInterval(notificationPollRef.current); };
+    }, [user?.token, fetchNotifications]);
+
+    const markNotificationRead = async (id) => {
+        try {
+            await apiCall(`/notifications/${id}/read`, 'PUT');
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (e) { /* silent */ }
+    };
+
+    const markAllNotificationsRead = async () => {
+        try {
+            await apiCall('/notifications/mark-all-read', 'PUT');
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+        } catch (e) { /* silent */ }
+    };
+
+    const clearAllNotifications = async () => {
+        try {
+            await apiCall('/notifications/clear-all', 'DELETE');
+            setNotifications([]);
+            setUnreadCount(0);
+        } catch (e) { /* silent */ }
+    };
+    // ────────────────────────────────────────────────────────────────────
+
+    // ── FCM Push Notifications setup ────────────────────────────────────
+    useEffect(() => {
+        if (!user || user.role === 'admin') return;
+
+        const setupFCM = async () => {
+            try {
+                // Request token
+                const fcmToken = await requestForToken();
+                if (fcmToken) {
+                    // Send to backend
+                    await apiCall(`/users/${user._id || user.id}`, 'PUT', { fcmToken });
+                }
+            } catch (err) {
+                console.warn("FCM Token setup failed:", err);
+            }
+        };
+
+        setupFCM();
+
+        // Listen for foreground messages
+        onMessageListener().then(payload => {
+            if (payload?.notification) {
+                addToast(`🔔 ${payload.notification.title}`);
+                fetchNotifications(); // Refresh the bell
+            }
+        }).catch(err => console.log('failed to setup listener: ', err));
+
+    }, [user?._id, user?.token]);
+    // ────────────────────────────────────────────────────────────────────
+
     const [isDarkMode, setIsDarkMode] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)')?.matches || false);
     const [toasts, setToasts] = useState([]);
     const socketRef = useRef(null);
@@ -35,7 +122,6 @@ export const AppProvider = ({ children }) => {
             const socket = io(SOCKET_URL, { query: { userId: user._id }, transports: ['websocket', 'polling'] });
             
             socket.on('receive_message', (msg) => {
-                // If the user isn't actively chatting with the sender, show a toast!
                 const isWatchingConversation = activeChatRef.current?.id === msg.senderId;
                 if (!isWatchingConversation && msg.senderId !== user._id) {
                     addToast(`New message from ${msg.senderName}`);
@@ -49,7 +135,7 @@ export const AppProvider = ({ children }) => {
         }
     }, [user?._id]);
 
-    // Firebase Auth State Listener — track user sessions
+    // Firebase Auth State Listener
     useEffect(() => {
         const unsubscribe = onAuthChange((firebaseUser) => {
             if (firebaseUser) {
@@ -108,14 +194,41 @@ export const AppProvider = ({ children }) => {
 
     const toggleDarkMode = () => setIsDarkMode(d => !d);
 
-    const toggleWishlist = (product) => {
+    // ── Wishlist — synced to DB for logged-in customers ─────────────────
+    const toggleWishlist = async (product) => {
         if (!user) { addToast("Please login to add to wishlist."); navigate('login'); return; }
-        const exists = wishlist.findIndex(item => item._id === product._id);
-        if (exists > -1) { setWishlist(prev => prev.filter(item => item._id !== product._id)); addToast(t('removedFromWishlist')); }
-        else { setWishlist(prev => [...prev, product]); addToast(t('addedToWishlist')); }
+
+        const exists = wishlist.findIndex(item => item._id === product._id) > -1;
+
+        // Optimistic local update
+        if (exists) {
+            setWishlist(prev => prev.filter(item => item._id !== product._id));
+            addToast(t('removedFromWishlist'));
+        } else {
+            setWishlist(prev => [...prev, product]);
+            addToast(t('addedToWishlist'));
+        }
+
+        // Sync to DB (customers only)
+        if (user.role === 'customer' && user._id && user.token) {
+            try {
+                await apiCall(`/users/${user._id}/wishlist/toggle`, 'PUT', { productId: product._id });
+            } catch (e) {
+                console.warn('[Wishlist] DB sync failed:', e.message);
+            }
+        }
     };
 
-    const removeFromWishlist = (product) => { setWishlist(prev => prev.filter(item => item._id !== product._id)); addToast(t('removedFromWishlist')); };
+    const removeFromWishlist = async (product) => {
+        setWishlist(prev => prev.filter(item => item._id !== product._id));
+        addToast(t('removedFromWishlist'));
+        if (user?.role === 'customer' && user._id && user.token) {
+            try {
+                await apiCall(`/users/${user._id}/wishlist/toggle`, 'PUT', { productId: product._id });
+            } catch (e) { /* silent */ }
+        }
+    };
+    // ────────────────────────────────────────────────────────────────────
 
     const addToCart = (product) => {
         if (user && user.role === 'admin') return;
@@ -130,7 +243,17 @@ export const AppProvider = ({ children }) => {
     const updateCartQuantity = (id, quantity) => { if (quantity < 1) return; setCart(prev => prev.map(item => item._id === id ? { ...item, quantity } : item)); };
     const removeFromCart = (id) => setCart(prev => prev.filter(item => item._id !== id));
 
-    const handleLogout = async () => { logoutFirebase(); if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; } setUser(null); setCart([]); setWishlist([]); setHistory(['home']); setView('home'); localStorage.removeItem('farmlink_user'); localStorage.removeItem('farmlink_cart'); localStorage.removeItem('farmlink_wishlist'); };
+    const handleLogout = async () => {
+        logoutFirebase();
+        if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null; }
+        if (notificationPollRef.current) clearInterval(notificationPollRef.current);
+        setUser(null); setCart([]); setWishlist([]);
+        setNotifications([]); setUnreadCount(0);
+        setHistory(['home']); setView('home');
+        localStorage.removeItem('farmlink_user');
+        localStorage.removeItem('farmlink_cart');
+        localStorage.removeItem('farmlink_wishlist');
+    };
 
     const contextValue = {
         user, setUser, cart, setCart, wishlist, setWishlist,
@@ -141,7 +264,12 @@ export const AppProvider = ({ children }) => {
         handleLogout,
         toggleWishlist, removeFromWishlist, addToCart, removeFromCart, updateCartQuantity,
         activeChat, setActiveChat, openChat, socket: socketRef,
+        // Notifications
+        notifications, unreadCount, fetchNotifications,
+        markNotificationRead, markAllNotificationsRead, clearAllNotifications,
     };
 
     return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 };
+
+

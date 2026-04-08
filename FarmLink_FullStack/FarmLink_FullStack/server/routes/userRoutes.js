@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/authMiddleware");
+const Customer = require("../models/Customer");
 
 const {
   registerUser,
@@ -25,4 +26,45 @@ router.post("/firebase-auth", firebaseAuth);
 // UPDATE user (own profile) – must be logged in
 router.put("/:id", verifyToken, updateUser);
 
+/* ── WISHLIST (customers only) ── */
+
+// GET user's wishlist product IDs
+router.get("/:id/wishlist", verifyToken, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id).select("wishlist");
+    if (!customer) return res.status(404).json({ message: "User not found" });
+    res.json({ wishlist: customer.wishlist });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT toggle a product in/out of the DB wishlist
+router.put("/:id/wishlist/toggle", verifyToken, async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) return res.status(400).json({ message: "productId required" });
+
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ message: "User not found" });
+
+    const idx = customer.wishlist.findIndex(
+      (id) => id.toString() === productId
+    );
+    let action;
+    if (idx > -1) {
+      customer.wishlist.splice(idx, 1);
+      action = "removed";
+    } else {
+      customer.wishlist.push(productId);
+      action = "added";
+    }
+    await customer.save();
+    res.json({ wishlist: customer.wishlist, action });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
+

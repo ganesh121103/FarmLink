@@ -1,11 +1,18 @@
 import React from 'react';
 import { Leaf, ShoppingBasket, User, LogOut, Sun, Moon, Globe, Menu, X, ChevronDown, ShoppingCart } from 'lucide-react';
 import Badge from '../ui/Badge';
+import NotificationBell from '../ui/NotificationBell';
 import { useAppContext } from '../../context/AppContext';
 
 const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
     const { user, cart, t, isDarkMode, toggleDarkMode, language, setLanguage, navigate, handleLogout, view } = useAppContext();
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    // When a notification links to a product, navigate there
+    const handleNotificationProductClick = (productId) => {
+        if (setSelectedFarmer) setSelectedFarmer(null);
+        navigate('products');
+    };
 
     const navLinks = [
         { key: 'home', label: t('home') },
@@ -83,6 +90,11 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         >
                             {isDarkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
                         </button>
+
+                        {/* Notification Bell — logged-in users only */}
+                        {user && (
+                            <NotificationBell onProductClick={handleNotificationProductClick} />
+                        )}
 
                         {/* Cart Button */}
                         {(!user || user?.role !== 'admin') && (
