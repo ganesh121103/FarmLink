@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Heart, ShoppingBasket, TrendingUp, Star, ArrowLeft, IndianRupee, CheckCircle2, Trash2, MessageSquare, Loader2 } from 'lucide-react';
+import { Package, Heart, ShoppingBasket, TrendingUp, Star, ArrowLeft, IndianRupee, CheckCircle2, Trash2, MessageSquare, Loader2, QrCode } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button, AddToCartButton } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { OrderTrackingTimeline } from '../../components/ui/Timeline';
 import ReviewModal from '../../components/modals/ReviewModal';
 import ReceiptModal from '../../components/modals/ReceiptModal';
 import OrderDetailModal from '../../components/modals/OrderDetailModal';
+import TransparencyModal from '../../components/modals/TransparencyModal';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
@@ -17,6 +18,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
     const [receiptOrder, setReceiptOrder] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [activeDrilldown, setActiveDrilldown] = useState(null); // 'orders' | 'spent' | 'wishlist' | 'delivered' | 'messages'
+    const [transparencyProduct, setTransparencyProduct] = useState(null);
     
     // --- Messaging State ---
     const [conversations, setConversations] = useState([]);
@@ -170,6 +172,13 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                                 <button aria-label="Remove from Wishlist" onClick={() => removeFromWishlist(product)} className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform text-red-500">
                                     <Trash2 size={16} />
                                 </button>
+                                <button
+                                    onClick={e => { e.stopPropagation(); setTransparencyProduct(product); }}
+                                    className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400"
+                                    title="Scan for Manufacturing Details"
+                                >
+                                    <QrCode size={14} />
+                                </button>
                             </div>
                             <div className="p-4 flex-1 flex flex-col">
                                 <h3 className="font-bold text-base mb-1">{product.name}</h3>
@@ -311,6 +320,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                 {activeDrilldown === 'messages' && <MessagesDrilldown />}
                 <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} orderId={selectedOrderId} />
                 <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
+                <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
             </div>
         );
     }
@@ -416,6 +426,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                 onReview={(id) => { setSelectedOrderId(id); setReviewModalOpen(true); }}
                 onReceipt={(o) => setReceiptOrder(o)}
             />
+            <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
         </div>
     );
 };

@@ -3,11 +3,12 @@ import {
     MapPin, Star, BadgeCheck, MessageSquare, Phone, Mail,
     ShoppingBag, Package, Award, Calendar, Filter, Search,
     ChevronRight, Sprout, TrendingUp, Heart, Share2, ArrowLeft,
-    CheckCircle2, Users, Leaf, Clock, ExternalLink, X
+    CheckCircle2, Users, Leaf, Clock, ExternalLink, X, QrCode
 } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { AddToCartButton, Button } from '../components/ui/Button';
+import TransparencyModal from '../components/modals/TransparencyModal';
 import { useAppContext } from '../context/AppContext';
 
 /* ── Star Rating Display ─────────────────────────────────────── */
@@ -72,6 +73,14 @@ const ProductCard = ({ product, onProductClick }) => {
                         className={isWishlisted ? 'text-red-500 fill-red-500' : 'text-gray-400'}
                     />
                 </button>
+                {/* Transparency QR button */}
+                <button
+                    onClick={e => { e.stopPropagation(); onProductClick?.({...product, showTransparency: true}); }}
+                    className="absolute bottom-2 left-2 w-8 h-8 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400"
+                    title="Scan for Manufacturing Details"
+                >
+                    <QrCode size={14} />
+                </button>
             </div>
 
             {/* Info */}
@@ -134,6 +143,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('default');
     const [shareTooltip, setShareTooltip] = useState(false);
+    const [transparencyProduct, setTransparencyProduct] = useState(null);
 
     if (!farmer) {
         return (
@@ -477,7 +487,17 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                             {filtered.map(p => (
-                                <ProductCard key={p._id} product={p} />
+                                <ProductCard 
+                                    key={p._id} 
+                                    product={p} 
+                                    onProductClick={(clickedProd) => {
+                                        if (clickedProd.showTransparency) {
+                                            setTransparencyProduct(clickedProd);
+                                        } else {
+                                            // Normal flow: can redirect or show details (if there's a view modal here)
+                                        }
+                                    }} 
+                                />
                             ))}
                         </div>
                     )}
@@ -577,6 +597,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                 </div>
 
             </div>
+            <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
         </div>
     );
 };

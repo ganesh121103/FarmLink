@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { SparklesIcon } from '../components/ui/BackButton';
 import { ProductSkeleton } from '../components/ui/Skeletons';
+import TransparencyModal from '../components/modals/TransparencyModal';
 import { mockReviews, CATEGORIES, LOCATIONS } from '../constants';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAppContext } from '../context/AppContext';
@@ -139,6 +140,7 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
     const [showMap, setShowMap] = useState(false);
     const [aiRecs, setAiRecs] = useState([]);
     const [aiRecsLoading, setAiRecsLoading] = useState(false);
+    const [transparencyProduct, setTransparencyProduct] = useState(null);
 
     const handleWhatsAppChat = (farmerName, phone) => {
         if (!phone) {
@@ -715,6 +717,14 @@ ${productList}`;
                                             <Heart size={18} className={isWishlisted ? "fill-red-500 text-red-500" : "text-stone-400"} />
                                         </button>
                                     )}
+                                    <button 
+                                        aria-label="View Transparency Details" 
+                                        onClick={(e) => { e.stopPropagation(); setTransparencyProduct(product); }} 
+                                        className="absolute bottom-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400 z-10"
+                                        title="Scan for Manufacturing Details"
+                                    >
+                                        <QrCode size={18} />
+                                    </button>
                                 </div>
                                 <div className="p-5 flex-1 flex flex-col">
                                     <h3 className="font-bold text-lg leading-tight group-hover:text-green-700 transition-colors mb-0.5">{product.name}</h3>
@@ -740,6 +750,7 @@ ${productList}`;
                     })}
                 </div>
             )}
+            <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
         </div>
     );
 };

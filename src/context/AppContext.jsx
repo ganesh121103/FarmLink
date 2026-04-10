@@ -14,8 +14,23 @@ export const AppProvider = ({ children }) => {
     
     useEffect(() => { localStorage.setItem('farmlink_language', language); }, [language]);
 
-    const [view, setView] = useState('home');
-    const [history, setHistory] = useState(['home']);
+    const [view, setView] = useState(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('view') || 'home';
+        } catch {
+            return 'home';
+        }
+    });
+    const [history, setHistory] = useState(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const initialView = params.get('view') || 'home';
+            return [initialView];
+        } catch {
+            return ['home'];
+        }
+    });
     const [activeChat, setActiveChat] = useState(null);
 
     const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('farmlink_user')) || null; } catch { return null; } });

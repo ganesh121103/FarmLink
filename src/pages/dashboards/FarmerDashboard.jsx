@@ -17,7 +17,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [activeTab, setActiveTab] = useState('inventory');
     const [conversations, setConversations] = useState([]);
     const [loadingConversations, setLoadingConversations] = useState(false);
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' });
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -116,7 +116,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         } finally {
             setIsLoading(false);
             setEditingId(null);
-            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 });
+            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' });
         }
     };
 
@@ -176,7 +176,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         }
     };
 
-    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '', freshnessDays: p.freshnessDays || 4 }); setEditingId(p._id); setIsAddProductOpen(true); };
+    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '', freshnessDays: p.freshnessDays || 4, transparencyInfo: p.transparencyInfo || '', farmingType: p.farmingType || '' }); setEditingId(p._id); setIsAddProductOpen(true); };
     const openDelete = (id) => { setProductToDelete(id); setDeleteModalOpen(true); };
     const tabClass = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
@@ -213,7 +213,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
-                    <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
+                    <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
                 </div>
             </div>
 
@@ -548,7 +548,26 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                     </div>
                                 )}
                             </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-bold text-black dark:text-slate-300">Farming Type</label>
+                                <div className="flex gap-3">
+                                    {['Organic', 'Inorganic', 'Seasonal'].map(type => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setNewProduct({ ...newProduct, farmingType: type })}
+                                            className={`flex-1 py-2 rounded-lg font-bold text-sm border-2 transition-colors ${newProduct.farmingType === type ? 'border-green-600 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'border-stone-200 text-stone-500 hover:border-green-300 dark:border-slate-600 dark:text-slate-300 dark:hover:border-green-500'}`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-black dark:text-slate-300">{t('description')}</label><textarea className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white" rows="3" placeholder={t('productDescPlaceholder')} value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} /></div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-bold text-black dark:text-slate-300 flex items-center gap-2"><Sprout size={14} className="text-green-500" /> Transparency / Farming Details</label>
+                                <textarea className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-stone-50 dark:bg-slate-900 border-l-4 border-l-green-500 text-black dark:text-white" rows="2" placeholder="e.g. Grown using organic compost. No chemical pesticides used. Certified by..." value={newProduct.transparencyInfo} onChange={(e) => setNewProduct({ ...newProduct, transparencyInfo: e.target.value })} />
+                            </div>
                             <Button type="submit" className="w-full py-3.5 mt-2" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" size={20} /> : editingId ? t('updateProduct') : t('addProduct')}</Button>
                         </form>
                     </div>

@@ -12,6 +12,12 @@ const productSchema = new mongoose.Schema({
   freshnessDays: { type: Number, default: 4, min: 1, max: 30 }, // How many days product stays listed
   expiresAt: { type: Date, default: null }, // Auto-set on create
   
+  
+  // Transparency
+  farmingType: { type: String, enum: ['Organic', 'Inorganic', 'Seasonal', ''], default: '' },
+  transparencyInfo: { type: String, default: '' }, // For Organic Manufacturing / Pesticides list
+
+  
   // Farmer Info
   farmer: { type: mongoose.Schema.Types.ObjectId, ref: 'Farmer', required: true },
   farmerName: { type: String, required: true },

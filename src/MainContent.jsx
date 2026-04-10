@@ -17,6 +17,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import FarmerDashboard from './pages/dashboards/FarmerDashboard';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import CustomerDashboard from './pages/dashboards/CustomerDashboard';
+import TransparencyReportView from './pages/TransparencyReportView';
 import { apiCall } from './api/apiCall';
 import { useAppContext } from './context/AppContext';
 import { mockFarmers, mockInitialProducts as mockProducts } from './constants';
@@ -103,6 +104,14 @@ const MainContent = () => {
 
     const BackBtn = () => <BackButton onClick={goBack} />;
 
+    if (view === 'transparency-report') {
+        return (
+            <main className="flex-grow min-h-screen bg-stone-50 dark:bg-slate-950">
+                <TransparencyReportView products={products} />
+            </main>
+        );
+    }
+
     return (
         <>
             <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} setSelectedFarmer={setSelectedFarmer} />
@@ -165,7 +174,6 @@ const MainContent = () => {
                 )}
                 {view === 'privacy' && <PrivacyView BackBtn={BackBtn} />}
                 {view === 'terms' && <TermsView BackBtn={BackBtn} />}
-                {view === 'notifications' && <NotificationsPage BackBtn={BackBtn} />}
             </main>
 
             <Footer />
