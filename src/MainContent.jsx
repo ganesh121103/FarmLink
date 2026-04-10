@@ -7,6 +7,7 @@ import PaymentGatewayModal from './components/modals/PaymentGatewayModal';
 import HomeView from './pages/HomeView';
 import AboutView from './pages/AboutView';
 import FarmersListView from './pages/FarmersListView';
+import FarmerStorefrontView from './pages/FarmerStorefrontView';
 import ProductsView from './pages/ProductsView';
 import CustomerActivityView from './pages/CustomerActivityView';
 import ProfileView from './pages/ProfileView';
@@ -29,6 +30,12 @@ const MainContent = () => {
     const [isLoadingFarmers, setIsLoadingFarmers] = useState(true);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [selectedFarmer, setSelectedFarmer] = useState(null);
+
+    // Expose globally so ProductsView "Visit Store" button can redirect
+    React.useEffect(() => {
+        window.__setSelectedFarmer = setSelectedFarmer;
+        return () => { delete window.__setSelectedFarmer; };
+    }, [setSelectedFarmer]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
@@ -133,6 +140,13 @@ const MainContent = () => {
                         products={products}
                         setProducts={setProducts}
                         isLoading={isLoadingProducts}
+                    />
+                )}
+                {view === 'farmer-storefront' && (
+                    <FarmerStorefrontView
+                        farmer={selectedFarmer}
+                        products={products}
+                        BackBtn={BackBtn}
                     />
                 )}
                 {(view === 'login' || view === 'register') && <AuthView initialMode={view} />}

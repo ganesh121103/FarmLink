@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -17,7 +17,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [activeTab, setActiveTab] = useState('inventory');
     const [conversations, setConversations] = useState([]);
     const [loadingConversations, setLoadingConversations] = useState(false);
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '' });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 });
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -116,7 +116,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         } finally {
             setIsLoading(false);
             setEditingId(null);
-            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '' });
+            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 });
         }
     };
 
@@ -176,7 +176,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         }
     };
 
-    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '' }); setEditingId(p._id); setIsAddProductOpen(true); };
+    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '', freshnessDays: p.freshnessDays || 4 }); setEditingId(p._id); setIsAddProductOpen(true); };
     const openDelete = (id) => { setProductToDelete(id); setDeleteModalOpen(true); };
     const tabClass = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
@@ -213,7 +213,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
-                    <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
+                    <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4 }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
                 </div>
             </div>
 
@@ -268,25 +268,65 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {myProducts.map(p => (
-                                <Card key={p._id} className="overflow-hidden flex flex-col">
+                            {myProducts.map(p => {
+                                const now = new Date();
+                                const expiresAt = p.expiresAt ? new Date(p.expiresAt) : null;
+                                const msLeft = expiresAt ? expiresAt - now : null;
+                                const daysLeft = msLeft !== null ? Math.ceil(msLeft / (1000 * 60 * 60 * 24)) : null;
+                                const addedDaysAgo = p.createdAt ? Math.floor((now - new Date(p.createdAt)) / (1000 * 60 * 60 * 24)) : null;
+                                const isExpiringSoon = daysLeft !== null && daysLeft <= 1;
+                                const isExpired = daysLeft !== null && daysLeft <= 0;
+                                return (
+                                <Card key={p._id} className={`overflow-hidden flex flex-col ${isExpiringSoon ? 'ring-2 ring-orange-400 dark:ring-orange-500' : ''} ${isExpired ? 'ring-2 ring-red-500 opacity-75' : ''}`}>
                                     <div className="h-40 overflow-hidden relative">
                                         {(p.images?.[0] || p.image)?.includes('.mp4') ? <video src={p.images?.[0] || p.image} className="w-full h-full object-cover" muted /> : <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover" />}
                                         <div className="absolute bottom-2 right-2"><Badge color={p.stock < 20 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>{p.stock}kg left</Badge></div>
+                                        {/* Expiry overlay badge */}
+                                        {expiresAt && (
+                                            <div className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                isExpired ? 'bg-red-600 text-white' :
+                                                isExpiringSoon ? 'bg-orange-500 text-white' :
+                                                'bg-black/60 text-white'
+                                            }`}>
+                                                {isExpired ? <AlertTriangle size={10} /> : <Clock size={10} />}
+                                                {isExpired ? 'Expired' : daysLeft === 1 ? 'Expires today!' : `${daysLeft}d left`}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-4 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="font-bold text-base">{p.name}</h3>
                                             <Badge>{p.category}</Badge>
                                         </div>
-                                        <p className="text-2xl font-black text-green-700 dark:text-green-500 mb-3">₹{p.price}/kg</p>
+                                        <p className="text-2xl font-black text-green-700 dark:text-green-500 mb-2">₹{p.price}/kg</p>
+                                        {/* Freshness info row */}
+                                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                                            {addedDaysAgo !== null && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-stone-400 dark:text-slate-500">
+                                                    <Calendar size={10} /> Added {addedDaysAgo === 0 ? 'today' : `${addedDaysAgo}d ago`}
+                                                </span>
+                                            )}
+                                            {expiresAt && (
+                                                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    isExpired ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                    isExpiringSoon ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                }`}>
+                                                    <Clock size={10} />
+                                                    {isExpired
+                                                        ? 'Auto-deleted soon'
+                                                        : `Deletes on ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                                                    }
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex gap-2 mt-auto">
                                             <button onClick={() => openEdit(p)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-stone-200 dark:border-slate-600 rounded-lg font-bold text-sm text-stone-600 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors"><Edit size={16} /> {t('edit')}</button>
                                             <button onClick={() => openDelete(p._id)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-red-200 dark:border-red-900/50 rounded-lg font-bold text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 size={16} /> {t('delete')}</button>
                                         </div>
                                     </div>
-                                </Card>
-                            ))}
+                                </Card>);
+                            })}
                         </div>
                     )}
                 </div>
@@ -479,6 +519,14 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 </Button>
                             </div>
                             <Input label={t('stockKg')} type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} required />
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-bold text-black dark:text-slate-300 flex items-center gap-2"><Clock size={14} className="text-orange-500" /> Product Fresh For (Days)</label>
+                                <div className="flex items-center gap-3">
+                                    <input type="range" min={1} max={30} value={newProduct.freshnessDays || 4} onChange={(e) => setNewProduct({ ...newProduct, freshnessDays: Number(e.target.value) })} className="flex-1 accent-green-600" />
+                                    <span className="min-w-[60px] text-center px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/40 rounded-lg font-black text-green-700 dark:text-green-400 text-sm">{newProduct.freshnessDays || 4} days</span>
+                                </div>
+                                <p className="text-xs text-stone-400">Product will be automatically removed after <strong>{newProduct.freshnessDays || 4} days</strong> if not manually deleted.</p>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-black dark:text-slate-300">{t('category')}</label><select value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} className="w-full px-4 py-3 border border-stone-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white">{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
                                 <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-black dark:text-slate-300">{t('locationTag')}</label><select value={newProduct.location} onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })} className="w-full px-4 py-3 border border-stone-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white">{LOCATIONS.map(l => <option key={l}>{l}</option>)}</select></div>

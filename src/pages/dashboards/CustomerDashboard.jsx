@@ -6,6 +6,7 @@ import { Button, AddToCartButton } from '../../components/ui/Button';
 import { OrderTrackingTimeline } from '../../components/ui/Timeline';
 import ReviewModal from '../../components/modals/ReviewModal';
 import ReceiptModal from '../../components/modals/ReceiptModal';
+import OrderDetailModal from '../../components/modals/OrderDetailModal';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
@@ -14,6 +15,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [receiptOrder, setReceiptOrder] = useState(null);
+    const [selectedOrder, setSelectedOrder] = useState(null);
     const [activeDrilldown, setActiveDrilldown] = useState(null); // 'orders' | 'spent' | 'wishlist' | 'delivered' | 'messages'
     
     // --- Messaging State ---
@@ -74,7 +76,11 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
             ) : (
                 <div className="space-y-4">
                     {orders.map((order, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 shadow-sm">
+                        <div
+                            key={i}
+                            className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 shadow-sm cursor-pointer hover:shadow-md hover:border-green-200 dark:hover:border-green-900/40 transition-all"
+                            onClick={() => setSelectedOrder(order)}
+                        >
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <p className="text-sm text-stone-500 font-bold mb-1">Order #{order._id}</p>
@@ -85,22 +91,18 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                                     <Badge color={order.status === 'Delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'}>{order.status}</Badge>
                                 </div>
                             </div>
-                            <div className="space-y-2 mb-4">
-                                {order.items?.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-3">
-                                        <img src={item.images?.[0] || item.image} alt={item.name} className="w-10 h-10 rounded-md object-cover" />
-                                        <p className="font-medium text-sm flex-1 text-black dark:text-white">{item.name} <span className="text-stone-400 text-xs">x{item.quantity || 1}</span></p>
-                                        <p className="font-bold text-sm text-black dark:text-white">₹{parseInt(item.price) * (item.quantity || 1)}</p>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                {order.items?.slice(0, 4).map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 bg-stone-50 dark:bg-slate-700/50 rounded-xl px-3 py-2 text-xs font-bold text-stone-600 dark:text-slate-300 whitespace-nowrap flex-shrink-0">
+                                        <img src={item.images?.[0] || item.image} alt={item.name} className="w-5 h-5 rounded-md object-cover" />
+                                        {item.name} ×{item.quantity || 1}
                                     </div>
                                 ))}
+                                {(order.items?.length || 0) > 4 && (
+                                    <span className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center px-2">+{order.items.length - 4} more</span>
+                                )}
                             </div>
-                            <OrderTrackingTimeline status={order.status} />
-                            {order.status === 'Delivered' && (
-                                <div className="flex gap-3 mt-6">
-                                    <Button variant="outline" className="text-sm py-2" onClick={() => { setSelectedOrderId(order._id); setReviewModalOpen(true); }}><Star size={16} /> Review</Button>
-                                    <Button variant="secondary" className="text-sm py-2 bg-stone-100 text-stone-800 shadow-none dark:bg-slate-700 dark:text-white" onClick={() => setReceiptOrder(order)}>Receipt</Button>
-                                </div>
-                            )}
+                            <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3 flex items-center gap-1">Tap to view full details →</p>
                         </div>
                     ))}
                 </div>
@@ -372,7 +374,11 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                         <Button onClick={() => navigate('products')} variant="outline">{t('startShopping')}</Button>
                     </div>
                 ) : orders.slice(0, 3).map((order, i) => (
-                    <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 shadow-sm">
+                    <div
+                        key={i}
+                        className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 shadow-sm cursor-pointer hover:shadow-md hover:border-green-200 dark:hover:border-green-900/40 transition-all"
+                        onClick={() => setSelectedOrder(order)}
+                    >
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <p className="text-sm text-stone-500 font-bold mb-1">Order #{order._id}</p>
@@ -383,13 +389,15 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                                 <Badge color={order.status === 'Delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'}>{order.status}</Badge>
                             </div>
                         </div>
-                        <OrderTrackingTimeline status={order.status} />
-                        {order.status === 'Delivered' && (
-                            <div className="flex gap-3 mt-8">
-                                <Button variant="outline" className="text-sm py-2" onClick={() => { setSelectedOrderId(order._id); setReviewModalOpen(true); }}><Star size={16} /> Review</Button>
-                                <Button variant="secondary" className="text-sm py-2 bg-stone-100 text-stone-800 shadow-none dark:bg-slate-700 dark:text-white" onClick={() => setReceiptOrder(order)}>Receipt</Button>
-                            </div>
-                        )}
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {order.items?.slice(0, 3).map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-2 bg-stone-50 dark:bg-slate-700/50 rounded-xl px-3 py-2 text-xs font-bold text-stone-600 dark:text-slate-300 whitespace-nowrap flex-shrink-0">
+                                    <img src={item.images?.[0] || item.image} alt={item.name} className="w-5 h-5 rounded-md object-cover" />
+                                    {item.name} ×{item.quantity || 1}
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3">Tap to view details →</p>
                     </div>
                 ))}
                 {orders.length > 3 && (
@@ -401,6 +409,13 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
 
             <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} orderId={selectedOrderId} />
             <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
+            <OrderDetailModal
+                isOpen={!!selectedOrder}
+                onClose={() => setSelectedOrder(null)}
+                order={selectedOrder}
+                onReview={(id) => { setSelectedOrderId(id); setReviewModalOpen(true); }}
+                onReceipt={(o) => setReceiptOrder(o)}
+            />
         </div>
     );
 };

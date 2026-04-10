@@ -7,6 +7,10 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   stock: { type: Number, default: 0 },
   tags: [String],
+
+  // Freshness & Auto-Expiry
+  freshnessDays: { type: Number, default: 4, min: 1, max: 30 }, // How many days product stays listed
+  expiresAt: { type: Date, default: null }, // Auto-set on create
   
   // Farmer Info
   farmer: { type: mongoose.Schema.Types.ObjectId, ref: 'Farmer', required: true },

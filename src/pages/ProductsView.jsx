@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -371,13 +371,24 @@ ${productList}`;
                     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 mb-16 shadow-sm">
                         <h3 className="font-black text-xl mb-4 text-black dark:text-white">About the Farmer</h3>
                         <div className="flex items-start gap-4">
-                            <div className="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-xl font-black text-green-700 flex-shrink-0">{farmerInfo.name.charAt(0)}</div>
-                            <div>
+                            <div className="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-xl font-black text-green-700 flex-shrink-0 overflow-hidden">
+                                {farmerInfo.image
+                                    ? <img src={farmerInfo.image} alt={farmerInfo.name} className="w-full h-full object-cover" />
+                                    : farmerInfo.name.charAt(0)
+                                }
+                            </div>
+                            <div className="flex-1">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
                                     <h4 className="font-black text-lg flex items-center gap-1.5">{farmerInfo.name} {farmerInfo.verified && <BadgeCheck size={18} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h4>
                                 </div>
                                 <p className="text-stone-500 dark:text-slate-400 text-sm mb-2 flex items-center gap-1"><MapPin size={12} /> {farmerInfo.location}</p>
-                                <p className="text-stone-600 dark:text-slate-300 text-sm">{farmerInfo.bio}</p>
+                                <p className="text-stone-600 dark:text-slate-300 text-sm mb-4">{farmerInfo.bio}</p>
+                                <button
+                                    onClick={() => { const s = farmerInfo; if (window.__setSelectedFarmer) window.__setSelectedFarmer(s); navigate('farmer-storefront'); }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-bold transition-colors shadow-md"
+                                >
+                                    <Store size={15} /> Visit {farmerInfo.name}'s Store →
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, MessageSquare, Phone, Mail, BadgeCheck } from 'lucide-react';
+import { Search, MapPin, Star, MessageSquare, Phone, Mail, BadgeCheck, Store } from 'lucide-react';
 import { FarmerSkeleton } from '../components/ui/Skeletons';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
@@ -23,7 +23,7 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
 
     const handleViewProducts = (farmer) => {
         setSelectedFarmer(farmer);
-        navigate('farmer-details');
+        navigate('farmer-storefront');
     };
 
     const getFarmerRating = (farmer) => {
@@ -95,10 +95,10 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
 
                             <div className="flex gap-2 mt-auto">
                                 <Button
-                                    className="flex-1 py-2.5 text-sm"
+                                    className="flex-1 py-2.5 text-sm flex items-center justify-center gap-2"
                                     onClick={() => handleViewProducts(farmer)}
                                 >
-                                    {t('viewProducts')}
+                                    <Store size={15} /> Visit Store
                                 </Button>
                                 <Button
                                     variant="outline"

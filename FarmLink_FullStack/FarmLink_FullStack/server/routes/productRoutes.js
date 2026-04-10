@@ -14,6 +14,15 @@ const getModels = () => {
   return { User, Farmer, Order, Notification, sendEmail, buildHtmlEmail, sendPushNotification };
 };
 
+/* ── Helper: compute expiresAt from freshnessDays ─────────────── */
+const computeExpiresAt = (freshnessDays) => {
+  const days = Number(freshnessDays) || 4; // default 4 days
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(23, 59, 59, 999); // end of that day
+  return d;
+};
+
 /* ════════════════════════════════════════════════════════════════
    GET products – public
    ════════════════════════════════════════════════════════════════ */
@@ -28,13 +37,18 @@ router.get("/", async (req, res) => {
 
 /* ════════════════════════════════════════════════════════════════
    ADD product – farmer or admin only
+   Sets expiresAt automatically from freshnessDays (default 4)
    Email triggers:
      🌱 NewArrival  → customers who bought in same category
      🧑‍🌾 NewArrival  → farmers cross-referenced by email
    ════════════════════════════════════════════════════════════════ */
 router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    // Auto-compute expiresAt if not provided
+    const freshnessDays = Number(req.body.freshnessDays) || 4;
+    const expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : computeExpiresAt(freshnessDays);
+
+    const product = await Product.create({ ...req.body, freshnessDays, expiresAt });
     res.json(product);
 
     setImmediate(async () => {
@@ -64,8 +78,9 @@ router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => 
         if (customerNotifs.length > 0) await Notification.insertMany(customerNotifs);
 
         // ── Branded email + push to each customer ────────────────
+        const freshUntil = expiresAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
         for (const c of customers) {
-          const subject  = `🌱 New in ${product.category} — FarmLink`;
+          const subject   = `🌱 New in ${product.category} — FarmLink`;
           const emailHtml = buildHtmlEmail(subject, `
             <h2>🌿 Fresh Arrival Just for You!</h2>
             <p>Hi <strong>${c.name || "there"}</strong>,</p>
@@ -74,7 +89,8 @@ router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => 
               <strong>Product:</strong> ${product.name}<br/>
               <strong>Seller:</strong> ${product.farmerName || "FarmLink Farmer"}<br/>
               <strong>Category:</strong> ${product.category}<br/>
-              <strong>Price:</strong> ₹${product.price}
+              <strong>Price:</strong> ₹${product.price}<br/>
+              <strong>Fresh Until:</strong> ${freshUntil} (${freshnessDays} days)
             </div>
             <p>Don't miss out — fresh produce sells out fast. Head to FarmLink and grab yours today!</p>
             <p style="color:#888;font-size:13px;">This is an automated notification. Please do not reply to this email.</p>
@@ -115,7 +131,8 @@ router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => 
               <strong>Product:</strong> ${product.name}<br/>
               <strong>Seller:</strong> ${product.farmerName || "FarmLink Farmer"}<br/>
               <strong>Category:</strong> ${product.category}<br/>
-              <strong>Price:</strong> ₹${product.price}
+              <strong>Price:</strong> ₹${product.price}<br/>
+              <strong>Fresh Until:</strong> ${freshUntil}
             </div>
             <p>Check it out on FarmLink before it sells out!</p>
             <p style="color:#888;font-size:13px;">This is an automated notification. Please do not reply to this email.</p>
@@ -194,8 +211,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
             `);
             await sendEmail(c.email, subject, emailHtml);
             await sendPushNotification(
-              c.fcmToken,
-              title,
+              c.fcmToken, title,
               `"${product.name}" is back. Grab it before it's gone!`,
               { type: "Wishlist", link: product._id.toString() }
             );
@@ -231,8 +247,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
             `);
             await sendEmail(c.email, subject, emailHtml);
             await sendPushNotification(
-              c.fcmToken,
-              title,
+              c.fcmToken, title,
               `"${product.name}" you wishlisted went out of stock.`,
               { type: "OutOfStock", link: product._id.toString() }
             );
@@ -272,8 +287,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
             `);
             await sendEmail(c.email, subject, emailHtml);
             await sendPushNotification(
-              c.fcmToken,
-              title,
+              c.fcmToken, title,
               `"${product.name}" is now ₹${newPrice} (was ₹${oldPrice})!`,
               { type: "PriceDrop", link: product._id.toString() }
             );

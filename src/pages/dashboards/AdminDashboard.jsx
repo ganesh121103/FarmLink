@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock, BadgeCheck, Search } from 'lucide-react';
+import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock, BadgeCheck, Search, Calendar, AlertTriangle } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import AdminDocumentReviewModal from '../../components/modals/AdminDocumentReviewModal';
+import OrderDetailModal from '../../components/modals/OrderDetailModal';
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
@@ -17,6 +18,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
     const [reviewingUser, setReviewingUser] = useState(null);
     const [previewProduct, setPreviewProduct] = useState(null);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     // Fetch all users (customers + admins)
     useEffect(() => {
@@ -298,18 +300,45 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
             {activeTab === 'products' && (
                 <div className="animate-fade-in-up overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">Product</th><th className="py-3 pr-4">Farmer</th><th className="py-3 pr-4">Category</th><th className="py-3 pr-4">Price</th><th className="py-3 pr-4">Stock</th><th className="py-3">Action</th></tr></thead>
+                        <thead><tr className="border-b border-stone-200 dark:border-slate-700 text-xs uppercase text-stone-400 tracking-wider"><th className="py-3 pr-4">Product</th><th className="py-3 pr-4">Farmer</th><th className="py-3 pr-4">Category</th><th className="py-3 pr-4">Price</th><th className="py-3 pr-4">Stock</th><th className="py-3 pr-4">Added / Expires</th><th className="py-3">Action</th></tr></thead>
                         <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
-                            {products.map(product => (
-                                <tr key={product._id} className="group hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => setPreviewProduct(product)}>
+                            {products.map(product => {
+                                const now = new Date();
+                                const expiresAt = product.expiresAt ? new Date(product.expiresAt) : null;
+                                const msLeft = expiresAt ? expiresAt - now : null;
+                                const daysLeft = msLeft !== null ? Math.ceil(msLeft / (1000 * 60 * 60 * 24)) : null;
+                                const addedDaysAgo = product.createdAt ? Math.floor((now - new Date(product.createdAt)) / (1000 * 60 * 60 * 24)) : null;
+                                const isExpiringSoon = daysLeft !== null && daysLeft <= 1;
+                                const isExpired = daysLeft !== null && daysLeft <= 0;
+                                return (
+                                <tr key={product._id} className={`group transition-colors cursor-pointer ${ isExpired ? 'bg-red-50/50 dark:bg-red-900/10' : isExpiringSoon ? 'bg-orange-50/50 dark:bg-orange-900/10' : 'hover:bg-stone-50 dark:hover:bg-slate-800/50'}`} onClick={() => setPreviewProduct(product)}>
                                     <td className="py-4 pr-4 flex items-center gap-3"><img src={product.images?.[0] || product.image || 'https://via.placeholder.com/40'} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /><div className="font-bold text-black dark:text-white text-sm">{product.name}</div></td>
                                     <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{product.farmerName}</td>
                                     <td className="py-4 pr-4"><Badge>{product.category}</Badge></td>
                                     <td className="py-4 pr-4 font-bold text-sm">₹{product.price}/kg</td>
                                     <td className="py-4 pr-4"><span className={`text-sm font-bold ${product.stock < 20 ? 'text-red-500' : 'text-green-600'}`}>{product.stock}kg</span></td>
+                                    <td className="py-4 pr-4">
+                                        <div className="flex flex-col gap-1">
+                                            {addedDaysAgo !== null && (
+                                                <span className="flex items-center gap-1 text-[10px] text-stone-400 font-bold">
+                                                    <Calendar size={10} /> {addedDaysAgo === 0 ? 'Added today' : `Added ${addedDaysAgo}d ago`}
+                                                </span>
+                                            )}
+                                            {expiresAt ? (
+                                                <span className={`flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded w-fit ${
+                                                    isExpired ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                    isExpiringSoon ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                }`}>
+                                                    {isExpired ? <AlertTriangle size={9} /> : <Clock size={9} />}
+                                                    {isExpired ? 'Expired' : daysLeft === 1 ? 'Expires today' : `${daysLeft}d left`}
+                                                </span>
+                                            ) : <span className="text-[10px] text-stone-300">No expiry set</span>}
+                                        </div>
+                                    </td>
                                     <td className="py-4" onClick={(e) => e.stopPropagation()}><button onClick={() => handleDeleteProduct(product._id)} className="text-xs py-1.5 px-3 font-bold border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">{t('removeProduct')}</button></td>
-                                </tr>
-                            ))}
+                                </tr>);
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -336,7 +365,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                                         <td colSpan="6" className="text-stone-500 text-center py-12">No orders on the platform yet.</td>
                                     </tr>
                                 ) : orders?.map((o, i) => (
-                                    <tr key={i} className="hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <tr key={i} className="hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(o)}>
                                         <td className="p-5">
                                             <span className="font-bold text-stone-800 dark:text-stone-200">#{o._id?.startsWith('ord_') ? o._id : 'ord_' + o._id?.slice(-5)}</span>
                                         </td>
@@ -367,7 +396,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                                                 {o.status?.toUpperCase() || 'PLACED'}
                                             </Badge>
                                         </td>
-                                        <td className="p-5">
+                                        <td className="p-5" onClick={e => e.stopPropagation()}>
                                             <select
                                                 className="border border-stone-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm font-bold bg-white dark:bg-slate-700 text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer"
                                                 value={o.status || 'Placed'}
@@ -399,6 +428,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
             )}
 
             <AdminDocumentReviewModal isOpen={!!reviewingUser} onClose={() => setReviewingUser(null)} selectedUser={reviewingUser} onVerify={handleVerifyUser} />
+            <OrderDetailModal isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} order={selectedOrder} />
 
             {/* Product Details Modal */}
             {previewProduct && (
