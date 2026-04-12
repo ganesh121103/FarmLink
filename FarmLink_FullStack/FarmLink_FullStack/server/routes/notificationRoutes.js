@@ -66,4 +66,15 @@ router.delete("/clear-all", verifyToken, async (req, res) => {
   }
 });
 
+/* DELETE single notification */
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    if (!notification) return res.status(404).json({ message: "Not found" });
+    res.json({ message: "Notification deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

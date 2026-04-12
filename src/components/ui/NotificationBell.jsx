@@ -55,8 +55,8 @@ const NotificationBell = ({ onProductClick }) => {
         navigate('notifications');
     };
 
-    // Show only most recent 5 in dropdown
-    const previewNotifs = notifications.slice(0, 5);
+    // Show all fetched notifications in dropdown dropdown
+    const previewNotifs = notifications;
 
     return (
         <div className="relative" ref={panelRef}>
@@ -170,9 +170,18 @@ const NotificationBell = ({ onProductClick }) => {
                                             </div>
                                         </div>
 
-                                        {notif.link && (
-                                            <ArrowRight size={14} className="flex-shrink-0 text-gray-300 dark:text-gray-600 mt-1" />
-                                        )}
+                                        <div className="flex flex-col items-center justify-between h-full py-1">
+                                            {notif.link && (
+                                                <ArrowRight size={14} className="flex-shrink-0 text-gray-300 dark:text-gray-600 mb-2" />
+                                            )}
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); useAppContext().deleteNotification(notif._id); }} 
+                                                className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                title="Delete notification"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </button>
                                 );
                             })

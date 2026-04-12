@@ -91,6 +91,17 @@ export const AppProvider = ({ children }) => {
             setUnreadCount(0);
         } catch (e) { /* silent */ }
     };
+
+    const deleteNotification = async (id) => {
+        try {
+            await apiCall(`/notifications/${id}`, 'DELETE');
+            setNotifications(prev => {
+                const isUnread = prev.find(n => n._id === id && !n.isRead);
+                if (isUnread) setUnreadCount(c => Math.max(0, c - 1));
+                return prev.filter(n => n._id !== id);
+            });
+        } catch (e) { /* silent */ }
+    };
     // ────────────────────────────────────────────────────────────────────
 
     // ── FCM Push Notifications setup ────────────────────────────────────
@@ -281,7 +292,7 @@ export const AppProvider = ({ children }) => {
         activeChat, setActiveChat, openChat, socket: socketRef,
         // Notifications
         notifications, unreadCount, fetchNotifications,
-        markNotificationRead, markAllNotificationsRead, clearAllNotifications,
+        markNotificationRead, markAllNotificationsRead, clearAllNotifications, deleteNotification,
     };
 
     return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;

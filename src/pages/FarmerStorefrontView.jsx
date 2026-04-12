@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
     MapPin, Star, BadgeCheck, MessageSquare, Phone, Mail,
     ShoppingBag, Package, Award, Calendar, Filter, Search,
-    ChevronRight, Sprout, TrendingUp, Heart, Share2, ArrowLeft,
+    ChevronRight, ChevronLeft, Sprout, TrendingUp, Heart, Share2, ArrowLeft,
     CheckCircle2, Users, Leaf, Clock, ExternalLink, X, QrCode
 } from 'lucide-react';
 import Badge from '../components/ui/Badge';
@@ -137,13 +137,15 @@ const ProductCard = ({ product, onProductClick }) => {
    FarmerStorefrontView
    ════════════════════════════════════════════════════════════════ */
 const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
-    const { openChat, addToast, navigate, user } = useAppContext();
+    const { openChat, addToast, navigate, user, wishlist } = useAppContext();
 
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('default');
     const [shareTooltip, setShareTooltip] = useState(false);
     const [transparencyProduct, setTransparencyProduct] = useState(null);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
     if (!farmer) {
         return (
@@ -249,6 +251,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                     {BackBtn && (
                         <div className="mb-6">
                             <button
+                                type="button"
                                 onClick={() => navigate('farmers')}
                                 className="flex items-center gap-2 text-white/80 hover:text-white font-bold text-sm transition-colors"
                             >
@@ -316,6 +319,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                         {/* Action buttons */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <button
+                                type="button"
                                 onClick={() => openChat(farmer)}
                                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-green-700 font-black text-sm hover:bg-green-50 transition-colors shadow-lg"
                             >
@@ -323,6 +327,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                             </button>
                             {farmer.phone && (
                                 <button
+                                    type="button"
                                     onClick={handleWhatsApp}
                                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-500 text-white font-black text-sm hover:bg-green-400 transition-colors shadow-lg"
                                 >
@@ -331,6 +336,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                             )}
                             <div className="relative">
                                 <button
+                                    type="button"
                                     onClick={handleShare}
                                     className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
                                     title="Share store"
@@ -439,7 +445,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
                             />
                             {search && (
-                                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                     <X size={14} />
                                 </button>
                             )}
@@ -463,6 +469,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                         <div className="flex flex-wrap gap-2 mb-6">
                             {categories.map(cat => (
                                 <button
+                                    type="button"
                                     key={cat}
                                     onClick={() => setCategoryFilter(cat)}
                                     className={`px-4 py-1.5 rounded-full text-xs font-black transition-all ${
@@ -494,7 +501,8 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                                         if (clickedProd.showTransparency) {
                                             setTransparencyProduct(clickedProd);
                                         } else {
-                                            // Normal flow: can redirect or show details (if there's a view modal here)
+                                            setSelectedProduct(clickedProd);
+                                            setCurrentMediaIndex(0);
                                         }
                                     }} 
                                 />
@@ -557,6 +565,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <button
+                                type="button"
                                 onClick={() => openChat(farmer)}
                                 className="flex items-center gap-3 px-5 py-4 bg-white/15 border border-white/20 rounded-2xl hover:bg-white/25 transition-colors text-left"
                             >
@@ -569,6 +578,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
 
                             {farmer.phone && (
                                 <button
+                                    type="button"
                                     onClick={handleWhatsApp}
                                     className="flex items-center gap-3 px-5 py-4 bg-white/15 border border-white/20 rounded-2xl hover:bg-white/25 transition-colors text-left"
                                 >
@@ -582,6 +592,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
 
                             {farmer.email && (
                                 <button
+                                    type="button"
                                     onClick={() => { navigator.clipboard.writeText(farmer.email); addToast('Email copied!'); }}
                                     className="flex items-center gap-3 px-5 py-4 bg-white/15 border border-white/20 rounded-2xl hover:bg-white/25 transition-colors text-left"
                                 >
@@ -597,6 +608,121 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                 </div>
 
             </div>
+            {/* ── Local Product Details Modal ── */}
+            {selectedProduct && (() => {
+                const isWishlisted = wishlist?.some(w => w._id === selectedProduct._id);
+                const allMedia = selectedProduct.images || [selectedProduct.image || 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=300'];
+                const currentMedia = allMedia[currentMediaIndex] || allMedia[0];
+                const isVideo = currentMedia?.includes('.mp4') || currentMedia?.startsWith('data:video');
+
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedProduct(null)} />
+                        
+                        <div className="bg-white dark:bg-gray-900 w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative z-10 animate-slide-up border border-gray-200 dark:border-gray-800 flex flex-col custom-scrollbar">
+                            
+                            <button
+                                type="button"
+                                onClick={() => setSelectedProduct(null)}
+                                className="absolute top-4 right-4 p-2 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 transition z-20"
+                            >
+                                <X size={20} className="text-gray-700 dark:text-gray-300" />
+                            </button>
+
+                            <div className="flex flex-col md:flex-row gap-0">
+                                {/* Left: Image Gallery */}
+                                <div className="w-full md:w-1/2 bg-gray-100 dark:bg-gray-800/80 p-6 md:p-8 flex flex-col justify-center items-center relative min-h-[300px]">
+                                    <div className="w-full max-w-sm aspect-square rounded-2xl overflow-hidden shadow-lg relative bg-white dark:bg-black/20">
+                                        {isVideo ? (
+                                            <video src={currentMedia} controls className="w-full h-full object-contain" />
+                                        ) : (
+                                            <img src={currentMedia} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                                        )}
+                                        
+                                        {allMedia.length > 1 && (
+                                            <>
+                                                <button onClick={() => setCurrentMediaIndex((currentMediaIndex - 1 + allMedia.length) % allMedia.length)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-2 rounded-full shadow-md hover:bg-white transition-colors">
+                                                    <ChevronLeft size={20} />
+                                                </button>
+                                                <button onClick={() => setCurrentMediaIndex((currentMediaIndex + 1) % allMedia.length)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-2 rounded-full shadow-md hover:bg-white transition-colors">
+                                                    <ChevronRight size={20} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                    
+                                    {allMedia.length > 1 && (
+                                        <div className="flex gap-2 mt-6 overflow-x-auto w-full max-w-sm pb-2 scrollbar-hide">
+                                            {allMedia.map((m, i) => (
+                                                <button key={i} onClick={() => setCurrentMediaIndex(i)} className={`w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 transition-all border-2 ${i === currentMediaIndex ? 'border-green-500 scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                                                    {m?.includes('.mp4') || m?.startsWith('data:video') ? (
+                                                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 uppercase">Vid</div>
+                                                    ) : (
+                                                        <img src={m} alt="" className="w-full h-full object-cover" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Right: Details */}
+                                <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Badge>{selectedProduct.category}</Badge>
+                                        {(selectedProduct.organic || selectedProduct.isOrganic) && (
+                                            <span className="flex items-center gap-1 text-[10px] font-black text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full border border-green-200 dark:border-green-900/40 tracking-wider uppercase">
+                                                <Leaf size={10} /> Certified Organic
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2 leading-tight">{selectedProduct.name}</h2>
+                                    <p className="text-xs font-bold tracking-widest text-gray-400 dark:text-gray-500 uppercase mb-4">BY {farmer.name}</p>
+
+                                    {selectedProduct.rating > 0 && (
+                                        <div className="flex items-center gap-3 mb-6 bg-gray-50 dark:bg-gray-800/50 w-max px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                            <span className="text-lg font-black text-gray-900 dark:text-white">{selectedProduct.rating?.toFixed(1) || '0.0'}</span>
+                                            <StarRow rating={selectedProduct.rating} size={14} showNum={false} />
+                                            <span className="text-xs font-bold text-gray-500">({selectedProduct.reviewsCount || selectedProduct.reviews?.length || 0} reviews)</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-baseline gap-2 mb-6">
+                                        <span className="text-4xl font-black text-green-700 dark:text-green-500">₹{selectedProduct.price}</span>
+                                        <span className="text-lg font-bold text-gray-400">per kg</span>
+                                    </div>
+
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-8 flex-1">
+                                        {selectedProduct.description || `${selectedProduct.name} carefully grown and harvested by ${farmer.name}. Buy direct from the farm for the best quality and prices.`}
+                                    </p>
+
+                                    <div className="grid grid-cols-2 gap-3 mt-auto">
+                                        <div className="col-span-2">
+                                            <AddToCartButton product={selectedProduct} fullWidth />
+                                        </div>
+                                        <button 
+                                            type="button"
+                                            onClick={() => useAppContext().toggleWishlist?.(selectedProduct)} 
+                                            className={`flex justify-center items-center gap-2 py-3.5 border-2 rounded-xl font-bold text-sm transition-colors ${isWishlisted ? 'border-red-500 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}
+                                        >
+                                            <Heart size={18} className={isWishlisted ? 'fill-current' : ''} /> {isWishlisted ? 'Wishlisted' : 'Save'}
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setTransparencyProduct(selectedProduct)} 
+                                            className="flex justify-center items-center gap-2 py-3.5 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm hover:border-green-400 hover:text-green-600 transition-colors"
+                                        >
+                                            <QrCode size={18} /> Transparency
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
         </div>
     );

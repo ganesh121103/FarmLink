@@ -172,6 +172,7 @@ const MainContent = () => {
                 {view === 'dashboard' && user?.role === 'admin' && (
                     <AdminDashboard products={products} setProducts={setProducts} farmers={farmers} orders={orders} setOrders={setOrders} />
                 )}
+                {view === 'notifications' && <NotificationsPage BackBtn={BackBtn} />}
                 {view === 'privacy' && <PrivacyView BackBtn={BackBtn} />}
                 {view === 'terms' && <TermsView BackBtn={BackBtn} />}
             </main>
