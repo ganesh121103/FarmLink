@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const TransparencyModal = ({ isOpen, onClose, product }) => {
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            const timer = setTimeout(() => setShow(true), 10);
+            return () => clearTimeout(timer);
+        } else {
+            setShow(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen || !product) return null;
 
     // We encode the full specific data needed into the URL payload.
@@ -21,8 +32,10 @@ const TransparencyModal = ({ isOpen, onClose, product }) => {
     // Safely encode unicode text like rupees and emojis
     const safeEncodedData = btoa(encodeURIComponent(JSON.stringify(payload)));
     
-    // Use the Cloudflare URL established previously
-    const qrData = `https://southampton-allocated-handheld-released.trycloudflare.com/?view=transparency-report&data=${safeEncodedData}`;
+    // Use dynamic local IP or current hostname instead of expired cloudflare tunnel
+    const currentHost = window.location.hostname === 'localhost' ? '10.188.168.201:5173' : window.location.host;
+    const protocol = window.location.protocol;
+    const qrData = `${protocol}//${currentHost}/?view=transparency-report&data=${safeEncodedData}`;
 
     const isOrganic = product.farmingType === 'Organic' || product.organic;
     const isInorganic = product.farmingType === 'Inorganic';
@@ -30,8 +43,11 @@ const TransparencyModal = ({ isOpen, onClose, product }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl p-6 md:p-8 rounded-3xl shadow-2xl relative z-10 animate-fade-in-up border border-stone-200 dark:border-slate-700 flex flex-col md:flex-row gap-8 items-center">
+            <div 
+                className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`} 
+                onClick={onClose} 
+            />
+            <div className={`bg-white dark:bg-slate-900 w-full max-w-2xl p-6 md:p-8 rounded-3xl shadow-2xl relative z-10 border border-stone-200 dark:border-slate-700 flex flex-col md:flex-row gap-8 items-center transform transition-all duration-300 ease-out ${show ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}>
                 
                 <button
                     onClick={onClose}
