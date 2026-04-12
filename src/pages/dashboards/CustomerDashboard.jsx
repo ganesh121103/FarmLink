@@ -47,7 +47,8 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         }
     };
 
-    const totalSpent = orders.reduce((sum, o) => sum + parseInt(o.total || 0), 0);
+    const validOrders = orders.filter(o => o.status !== 'Cancelled');
+    const totalSpent = validOrders.reduce((sum, o) => sum + parseInt(o.total || 0), 0);
     const deliveredOrdersList = orders.filter(o => o.status === 'Delivered');
     const deliveredOrders = deliveredOrdersList.length;
 
@@ -137,7 +138,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 <div className="text-center mb-6">
                     <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Spent</p>
                     <p className="text-5xl font-black text-green-700 dark:text-green-400">₹{totalSpent}</p>
-                    <p className="text-sm text-stone-400 mt-1">{orders.length} orders placed</p>
+                    <p className="text-sm text-stone-400 mt-1">{validOrders.length} valid orders placed</p>
                 </div>
             </div>
             {orders.length === 0 ? (
@@ -350,7 +351,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
             {/* Stats - Clickable */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
                 <Card className="p-5 text-center border-l-4 border-l-green-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('orders')}>
-                    <div className="text-3xl font-black text-black dark:text-white">{orders.length}</div>
+                    <div className="text-3xl font-black text-black dark:text-white">{validOrders.length}</div>
                     <p className="text-xs text-stone-500 font-bold uppercase mt-1">{t('orders')}</p>
                 </Card>
                 <Card className="p-5 text-center border-l-4 border-l-yellow-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('spent')}>
@@ -375,7 +376,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
                 <div onClick={() => navigate('activity')} className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex items-center gap-4 group">
                     <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl text-green-700 dark:text-green-400 group-hover:scale-110 transition-transform"><Package size={28} /></div>
-                    <div><h3 className="font-bold text-black dark:text-white">{t('orderHistory')}</h3><p className="text-sm text-stone-500">{orders.length} orders</p></div>
+                    <div><h3 className="font-bold text-black dark:text-white">{t('orderHistory')}</h3><p className="text-sm text-stone-500">{validOrders.length} valid orders</p></div>
                 </div>
                 <div onClick={() => { window.location.hash = 'wishlist'; navigate('activity'); }} className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 rounded-2xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex items-center gap-4 group">
                     <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-500 group-hover:scale-110 transition-transform"><Heart size={28} /></div>
