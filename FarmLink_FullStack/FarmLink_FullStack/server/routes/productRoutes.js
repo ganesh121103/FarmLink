@@ -319,7 +319,7 @@ router.delete("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res
    ════════════════════════════════════════════════════════════════ */
 router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res) => {
   try {
-    const { rating, comment } = req.body;
+    const { rating, comment, images } = req.body;
     if (!rating || !comment) {
       return res.status(400).json({ message: "Rating and comment are required." });
     }
@@ -343,6 +343,7 @@ router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res)
     if (existingIndex > -1) {
       product.reviews[existingIndex].rating     = Number(rating);
       product.reviews[existingIndex].comment    = String(comment);
+      if (images !== undefined) product.reviews[existingIndex].images = images;
       product.reviews[existingIndex].isVerified = !!hasOrdered;
       product.reviews[existingIndex].date       = Date.now();
     } else {
@@ -351,6 +352,7 @@ router.post("/:id/reviews", verifyToken, checkRole("customer"), async (req, res)
         userName:   reviewer.name,
         rating:     Number(rating),
         comment:    String(comment),
+        images:     images || [],
         isVerified: !!hasOrdered,
         date:       Date.now(),
       });

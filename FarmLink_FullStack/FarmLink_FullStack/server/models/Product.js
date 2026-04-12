@@ -38,6 +38,7 @@ const productSchema = new mongoose.Schema({
       userName: { type: String, required: true },
       rating: { type: Number, required: true, min: 1, max: 5 },
       comment: { type: String, required: true },
+      images: [{ type: String }],
       isVerified: { type: Boolean, default: false },
       date: { type: Date, default: Date.now }
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode, ImageIcon, X } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -155,8 +155,25 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
     // Review States
     const [newReviewRating, setNewReviewRating] = useState(5);
     const [newReviewComment, setNewReviewComment] = useState('');
+    const [newReviewImages, setNewReviewImages] = useState([]);
     const [submittingReview, setSubmittingReview] = useState(false);
     const [isEditingReview, setIsEditingReview] = useState(false);
+
+    const handleReviewImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            if (file.size > 5 * 1024 * 1024) { addToast(`File ${file.name} is too large. Max 5MB.`); return; }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewReviewImages(prev => [...prev, reader.result]);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeReviewImage = (index) => {
+        setNewReviewImages(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleSubmitReview = async () => {
         if (!newReviewComment.trim()) return;
@@ -164,12 +181,14 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         try {
             const { data } = await apiCall(`/products/${selectedProduct._id}/reviews`, "POST", { 
                 rating: newReviewRating, 
-                comment: newReviewComment 
+                comment: newReviewComment,
+                images: newReviewImages
             });
             
             setSelectedProduct(data);
             setNewReviewComment('');
             setNewReviewRating(5);
+            setNewReviewImages([]);
             
             // Properly update parent state for real-time reactivity
             if (setProducts) {
@@ -274,7 +293,7 @@ ${productList}`;
         );
     };
 
-    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); window.scrollTo(0, 0); fetchAIRecs(p); };
+    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); setNewReviewComment(''); setNewReviewRating(5); setNewReviewImages([]); window.scrollTo(0, 0); fetchAIRecs(p); };
 
     let filteredProducts = products;
     if (currentFarmer) filteredProducts = filteredProducts.filter(p => p.farmer === currentFarmer._id || p.farmerName === currentFarmer.name);
@@ -456,7 +475,20 @@ ${productList}`;
                                             )}
                                         </div>
                                     </div>
-                                    <p className="text-sm font-medium text-stone-700 dark:text-slate-200 leading-relaxed ml-1">{r.comment}</p>
+                                    <p className="text-sm font-medium text-stone-700 dark:text-slate-200 leading-relaxed ml-1 mb-3">{r.comment}</p>
+                                    {r.images && r.images.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 ml-1 mt-2">
+                                            {r.images.map((img, i) => (
+                                                <div key={i} className="w-16 h-16 rounded-xl border border-stone-200 dark:border-slate-600 overflow-hidden shadow-sm bg-stone-50 dark:bg-slate-900">
+                                                    {img?.includes('.mp4') || img?.startsWith('data:video') ? (
+                                                        <video src={img} className="w-full h-full object-cover" muted />
+                                                    ) : (
+                                                        <img src={img} alt="Review attachment" className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" onClick={() => window.open(img, '_blank')} />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}
@@ -483,6 +515,7 @@ ${productList}`;
                                                 if (myReview) {
                                                     setNewReviewRating(myReview.rating);
                                                     setNewReviewComment(myReview.comment);
+                                                    setNewReviewImages(myReview.images || []);
                                                 }
                                                 // Temporarily hide the 'success' state by using a local state override if needed, 
                                                 // but for simplicity, we'll just allow the form to show if we clear the 'hasReviewed' logic 
@@ -520,8 +553,36 @@ ${productList}`;
                                         value={newReviewComment}
                                         onChange={(e) => setNewReviewComment(e.target.value)}
                                         placeholder="What did you like or dislike about this product?"
-                                        className="w-full p-4 rounded-xl border-2 border-transparent bg-stone-100 dark:bg-slate-900 text-sm focus:border-green-500 outline-none mb-5 min-h-[120px] resize-y font-medium text-stone-700 dark:text-slate-200 transition-colors shadow-inner"
+                                        className="w-full p-4 rounded-xl border-2 border-transparent bg-stone-100 dark:bg-slate-900 text-sm focus:border-green-500 outline-none mb-3 min-h-[100px] resize-y font-medium text-stone-700 dark:text-slate-200 transition-colors shadow-inner"
                                     />
+                                    
+                                    <div className="mb-5">
+                                        <label className="cursor-pointer inline-flex items-center gap-2 border border-stone-300 dark:border-slate-600 rounded-lg px-4 py-2 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
+                                            <input type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleReviewImageChange} />
+                                            <ImageIcon size={18} className="text-stone-500" />
+                                            <span className="text-sm font-bold text-stone-600 dark:text-slate-300">Add Photos</span>
+                                        </label>
+                                        
+                                        {newReviewImages.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-3 p-3 bg-stone-50 dark:bg-slate-900/50 rounded-xl border border-stone-100 dark:border-slate-700">
+                                                {newReviewImages.map((img, i) => (
+                                                    <div key={i} className="relative w-16 h-16">
+                                                        {img?.includes('.mp4') || img?.startsWith('data:video') ? (
+                                                            <video src={img} className="w-full h-full object-cover rounded-lg border border-stone-200 dark:border-slate-600" />
+                                                        ) : (
+                                                            <img src={img} alt="Upload preview" className="w-full h-full object-cover rounded-lg border border-stone-200 dark:border-slate-600" />
+                                                        )}
+                                                        <button 
+                                                            onClick={() => removeReviewImage(i)} 
+                                                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"
+                                                        >
+                                                            <X size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                     
                                     <div className="flex justify-end">
                                         <button onClick={handleSubmitReview} disabled={submittingReview || !newReviewComment.trim()} className="bg-green-600 hover:bg-green-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center min-w-[160px]">

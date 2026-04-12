@@ -186,7 +186,17 @@ const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt, onCance
                                                                 </span>
                                                                 <span className="text-xs text-gray-400">× ₹{item.price}/kg</span>
                                                             </div>
-                                                            <span className="text-sm font-black text-gray-900 dark:text-white">₹{itemTotal}</span>
+                                                            <div className="flex items-center gap-3">
+                                                                {onReview && order.status === 'Delivered' && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); onClose(); onReview({ productId: item.productId, name: item.name }); }}
+                                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                                                                    >
+                                                                        <Star size={13} /> Review
+                                                                    </button>
+                                                                )}
+                                                                <span className="text-sm font-black text-gray-900 dark:text-white">₹{itemTotal}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -251,14 +261,7 @@ const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt, onCance
                             <FileText size={16} /> Receipt
                         </button>
                     )}
-                    {onReview && order.status === 'Delivered' && (
-                        <button
-                            onClick={() => { onClose(); onReview(order._id); }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
-                        >
-                            <Star size={16} /> Write Review
-                        </button>
-                    )}
+
                     {onCancel && ['Placed', 'Processing', 'Confirmed'].includes(order.status) && (
                         <button
                             onClick={() => { onCancel(order._id); onClose(); }}

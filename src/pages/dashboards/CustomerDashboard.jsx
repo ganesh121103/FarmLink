@@ -14,7 +14,7 @@ import { apiCall } from '../../api/apiCall';
 const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) => {
     const { user, t, wishlist, removeFromWishlist, cart, navigate, openChat, addToast } = useAppContext();
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
-    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [selectedReviewProduct, setSelectedReviewProduct] = useState(null);
     const [receiptOrder, setReceiptOrder] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [activeDrilldown, setActiveDrilldown] = useState(null); // 'orders' | 'spent' | 'wishlist' | 'delivered' | 'messages'
@@ -245,7 +245,6 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                                 ))}
                             </div>
                             <div className="flex gap-3">
-                                <Button variant="outline" className="text-sm py-2" onClick={() => { setSelectedOrderId(order._id); setReviewModalOpen(true); }}><Star size={16} /> Review</Button>
                                 <Button variant="secondary" className="text-sm py-2 bg-stone-100 text-stone-800 shadow-none dark:bg-slate-700 dark:text-white" onClick={() => setReceiptOrder(order)}>Receipt</Button>
                             </div>
                         </div>
@@ -332,7 +331,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 {activeDrilldown === 'wishlist' && <WishlistDrilldown />}
                 {activeDrilldown === 'delivered' && <DeliveredDrilldown />}
                 {activeDrilldown === 'messages' && <MessagesDrilldown />}
-                <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} orderId={selectedOrderId} />
+                <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} product={selectedReviewProduct} />
                 <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
                 <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
             </div>
@@ -431,13 +430,13 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 )}
             </div>
 
-            <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} orderId={selectedOrderId} />
+            <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} product={selectedReviewProduct} />
             <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
             <OrderDetailModal
                 isOpen={!!selectedOrder}
                 onClose={() => setSelectedOrder(null)}
                 order={selectedOrder}
-                onReview={(id) => { setSelectedOrderId(id); setReviewModalOpen(true); }}
+                onReview={(productData) => { setSelectedReviewProduct(productData); setReviewModalOpen(true); }}
                 onReceipt={(o) => setReceiptOrder(o)}
                 onCancel={handleCancelOrder}
             />

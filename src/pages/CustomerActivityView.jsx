@@ -40,10 +40,10 @@ const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, f
     };
 
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
-    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [selectedReviewProduct, setSelectedReviewProduct] = useState(null);
     const [receiptOrder, setReceiptOrder] = useState(null);
 
-    const handleOpenReview = (orderId) => { setSelectedOrderId(orderId); setReviewModalOpen(true); };
+    const handleOpenReview = (productData) => { setSelectedReviewProduct(productData); setReviewModalOpen(true); };
 
     const tabStyle = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
@@ -90,10 +90,17 @@ const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, f
                                 </div>
                                 <div className="space-y-3 mb-4">
                                     {order.items?.map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-3">
-                                            <img src={item.images?.[0] || item.image} alt={item.name} className="w-10 h-10 rounded-md object-cover" />
-                                            <p className="font-medium text-sm flex-1">{item.name} <span className="text-stone-400 text-xs">x{item.quantity || 1}</span></p>
-                                            <p className="font-bold text-sm">₹{parseInt(item.price) * (item.quantity || 1)}</p>
+                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 bg-stone-50 dark:bg-slate-700/30 p-2 rounded-xl">
+                                            <div className="flex items-center gap-3 flex-1">
+                                                <img src={item.images?.[0] || item.image} alt={item.name} className="w-10 h-10 rounded-md object-cover" />
+                                                <p className="font-medium text-sm flex-1">{item.name} <span className="text-stone-400 text-xs">x{item.quantity || 1}</span></p>
+                                                <p className="font-bold text-sm">₹{parseInt(item.price) * (item.quantity || 1)}</p>
+                                            </div>
+                                            {order.status === 'Delivered' && (
+                                                <Button variant="outline" className="text-xs py-1 px-3 ml-12 sm:ml-0" onClick={() => handleOpenReview({ productId: item.productId, name: item.name })}>
+                                                    <Star size={12} className="mr-1 inline" /> Review
+                                                </Button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -106,7 +113,6 @@ const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, f
                             <div className="flex flex-col justify-center gap-3 md:border-l md:border-stone-100 md:dark:border-slate-700 md:pl-6 min-w-[150px]">
                                 {order.status === 'Delivered' && (
                                     <>
-                                        <Button variant="outline" className="w-full text-sm py-2" onClick={() => handleOpenReview(order._id)}><Star size={16} /> {t('leaveReview')}</Button>
                                         <Button variant="secondary" className="w-full text-sm py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 shadow-none dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white" onClick={() => setReceiptOrder(order)}><FileText size={16} /> View Receipt</Button>
                                     </>
                                 )}
@@ -201,7 +207,7 @@ const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, f
                 </div>
             )}
 
-            <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} orderId={selectedOrderId} />
+            <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} product={selectedReviewProduct} />
             <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
         </div>
     );
