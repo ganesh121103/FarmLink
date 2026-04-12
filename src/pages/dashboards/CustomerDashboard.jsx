@@ -11,7 +11,7 @@ import TransparencyModal from '../../components/modals/TransparencyModal';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
-const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
+const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) => {
     const { user, t, wishlist, removeFromWishlist, cart, navigate, openChat, addToast } = useAppContext();
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -50,6 +50,20 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
     const totalSpent = orders.reduce((sum, o) => sum + parseInt(o.total || 0), 0);
     const deliveredOrdersList = orders.filter(o => o.status === 'Delivered');
     const deliveredOrders = deliveredOrdersList.length;
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Are you sure you want to cancel this order?")) return;
+        try {
+            await apiCall(`/orders/${orderId}/cancel`, 'PUT');
+            if (setOrders) {
+                setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'Cancelled' } : o));
+            }
+            addToast("Order cancelled successfully");
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to cancel order");
+        }
+    };
 
     // --- Drilldown Back Button ---
     const DrilldownBackBtn = () => (
@@ -425,6 +439,7 @@ const CustomerDashboard = ({ orders, BackBtn, setIsCheckoutOpen }) => {
                 order={selectedOrder}
                 onReview={(id) => { setSelectedOrderId(id); setReviewModalOpen(true); }}
                 onReceipt={(o) => setReceiptOrder(o)}
+                onCancel={handleCancelOrder}
             />
             <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
         </div>

@@ -8,7 +8,9 @@ import ReviewModal from '../components/modals/ReviewModal';
 import ReceiptModal from '../components/modals/ReceiptModal';
 import { useAppContext } from '../context/AppContext';
 
-const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) => {
+import { apiCall } from '../api/apiCall';
+
+const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, farmers }) => {
     const { user, addToast, t, wishlist, removeFromWishlist, cart, removeFromCart, updateCartQuantity, navigate } = useAppContext();
     const [activeTab, setActiveTab] = useState(() => {
         const hash = window.location.hash;
@@ -22,6 +24,20 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) =
             window.history.replaceState(null, '', window.location.pathname);
         }
     }, []);
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Are you sure you want to cancel this order?")) return;
+        try {
+            await apiCall(`/orders/${orderId}/cancel`, 'PUT');
+            if (setOrders) {
+                setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'Cancelled' } : o));
+            }
+            addToast("Order cancelled successfully");
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to cancel order");
+        }
+    };
 
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -66,7 +82,11 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) =
                                         </p>
                                         <p className="text-xs text-stone-400">{order.date}</p>
                                     </div>
-                                    <Badge color={order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>{order.status}</Badge>
+                                    <Badge color={
+                                        order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 
+                                        order.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-blue-100 text-blue-800'
+                                    }>{order.status}</Badge>
                                 </div>
                                 <div className="space-y-3 mb-4">
                                     {order.items?.map((item, idx) => (
@@ -89,6 +109,11 @@ const CustomerActivityView = ({ orders, BackBtn, setIsCheckoutOpen, farmers }) =
                                         <Button variant="outline" className="w-full text-sm py-2" onClick={() => handleOpenReview(order._id)}><Star size={16} /> {t('leaveReview')}</Button>
                                         <Button variant="secondary" className="w-full text-sm py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 shadow-none dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white" onClick={() => setReceiptOrder(order)}><FileText size={16} /> View Receipt</Button>
                                     </>
+                                )}
+                                {['Placed', 'Processing', 'Confirmed'].includes(order.status) && (
+                                    <Button variant="outline" className="w-full text-sm py-2 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-900/20" onClick={() => handleCancelOrder(order._id)}>
+                                        <X size={16} className="inline mr-1" /> Cancel Order
+                                    </Button>
                                 )}
                             </div>
                         </div>

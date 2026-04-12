@@ -42,7 +42,7 @@ const useCopyId = () => {
      onReview — fn(orderId) optional
      onReceipt— fn(order)   optional
    ════════════════════════════════════════════════════════════════ */
-const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt }) => {
+const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt, onCancel }) => {
     const { copied, copy } = useCopyId();
 
     if (!isOpen || !order) return null;
@@ -87,6 +87,7 @@ const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt }) => {
                     {/* Status badge */}
                     <div className="flex items-center gap-3 mb-3">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white/20 text-white border border-white/30`}>
+                            {order.status === 'Cancelled' && <X size={13} />}
                             {order.status === 'Delivered' && <CheckCircle2 size={13} />}
                             {order.status === 'Shipped'   && <Truck size={13} />}
                             {order.status === 'Placed'    && <Clock size={13} />}
@@ -256,6 +257,14 @@ const OrderDetailModal = ({ isOpen, onClose, order, onReview, onReceipt }) => {
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
                         >
                             <Star size={16} /> Write Review
+                        </button>
+                    )}
+                    {onCancel && ['Placed', 'Processing', 'Confirmed'].includes(order.status) && (
+                        <button
+                            onClick={() => { onCancel(order._id); onClose(); }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                        >
+                            <X size={16} /> Cancel Order
                         </button>
                     )}
                     <button

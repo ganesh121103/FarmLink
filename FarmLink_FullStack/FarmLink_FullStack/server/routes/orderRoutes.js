@@ -112,4 +112,29 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
   }
 });
 
+/* CANCEL order – customer (before dispatch) */
+router.put("/:id/cancel", verifyToken, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // Ensure the customer owns this order (or admin)
+    if (order.userId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // Only allow cancellation before dispatch
+    if (['Shipped', 'Delivered', 'Cancelled'].includes(order.status)) {
+      return res.status(400).json({ message: "Order cannot be cancelled at this stage." });
+    }
+
+    order.status = 'Cancelled';
+    await order.save();
+
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 module.exports = router;

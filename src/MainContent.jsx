@@ -160,14 +160,14 @@ const MainContent = () => {
                 )}
                 {(view === 'login' || view === 'register') && <AuthView initialMode={view} />}
                 {view === 'activity' && (!user || user?.role !== 'admin') && (
-                    <CustomerActivityView orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} farmers={farmers} />
+                    <CustomerActivityView orders={orders} setOrders={setOrders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} farmers={farmers} />
                 )}
                 {view === 'profile' && <ProfileView BackBtn={BackBtn} setFarmers={setFarmers} />}
                 {view === 'dashboard' && user?.role === 'farmer' && (
                     <FarmerDashboard products={products} setProducts={setProducts} orders={orders} setOrders={setOrders} />
                 )}
                 {view === 'dashboard' && user?.role === 'customer' && (
-                    <CustomerDashboard orders={orders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} />
+                    <CustomerDashboard orders={orders} setOrders={setOrders} BackBtn={BackBtn} setIsCheckoutOpen={setIsCheckoutOpen} />
                 )}
                 {view === 'dashboard' && user?.role === 'admin' && (
                     <AdminDashboard products={products} setProducts={setProducts} farmers={farmers} orders={orders} setOrders={setOrders} />
