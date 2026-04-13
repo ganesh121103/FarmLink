@@ -365,6 +365,7 @@ ${productList}`;
                             {selectedProduct.tags?.map(tag => <span key={tag} className="flex items-center gap-1 bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full"><SparklesIcon /> {tag}</span>)}
                             <span className="bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full">📦 {selectedProduct.stock}kg left</span>
                             {selectedProduct.location && <span className="bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1"><MapPin size={12} /> {selectedProduct.location}</span>}
+                            <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">🚚 Get it by {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                         </div>
 
                         <p className="text-stone-600 dark:text-slate-300 leading-relaxed mb-8 border-t border-stone-100 dark:border-slate-700 pt-6">{selectedProduct.description}</p>

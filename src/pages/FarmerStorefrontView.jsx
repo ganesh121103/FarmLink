@@ -688,9 +688,14 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                                         </div>
                                     )}
 
-                                    <div className="flex items-baseline gap-2 mb-6">
+                                    <div className="flex items-baseline gap-2 mb-2">
                                         <span className="text-4xl font-black text-green-700 dark:text-green-500">₹{selectedProduct.price}</span>
                                         <span className="text-lg font-bold text-gray-400">per kg</span>
+                                    </div>
+                                    <div className="mb-6">
+                                        <span className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-bold px-3 py-1.5 rounded-full border border-green-200 dark:border-green-800">
+                                            🚚 Get it by {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                        </span>
                                     </div>
 
                                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-8 flex-1">
