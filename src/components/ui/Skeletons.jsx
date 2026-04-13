@@ -34,3 +34,24 @@ export const FarmerSkeleton = () => (
         </div>
     </Card>
 );
+
+export const ConversationSkeleton = () => (
+    <Card className="p-5 flex flex-col gap-4 h-full animate-pulse border-transparent">
+        <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-stone-200 dark:bg-slate-700 rounded-full shrink-0"></div>
+            <div className="flex-1 space-y-2">
+                <div className="h-4 bg-stone-200 dark:bg-slate-700 rounded w-1/2"></div>
+                <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded w-1/4"></div>
+            </div>
+            <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded w-12"></div>
+        </div>
+        <div className="h-10 bg-stone-200 dark:bg-slate-700 rounded-xl w-full mt-1"></div>
+    </Card>
+);
+
+export const DashboardStatSkeleton = () => (
+    <Card className="p-5 text-center flex flex-col items-center justify-center animate-pulse border-transparent bg-stone-50 dark:bg-slate-800/50">
+        <div className="h-8 bg-stone-200 dark:bg-slate-700 rounded w-16 mb-2"></div>
+        <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded w-24"></div>
+    </Card>
+);

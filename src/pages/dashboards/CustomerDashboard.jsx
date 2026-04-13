@@ -4,6 +4,7 @@ import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button, AddToCartButton } from '../../components/ui/Button';
 import { OrderTrackingTimeline } from '../../components/ui/Timeline';
+import { ConversationSkeleton } from '../../components/ui/Skeletons';
 import ReviewModal from '../../components/modals/ReviewModal';
 import ReceiptModal from '../../components/modals/ReceiptModal';
 import OrderDetailModal from '../../components/modals/OrderDetailModal';
@@ -263,7 +264,9 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 <MessageSquare size={28} className="text-indigo-500" /> My Messages
             </h2>
             {loadingConversations ? (
-                <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-green-600" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => <ConversationSkeleton key={i} />)}
+                </div>
             ) : conversations.length === 0 ? (
                 <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
                     <MessageSquare size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />

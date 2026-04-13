@@ -8,6 +8,7 @@ import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationM
 import CropScannerModal from '../../components/modals/CropScannerModal';
 import VerificationModal from '../../components/modals/VerificationModal';
 import { CATEGORIES, LOCATIONS } from '../../constants';
+import { ConversationSkeleton } from '../../components/ui/Skeletons';
 
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
@@ -359,7 +360,9 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
             {activeTab === 'messages' && (
                 <div className="space-y-4 animate-fade-in-up">
                     {loadingConversations ? (
-                        <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-green-600" /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => <ConversationSkeleton key={i} />)}
+                        </div>
                     ) : conversations.length === 0 ? (
                         <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-stone-300 dark:border-slate-600">
                             <MessageSquare size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
