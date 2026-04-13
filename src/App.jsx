@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext';
 import MainContent from './MainContent';
 import Background from './components/ui/Background';
 import ToastContainer from './components/ui/ToastContainer';
+import ScrollToTopButton from './components/ui/ScrollToTopButton';
 
 import './index.css';
 
@@ -13,6 +14,7 @@ export default function App() {
                 <Background />
                 <ToastContainer />
                 <MainContent />
+                <ScrollToTopButton />
             </div>
             <style>{`
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
