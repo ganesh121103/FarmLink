@@ -193,6 +193,20 @@ const AuthView = ({ initialMode = 'login' }) => {
         return e;
     };
 
+    const getPasswordStrength = (pass) => {
+        if (!pass) return { text: '', color: 'bg-gray-200 dark:bg-slate-700', width: 'w-0' };
+        let score = 0;
+        if (pass.length > 5) score += 1;
+        if (pass.length > 7) score += 1;
+        if (/[A-Z]/.test(pass)) score += 1;
+        if (/[0-9]/.test(pass)) score += 1;
+        if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+        
+        if (score <= 2) return { text: 'Weak', color: 'bg-red-500', width: 'w-1/3' };
+        if (score <= 4) return { text: 'Good', color: 'bg-amber-500', width: 'w-2/3' };
+        return { text: 'Strong', color: 'bg-green-500', width: 'w-full' };
+    };
+
     // Helper: build user data from Firebase user + sync with backend
     const syncFirebaseUserWithBackend = async (firebaseUser, extraData = {}) => {
         const userData = {
@@ -426,6 +440,20 @@ const AuthView = ({ initialMode = 'login' }) => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                            
+                            {/* Password Strength Indicator */}
+                            {mode === 'register' && formData.password && (
+                                <div className="mt-2 text-xs font-semibold">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-gray-500 dark:text-gray-400">Password strength:</span>
+                                        <span className={getPasswordStrength(formData.password).color.replace('bg-', 'text-')}>{getPasswordStrength(formData.password).text}</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div className={`h-full transition-all duration-500 ${getPasswordStrength(formData.password).color} ${getPasswordStrength(formData.password).width}`}></div>
+                                    </div>
+                                </div>
+                            )}
+
                             {errors.password && <p className={errorText}>{errors.password}</p>}
                         </div>
 
@@ -741,6 +769,18 @@ const AuthView = ({ initialMode = 'login' }) => {
                                                 {fpShowPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                                             </button>
                                         </div>
+                                        {/* Reset Password Strength Indicator */}
+                                        {fpPassword && (
+                                            <div className="mt-2 text-xs font-semibold">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-gray-500 dark:text-gray-400">Password strength:</span>
+                                                    <span className={getPasswordStrength(fpPassword).color.replace('bg-', 'text-')}>{getPasswordStrength(fpPassword).text}</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                    <div className={`h-full transition-all duration-500 ${getPasswordStrength(fpPassword).color} ${getPasswordStrength(fpPassword).width}`}></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div>
