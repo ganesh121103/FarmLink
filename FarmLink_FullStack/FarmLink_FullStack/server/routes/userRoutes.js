@@ -10,6 +10,7 @@ const {
   updateUser,
   firebaseAuth,
   forgotPassword,
+  verifyResetToken,
   resetPassword
 } = require("../controllers/userController");
 
@@ -27,6 +28,9 @@ router.post("/firebase-auth", firebaseAuth);
 
 // FORGOT PASSWORD – sends reset token to email
 router.post("/forgot-password", forgotPassword);
+
+// VERIFY RESET TOKEN - checks if OTP is valid
+router.post("/verify-otp", verifyResetToken);
 
 // RESET PASSWORD – validates token and sets new password
 router.post("/reset-password", resetPassword);

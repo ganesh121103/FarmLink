@@ -22,7 +22,7 @@ const AuthView = ({ initialMode = 'login' }) => {
 
     // ─── Forgot Password State ─────────────────────────────────────────────
     const [showForgotModal, setShowForgotModal]   = useState(false);
-    // step: 'email' | 'reset' | 'success'
+    // step: 'email' | 'verify' | 'reset' | 'success'
     const [fpStep, setFpStep]                     = useState('email');
     const [fpEmail, setFpEmail]                   = useState('');
     const [fpToken, setFpToken]                   = useState('');
@@ -43,6 +43,57 @@ const AuthView = ({ initialMode = 'login' }) => {
         setFpError('');
         setFpSuccess('');
     };
+
+    const handleOtpChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return;
+        
+        let newToken = fpToken.padEnd(6, ' ').split('');
+        
+        if (value.length <= 1) {
+            newToken[index] = value;
+            setFpToken(newToken.join('').trim());
+            setFpError('');
+            if (value && index < 5) {
+                const nextInput = document.getElementById(`otp-${index + 1}`);
+                if (nextInput) nextInput.focus();
+            }
+        } else if (value.length === 6 && /^\d+$/.test(value)) {
+            setFpToken(value);
+            setFpError('');
+            const lastInput = document.getElementById(`otp-5`);
+            if (lastInput) lastInput.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace') {
+            if (!fpToken[index] && index > 0) {
+                const prevInput = document.getElementById(`otp-${index - 1}`);
+                if (prevInput) {
+                    prevInput.focus();
+                    let newToken = fpToken.padEnd(6, ' ').split('');
+                    newToken[index - 1] = ' ';
+                    setFpToken(newToken.join('').trim());
+                }
+            } else {
+                 let newToken = fpToken.padEnd(6, ' ').split('');
+                 newToken[index] = ' ';
+                 setFpToken(newToken.join('').trim());
+            }
+        }
+    };
+
+    const handleOtpPaste = (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, 6);
+        if (pastedData) {
+            setFpToken(pastedData);
+            setFpError('');
+            const focusIndex = Math.min(pastedData.length, 5);
+            const inputElement = document.getElementById(`otp-${focusIndex === 6 ? 5 : focusIndex}`);
+            if (inputElement) inputElement.focus();
+        }
+    };
     const closeForgotModal = () => setShowForgotModal(false);
 
     const handleForgotSendEmail = async (e) => {
@@ -53,9 +104,25 @@ const AuthView = ({ initialMode = 'login' }) => {
         setFpLoading(true);
         try {
             await apiCall('/users/forgot-password', 'POST', { email: fpEmail.trim().toLowerCase() });
-            setFpStep('reset');
+            setFpStep('verify');
         } catch (err) {
             setFpError(err.message || 'Something went wrong. Please try again.');
+        } finally {
+            setFpLoading(false);
+        }
+    };
+
+    const handleForgotVerifyOtp = async (e) => {
+        e.preventDefault();
+        if (!fpToken.trim()) { setFpError('Please enter the OTP'); return; }
+        if (fpToken.length !== 6) { setFpError('OTP must be 6 digits'); return; }
+        setFpError('');
+        setFpLoading(true);
+        try {
+            await apiCall('/users/verify-otp', 'POST', { token: fpToken.trim() });
+            setFpStep('reset');
+        } catch (err) {
+            setFpError(err.message || 'Invalid or expired OTP.');
         } finally {
             setFpLoading(false);
         }
@@ -581,15 +648,15 @@ const AuthView = ({ initialMode = 'login' }) => {
                             </>
                         )}
 
-                        {/* ── Step 2: Enter Token + New Password ── */}
-                        {fpStep === 'reset' && (
+                        {/* ── Step 2: Verify OTP ── */}
+                        {fpStep === 'verify' && (
                             <>
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
                                         <KeyRound size={20} className="text-orange-600 dark:text-orange-400" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Enter New Password</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Verify OTP</h3>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Check your inbox for the OTP</p>
                                     </div>
                                 </div>
@@ -600,22 +667,64 @@ const AuthView = ({ initialMode = 'login' }) => {
                                     <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Enter the 6-digit OTP from your email. It expires in 1 hour.</p>
                                 </div>
 
-                                <form onSubmit={handleForgotReset} className="space-y-4">
+                                <form onSubmit={handleForgotVerifyOtp} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">6-Digit OTP</label>
-                                        <input
-                                            type="text"
-                                            maxLength={6}
-                                            placeholder="• • • • • •"
-                                            value={fpToken}
-                                            onChange={e => { 
-                                                const val = e.target.value.replace(/\D/g, ''); 
-                                                setFpToken(val); 
-                                                setFpError(''); 
-                                            }}
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-2xl tracking-[1em] text-center font-bold text-gray-800 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-600 transition font-mono"
-                                        />
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">6-Digit OTP</label>
+                                        <div className="flex gap-2 justify-between">
+                                            {Array.from({ length: 6 }).map((_, index) => (
+                                                <input
+                                                    key={index}
+                                                    id={`otp-${index}`}
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    maxLength={index === 0 ? 6 : 1}
+                                                    value={fpToken[index] || ''}
+                                                    onChange={e => handleOtpChange(index, e.target.value)}
+                                                    onKeyDown={e => handleOtpKeyDown(index, e)}
+                                                    onPaste={index === 0 ? handleOtpPaste : undefined}
+                                                    className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl sm:text-3xl font-bold bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 dark:focus:ring-green-500/10 outline-none text-gray-800 dark:text-white transition-all shadow-sm"
+                                                    autoFocus={index === 0}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
+
+                                    {fpError && (
+                                        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3">
+                                            {fpError}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={fpLoading}
+                                        className="w-full py-3.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                                    >
+                                        {fpLoading ? <><Loader2 size={17} className="animate-spin" /> Verifying...</> : 'Verify OTP'}
+                                    </button>
+
+                                    <button type="button" onClick={() => { setFpStep('email'); setFpError(''); }}
+                                        className="w-full py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition flex items-center justify-center gap-1">
+                                        <ArrowLeft size={14} /> Back
+                                    </button>
+                                </form>
+                            </>
+                        )}
+
+                        {/* ── Step 3: Enter New Password ── */}
+                        {fpStep === 'reset' && (
+                            <>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                                        <KeyRound size={20} className="text-orange-600 dark:text-orange-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Enter New Password</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">OTP verified successfully</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleForgotReset} className="space-y-4">
 
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">New Password</label>
@@ -659,15 +768,15 @@ const AuthView = ({ initialMode = 'login' }) => {
                                         {fpLoading ? <><Loader2 size={17} className="animate-spin" /> Resetting...</> : 'Reset Password'}
                                     </button>
 
-                                    <button type="button" onClick={() => { setFpStep('email'); setFpError(''); }}
+                                    <button type="button" onClick={() => { setFpStep('verify'); setFpError(''); }}
                                         className="w-full py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition flex items-center justify-center gap-1">
-                                        <ArrowLeft size={14} /> Resend OTP
+                                        <ArrowLeft size={14} /> Back
                                     </button>
                                 </form>
                             </>
                         )}
 
-                        {/* ── Step 3: Success ── */}
+                        {/* ── Step 4: Success ── */}
                         {fpStep === 'success' && (
                             <div className="text-center py-4">
                                 <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mx-auto mb-5">

@@ -382,6 +382,38 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+/* ---------------- VERIFY RESET TOKEN ---------------- */
+exports.verifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token.trim()).digest("hex");
+
+    // Search all role collections for the matching token
+    const models = [Customer, Farmer, Admin];
+    let user = null;
+    for (const Model of models) {
+      user = await Model.findOne({
+        passwordResetToken: tokenHash,
+        passwordResetExpires: { $gt: new Date() },
+      });
+      if (user) break;
+    }
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP. Please request a new one." });
+    }
+
+    res.json({ message: "OTP is valid." });
+  } catch (err) {
+    console.error("VERIFY TOKEN ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 /* ---------------- RESET PASSWORD ---------------- */
 exports.resetPassword = async (req, res) => {
