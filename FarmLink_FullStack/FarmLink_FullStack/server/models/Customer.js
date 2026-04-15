@@ -29,6 +29,10 @@ const customerSchema = new mongoose.Schema({
   // Firebase Cloud Messaging Device Token for Push Notifications
   fcmToken: { type: String, default: "" },
 
+  // ✅ PASSWORD RESET
+  passwordResetToken: { type: String, default: "" },
+  passwordResetExpires: { type: Date, default: null },
+
   // ✅ WISHLIST — array of Product ObjectIds
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 

@@ -26,7 +26,11 @@ const farmerSchema = new mongoose.Schema({
   image: { type: String, default: "" },
   fcmToken: { type: String, default: "" },
   rating: { type: Number, default: 0 },
-  numReviews: { type: Number, default: 0 }
+  numReviews: { type: Number, default: 0 },
+
+  // ✅ PASSWORD RESET
+  passwordResetToken: { type: String, default: "" },
+  passwordResetExpires: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Farmer", farmerSchema);

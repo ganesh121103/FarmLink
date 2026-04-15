@@ -15,8 +15,13 @@ const initTransporter = () => {
         service: 'gmail',
         auth: {
             user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASS, // 16-char App Password from Google
+            pass: process.env.GMAIL_APP_PASS,
         },
+        pool: true,              // reuse connections
+        maxConnections: 3,
+        connectionTimeout: 10000, // 10s to establish connection
+        greetingTimeout: 8000,   // 8s for SMTP greeting
+        socketTimeout: 15000,    // 15s for socket inactivity
     });
 
     console.log("✅ Gmail SMTP transporter initialized for:", process.env.GMAIL_USER);

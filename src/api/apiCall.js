@@ -19,8 +19,13 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
             options.body = isMultipart ? body : JSON.stringify(body);
         }
 
-        // Don't send token for login/register
-        if (!endpoint.includes('/login') && !endpoint.includes('/register')) {
+        // Don't send token for auth / password-reset endpoints
+        const isPublicEndpoint = endpoint.includes('/login') ||
+            endpoint.includes('/register') ||
+            endpoint.includes('/forgot-password') ||
+            endpoint.includes('/reset-password');
+
+        if (!isPublicEndpoint) {
             const userStr = localStorage.getItem('farmlink_user');
             if (userStr && userStr !== "undefined") {
                 try {
@@ -45,7 +50,7 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
 
         clearTimeout(timeoutId);
 
-        if (response.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
+        if (response.status === 401 && !isPublicEndpoint) {
             document.dispatchEvent(new CustomEvent('auth-expired'));
             throw new Error('Session expired. Please log in again.');
         }

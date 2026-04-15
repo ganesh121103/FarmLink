@@ -8,7 +8,9 @@ const {
   loginUser,
   getUsers,
   updateUser,
-  firebaseAuth
+  firebaseAuth,
+  forgotPassword,
+  resetPassword
 } = require("../controllers/userController");
 
 // GET all users or filter by role – public for now (farmers list on homepage)
@@ -22,6 +24,12 @@ router.post("/login", loginUser);
 
 // FIREBASE / GOOGLE AUTH (find-or-create by firebaseUid)
 router.post("/firebase-auth", firebaseAuth);
+
+// FORGOT PASSWORD – sends reset token to email
+router.post("/forgot-password", forgotPassword);
+
+// RESET PASSWORD – validates token and sets new password
+router.post("/reset-password", resetPassword);
 
 // UPDATE user (own profile) – must be logged in
 router.put("/:id", verifyToken, updateUser);

@@ -9,6 +9,10 @@ const adminSchema = new mongoose.Schema({
   phone: { type: String, default: "" },
   address: { type: String, default: "" },
   image: { type: String, default: "" },
+
+  // ✅ PASSWORD RESET
+  passwordResetToken: { type: String, default: "" },
+  passwordResetExpires: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Admin", adminSchema);

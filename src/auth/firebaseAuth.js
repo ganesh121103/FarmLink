@@ -9,6 +9,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -84,6 +85,18 @@ export const loginWithGoogle = async () => {
       return { user: null, error: null };
     }
     return { user: null, error: getFirebaseErrorMessage(error.code) };
+  }
+};
+
+// ─── Password Reset ──────────────────────────────────────────────────────────
+export const resetPassword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("✅ Password reset email sent to:", email);
+    return { error: null };
+  } catch (error) {
+    console.error("❌ Password reset error:", error.message);
+    return { error: getFirebaseErrorMessage(error.code) };
   }
 };
 

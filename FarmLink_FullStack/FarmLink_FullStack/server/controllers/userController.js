@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const Customer = require("../models/Customer");
 const Farmer = require("../models/Farmer");
 const Admin = require("../models/Admin");
@@ -311,6 +312,126 @@ exports.firebaseAuth = async (req, res) => {
     });
   } catch (err) {
     console.error("FIREBASE AUTH ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+/* ---------------- FORGOT PASSWORD ---------------- */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    // Search across all role collections (case-insensitive email match)
+    const emailRegex = new RegExp(`^${email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    const models = [Customer, Farmer, Admin];
+    let user = null;
+    for (const Model of models) {
+      user = await Model.findOne({ email: emailRegex });
+      if (user) break;
+    }
+
+    // Always respond the same way to prevent email enumeration
+    if (!user) {
+      return res.json({ message: "If that email is registered, a reset link has been sent." });
+    }
+
+    // Check if this is a social-only account (no password set)
+    if (user.firebaseUid && !user.password) {
+      return res.json({ message: "If that email is registered, a reset link has been sent." });
+    }
+
+    // Generate a secure 6-digit OTP
+    const plainToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHash = crypto.createHash("sha256").update(plainToken).digest("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    user.passwordResetToken = tokenHash;
+    user.passwordResetExpires = expires;
+    await user.save();
+
+    // Respond to client immediately — token is already saved in DB
+    res.json({ message: "If that email is registered, an OTP has been sent." });
+
+    // Send email in background (non-blocking) — won't affect HTTP response
+    setImmediate(async () => {
+      try {
+        const resetHtml = buildHtmlEmail(
+          "Reset Your FarmLink Password",
+          `
+            <h2>Password Reset OTP 🔐</h2>
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>We received a request to reset your FarmLink password. Use the OTP below to set a new password. It is valid for <strong>1 hour</strong>.</p>
+            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+              ${plainToken}
+            </div>
+            <p>If you did not request this, you can safely ignore this email. Your password will not change.</p>
+            <p style="color:#888;font-size:12px;">Expires: ${expires.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>
+          `
+        );
+        await sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml);
+        console.log(`[ForgotPassword] Reset OTP sent to ${user.email}`);
+      } catch (emailErr) {
+        console.error("[ForgotPassword] Email dispatch failed:", emailErr.message);
+      }
+    });
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+/* ---------------- RESET PASSWORD ---------------- */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token.trim()).digest("hex");
+
+    // Search all role collections for the matching token
+    const models = [Customer, Farmer, Admin];
+    let user = null;
+    for (const Model of models) {
+      user = await Model.findOne({
+        passwordResetToken: tokenHash,
+        passwordResetExpires: { $gt: new Date() },
+      });
+      if (user) break;
+    }
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP. Please request a new one." });
+    }
+
+    // Update password
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordResetToken = "";
+    user.passwordResetExpires = null;
+    await user.save();
+
+    // Notify user via confirmation email (non-blocking)
+    const confirmHtml = buildHtmlEmail(
+      "Your FarmLink Password Has Been Changed",
+      `
+        <h2>Password Changed Successfully ✅</h2>
+        <p>Hi <strong>${user.name}</strong>,</p>
+        <p>Your FarmLink account password has been updated successfully at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.</p>
+        <p>If you did not make this change, please contact support immediately.</p>
+      `
+    );
+    setImmediate(() => sendEmail(user.email, "Your FarmLink Password Has Been Changed ✅", confirmHtml));
+
+    res.json({ message: "Password has been reset successfully. You can now log in with your new password." });
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
