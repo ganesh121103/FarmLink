@@ -315,12 +315,35 @@ ${productList}`;
     const debouncedSearch = useDebounce(localSearch, 400);
     const currentFarmer = selectedFarmer || (filterByLocation ? null : null);
 
+    // Recently Viewed — persisted in localStorage, max 5 products
+    const [recentlyViewed, setRecentlyViewed] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('farmlink_recently_viewed')) || []; }
+        catch { return []; }
+    });
+
+    // handleSelectProduct defined early so deep-link useEffect can reference it
+    const handleSelectProduct = (p) => {
+        setSelectedProduct(p);
+        setCurrentMediaIndex(0);
+        setNewReviewComment('');
+        setNewReviewRating(5);
+        setNewReviewImages([]);
+        window.scrollTo(0, 0);
+        fetchAIRecs(p);
+
+        // Track recently viewed in localStorage
+        setRecentlyViewed(prev => {
+            const filtered = prev.filter(rv => rv._id !== p._id);
+            const updated = [p, ...filtered].slice(0, 5);
+            try { localStorage.setItem('farmlink_recently_viewed', JSON.stringify(updated)); } catch { /* ignore */ }
+            return updated;
+        });
+    };
+
     // Deep-link handler: opens product detail when a shared URL is loaded
     useEffect(() => {
         const handler = (e) => {
-            if (e.detail) {
-                handleSelectProduct(e.detail);
-            }
+            if (e.detail) handleSelectProduct(e.detail);
         };
         window.addEventListener('farmlink:open-product', handler);
         return () => window.removeEventListener('farmlink:open-product', handler);
@@ -366,8 +389,6 @@ ${productList}`;
             () => { setIsLocating(false); }
         );
     };
-
-    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); setNewReviewComment(''); setNewReviewRating(5); setNewReviewImages([]); window.scrollTo(0, 0); fetchAIRecs(p); };
 
     let filteredProducts = products;
     if (currentFarmer) filteredProducts = filteredProducts.filter(p => p.farmer === currentFarmer._id || p.farmerName === currentFarmer.name);
@@ -908,6 +929,61 @@ ${productList}`;
                 </div>
             )}
             <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
+
+            {/* Recently Viewed Section */}
+            {recentlyViewed.length > 0 && (
+                <div className="mt-16 mb-4">
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-black dark:text-white">Recently Viewed</h2>
+                                <p className="text-xs text-stone-400 dark:text-slate-500 font-medium">Pick up where you left off</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setRecentlyViewed([]);
+                                try { localStorage.removeItem('farmlink_recently_viewed'); } catch { /* ignore */ }
+                            }}
+                            className="text-xs font-bold text-stone-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                            Clear history
+                        </button>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d6d3d1 transparent' }}>
+                        {recentlyViewed.map((p) => (
+                            <button
+                                key={p._id}
+                                onClick={() => handleSelectProduct(p)}
+                                className="flex-shrink-0 w-44 group bg-white dark:bg-slate-800 rounded-2xl border border-stone-100 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300 text-left"
+                            >
+                                <div className="h-28 overflow-hidden relative">
+                                    <img
+                                        src={p.images?.[0] || p.image}
+                                        alt={p.name}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                </div>
+                                <div className="p-3">
+                                    <p className="font-bold text-sm text-black dark:text-white leading-tight line-clamp-1 mb-1 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">{p.name}</p>
+                                    <p className="text-[10px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-wide mb-2 line-clamp-1">{p.farmerName}</p>
+                                    <div className="flex items-center gap-1 mb-1">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} size={10} className={i < Math.round(p.rating || 0) ? 'text-yellow-400 fill-current' : 'text-stone-300 dark:text-slate-600'} />
+                                        ))}
+                                    </div>
+                                    <p className="text-green-700 dark:text-green-400 font-black text-sm">₹{p.price}<span className="text-[10px] text-stone-400 font-bold">/kg</span></p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
