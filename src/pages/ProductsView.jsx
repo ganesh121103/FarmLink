@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode, ImageIcon, X } from 'lucide-react';
+import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode, ImageIcon, X, Share2, Check } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -151,6 +151,69 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
         window.open(`https://wa.me/${cleanPhone}`, '_blank');
     };
+
+    const [shareCopied, setShareCopied] = useState(false);
+    const shareCopiedTimerRef = useRef(null);
+
+    const handleShare = async (product) => {
+        // Build a proper deep-link URL: ?view=products&product=<id>
+        // Works on any deployment (localhost during dev, real domain in production)
+        const origin = window.location.origin;
+        const path = window.location.pathname.replace(/\/$/, ''); // strip trailing slash
+        const shareUrl = `${origin}${path}?view=products&product=${product._id}`;
+        const shareTitle = `${product.name} — FarmLink`;
+        const shareText = `🌿 Check out ${product.name} by ${product.farmerName} on FarmLink!\n₹${product.price}/kg – fresh, farm-direct produce.`;
+        const fullCopyText = `${shareText}\n👉 ${shareUrl}`;
+
+        const markCopied = () => {
+            setShareCopied(true);
+            addToast('📋 Link copied to clipboard!');
+            if (shareCopiedTimerRef.current) clearTimeout(shareCopiedTimerRef.current);
+            shareCopiedTimerRef.current = setTimeout(() => setShareCopied(false), 2500);
+        };
+
+        // Tier 1: Native Web Share API (Android/iOS mobile, Chrome on supported platforms)
+        if (typeof navigator.share === 'function') {
+            try {
+                await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+                return; // User shared successfully
+            } catch (err) {
+                if (err.name === 'AbortError') return; // User cancelled — not an error
+                // Any other error: fall through to clipboard
+            }
+        }
+
+        // Tier 2: Modern Async Clipboard API (HTTPS required)
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(fullCopyText);
+                markCopied();
+                return;
+            } catch {
+                // May fail on HTTP or if clipboard permission denied — fall through
+            }
+        }
+
+        // Tier 3: Legacy execCommand('copy') — works on HTTP and older browsers
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = fullCopyText;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (ok) {
+                markCopied();
+            } else {
+                addToast('⚠️ Could not copy automatically. Please copy the URL from your browser address bar.');
+            }
+        } catch {
+            addToast('⚠️ Could not copy automatically. Please copy the URL from your browser address bar.');
+        }
+    };
     
     // Review States
     const [newReviewRating, setNewReviewRating] = useState(5);
@@ -252,6 +315,17 @@ ${productList}`;
     const debouncedSearch = useDebounce(localSearch, 400);
     const currentFarmer = selectedFarmer || (filterByLocation ? null : null);
 
+    // Deep-link handler: opens product detail when a shared URL is loaded
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail) {
+                handleSelectProduct(e.detail);
+            }
+        };
+        window.addEventListener('farmlink:open-product', handler);
+        return () => window.removeEventListener('farmlink:open-product', handler);
+    }, []);
+
     const handleVoiceSearch = () => {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRec) return;
@@ -327,6 +401,15 @@ ${productList}`;
                             ) : (
                                 <img src={currentMedia} alt={selectedProduct.name} className="w-full h-full object-cover" />
                             )}
+                            {/* Floating Share Button on media */}
+                            <button
+                                onClick={() => handleShare(selectedProduct)}
+                                title="Share this product"
+                                className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-stone-700 dark:text-slate-200 px-3 py-2 rounded-full shadow-md text-xs font-bold hover:bg-green-50 dark:hover:bg-green-900/40 hover:text-green-700 dark:hover:text-green-400 transition-all duration-200 hover:scale-105 border border-white/50 dark:border-slate-700"
+                            >
+                                {shareCopied ? <Check size={14} className="text-green-500" /> : <Share2 size={14} />}
+                                <span>{shareCopied ? 'Copied!' : 'Share'}</span>
+                            </button>
                             {allMedia.length > 1 && (
                                 <>
                                     <button onClick={() => setCurrentMediaIndex((currentMediaIndex - 1 + allMedia.length) % allMedia.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-slate-800/80 backdrop-blur p-2 rounded-full shadow-md">
@@ -383,6 +466,18 @@ ${productList}`;
                                         <MessageSquare size={18} /> Chat
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => handleShare(selectedProduct)}
+                                    title="Share this product"
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 border-2 rounded-xl font-bold text-sm transition-all duration-200 ${
+                                        shareCopied
+                                            ? 'border-green-500 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                                            : 'border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:text-blue-400'
+                                    }`}
+                                >
+                                    {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
+                                    <span className="hidden sm:inline">{shareCopied ? 'Copied!' : 'Share'}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
