@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Edit, Loader2, BadgeCheck } from 'lucide-react';
+import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Edit, Loader2, BadgeCheck, Calendar } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import EditProfileModal from '../components/modals/EditProfileModal';
@@ -116,6 +116,15 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
                                 <div className="flex items-center gap-3"><Mail size={18} className="text-stone-400" /><span className="font-medium text-sm">{user?.email}</span></div>
                                 <div className="flex items-center gap-3"><Phone size={18} className="text-stone-400" /><span className="font-medium text-sm">{user?.phone || 'Not provided'}</span></div>
                                 <div className="flex items-center gap-3"><MapPin size={18} className="text-stone-400" /><span className="font-medium text-sm">{user?.address || user?.location || 'Not provided'}</span></div>
+                                <div className="flex items-center gap-3">
+                                    <Calendar size={18} className="text-stone-400" />
+                                    <span className="font-medium text-sm">
+                                        {user?.createdAt
+                                            ? <>Member since <span className="font-bold text-black dark:text-white">{new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span></>
+                                            : 'Member since unknown'
+                                        }
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
