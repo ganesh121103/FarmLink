@@ -10,6 +10,7 @@ import TransparencyModal from '../components/modals/TransparencyModal';
 import { mockReviews, CATEGORIES, LOCATIONS } from '../constants';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAppContext } from '../context/AppContext';
+import { getProductSeasonalTag } from '../utils/seasonUtils';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -446,6 +447,11 @@ ${productList}`;
 
                         <div className="flex flex-wrap gap-3 mb-6">
                             {selectedProduct.tags?.map(tag => <span key={tag} className="flex items-center gap-1 bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full"><SparklesIcon /> {tag}</span>)}
+                            {(() => { const st = getProductSeasonalTag(selectedProduct); return st ? (
+                                <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${st.config.bg} ${st.config.text} ${st.config.border}`}>
+                                    {st.config.emoji} {st.config.badge}
+                                </span>
+                            ) : null; })()}
                             <span className="bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full">📦 {selectedProduct.stock}kg left</span>
                             {selectedProduct.location && <span className="bg-stone-100 dark:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1"><MapPin size={12} /> {selectedProduct.location}</span>}
                             <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">🚚 Get it by {new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
@@ -861,11 +867,18 @@ ${productList}`;
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {filteredProducts.map((product) => {
                         const isWishlisted = wishlist?.some(item => item._id === product._id);
+                        const seasonTag = getProductSeasonalTag(product);
                         return (
                             <Card key={product._id} tabIndex={0} onClick={() => handleSelectProduct(product)} className="overflow-hidden group flex flex-col relative h-full border-transparent hover:border-green-300 dark:hover:border-green-700 cursor-pointer">
                                 {product.tags?.map((tag, i) => (<span key={i} className="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-black dark:text-slate-200 text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm flex items-center border border-stone-100 dark:border-slate-700"><SparklesIcon /> {tag}</span>))}
                                 <div className="h-48 md:h-56 overflow-hidden relative">
                                     <img src={product.images?.[0] || product.image} loading="lazy" alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    {/* Seasonal badge — bottom-left of image */}
+                                    {seasonTag && (
+                                        <span className={`absolute bottom-3 left-3 z-10 flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full border shadow-sm backdrop-blur-sm ${seasonTag.config.bg} ${seasonTag.config.text} ${seasonTag.config.border}`}>
+                                            {seasonTag.config.emoji} {seasonTag.config.badge}
+                                        </span>
+                                    )}
                                     <button
                                         aria-label="Toggle Wishlist"
                                         onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
@@ -876,7 +889,7 @@ ${productList}`;
                                     <button
                                         aria-label="View Transparency Details"
                                         onClick={(e) => { e.stopPropagation(); setTransparencyProduct(product); }}
-                                        className="absolute bottom-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400 z-10"
+                                        className={`absolute ${seasonTag ? 'bottom-3' : 'bottom-3'} right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400 z-10`}
                                         title="Scan for Manufacturing Details"
                                     >
                                         <QrCode size={18} />
