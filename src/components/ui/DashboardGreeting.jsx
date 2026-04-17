@@ -75,6 +75,7 @@ function formatClock(date) {
  */
 const DashboardGreeting = ({ user, extra }) => {
     const [time, setTime] = useState(new Date());
+    const [imgError, setImgError] = useState(false);
 
     // Live clock — tick every second for the visible clock display
     useEffect(() => {
@@ -91,15 +92,16 @@ const DashboardGreeting = ({ user, extra }) => {
             <div className="flex items-center gap-4">
                 {/* Avatar */}
                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-green-50 dark:bg-green-900/30 border-2 border-green-100 dark:border-green-800/50 overflow-hidden flex-shrink-0 shadow-sm flex items-center justify-center">
-                    {user?.image ? (
+                    {user?.image && !imgError ? (
                         <img
                             src={user.image}
                             alt={user.name}
                             className="w-full h-full object-cover"
+                            onError={() => setImgError(true)}
                         />
                     ) : (
-                        <span className="text-2xl font-black text-green-700 dark:text-green-400">
-                            {user?.name?.charAt(0)?.toUpperCase() || <User size={28} />}
+                        <span className="text-2xl font-black text-green-700 dark:text-green-400 select-none">
+                            {user?.name?.charAt(0)?.toUpperCase() || '?'}
                         </span>
                     )}
                 </div>

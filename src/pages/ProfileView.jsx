@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, CheckCircle, Mail, Phone, MapPin, Sprout, LocateFixed, LogOut, Edit, Loader2, BadgeCheck, Calendar } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import UserAvatar from '../components/ui/UserAvatar';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import VerificationModal from '../components/modals/VerificationModal';
 import { ShieldAlert } from '../components/ui/CustomIcons';
@@ -46,13 +47,14 @@ const ProfileView = ({ BackBtn, setFarmers }) => {
             <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-stone-100 dark:border-slate-700 p-8 md:p-10">
                 <div className="flex flex-col">
                     <div className="flex justify-between items-start mb-6">
-                        <div className="w-32 h-32 bg-stone-50 dark:bg-slate-900 rounded-full flex items-center justify-center shadow-inner border-4 border-white dark:border-slate-800 overflow-hidden relative group">
-                            {user?.image ? (
-                                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <User size={64} className="text-stone-300 dark:text-slate-600" />
-                            )}
-                        </div>
+                        <UserAvatar
+                                name={user?.name}
+                                image={user?.image}
+                                size="w-32 h-32"
+                                textSize="text-5xl"
+                                rounded="rounded-full"
+                                className="shadow-inner border-4 border-white dark:border-slate-800"
+                            />
                         <Button onClick={() => setIsEditModalOpen(true)} variant="outline" className="bg-white dark:bg-slate-800"><Edit size={16} /> {t('editProfile')}</Button>
                     </div>
 

@@ -4,6 +4,7 @@ import { FarmerSkeleton } from '../components/ui/Skeletons';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import UserAvatar from '../components/ui/UserAvatar';
 import { useAppContext } from '../context/AppContext';
 
 const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, isLoading }) => {
@@ -68,13 +69,12 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                     {filtered.map(farmer => (
                         <Card key={farmer._id} className="p-6 flex flex-col gap-4 h-full">
                             <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-2xl font-black text-green-700 dark:text-green-500 flex-shrink-0 overflow-hidden">
-                                    {farmer.image ? (
-                                        <img src={farmer.image} alt={farmer.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        farmer.name.charAt(0).toUpperCase()
-                                    )}
-                                </div>
+                                <UserAvatar
+                                    name={farmer.name}
+                                    image={farmer.image}
+                                    size="w-16 h-16"
+                                    textSize="text-2xl"
+                                />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
                                         <h3 className="font-black text-lg leading-tight text-black dark:text-white flex items-center gap-1.5">{farmer.name} {farmer.verified && <BadgeCheck size={18} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h3>

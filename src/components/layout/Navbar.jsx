@@ -3,6 +3,7 @@ import { Leaf, ShoppingBasket, User, LogOut, Sun, Moon, Globe, Menu, X, ChevronD
 import Badge from '../ui/Badge';
 import NotificationBell from '../ui/NotificationBell';
 import WishlistDrawer from '../ui/WishlistDrawer';
+import UserAvatar from '../ui/UserAvatar';
 import { useAppContext } from '../../context/AppContext';
 
 const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
@@ -152,12 +153,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                     onClick={() => navigate('profile')}
                                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 >
-                                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 overflow-hidden">
-                                        {user.image
-                                            ? <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-                                            : <User size={16} />
-                                        }
-                                    </div>
+                                    <UserAvatar name={user.name} image={user.image} size="w-8 h-8" textSize="text-sm" />
                                     <span className="text-sm font-bold text-gray-900 dark:text-white max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
                                     {user.role === 'admin' && <Badge color="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">Admin</Badge>}
                                 </button>

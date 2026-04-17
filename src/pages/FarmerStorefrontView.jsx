@@ -9,6 +9,7 @@ import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { AddToCartButton, Button } from '../components/ui/Button';
 import TransparencyModal from '../components/modals/TransparencyModal';
+import UserAvatar from '../components/ui/UserAvatar';
 import { useAppContext } from '../context/AppContext';
 
 /* ── Star Rating Display ─────────────────────────────────────── */
@@ -264,16 +265,14 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                     <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 pb-6">
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
-                            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-white/30 shadow-2xl bg-white/10">
-                                {farmer.image
-                                    ? <img src={farmer.image} alt={farmer.name} className="w-full h-full object-cover" />
-                                    : (
-                                        <div className="w-full h-full flex items-center justify-center text-white text-4xl font-black">
-                                            {farmer.name.charAt(0).toUpperCase()}
-                                        </div>
-                                    )
-                                }
-                            </div>
+                            <UserAvatar
+                                name={farmer.name}
+                                image={farmer.image}
+                                size="w-24 h-24 sm:w-32 sm:h-32"
+                                textSize="text-4xl sm:text-5xl"
+                                rounded="rounded-2xl"
+                                className="border-4 border-white/30 shadow-2xl bg-white/10"
+                            />
                             {farmer.verified && (
                                 <div className="absolute -bottom-2 -right-2 w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg" title="Verified Farmer">
                                     <BadgeCheck size={20} className="text-white" />

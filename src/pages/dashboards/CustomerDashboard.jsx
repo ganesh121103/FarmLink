@@ -10,6 +10,7 @@ import ReceiptModal from '../../components/modals/ReceiptModal';
 import OrderDetailModal from '../../components/modals/OrderDetailModal';
 import TransparencyModal from '../../components/modals/TransparencyModal';
 import DashboardGreeting from '../../components/ui/DashboardGreeting';
+import UserAvatar from '../../components/ui/UserAvatar';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
@@ -301,13 +302,12 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                                     </span>
                                 )}
                                 <div className="flex items-center gap-4 mb-3 pr-8">
-                                    <div className="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 font-black text-lg overflow-hidden flex-shrink-0">
-                                        {otherImage ? (
-                                            <img src={otherImage} alt={otherName} className="w-full h-full object-cover" />
-                                        ) : (
-                                            otherName.charAt(0)?.toUpperCase() || 'F'
-                                        )}
-                                    </div>
+                                    <UserAvatar
+                                        name={otherName}
+                                        image={otherImage}
+                                        size="w-12 h-12"
+                                        textSize="text-lg"
+                                    />
                                     <div className="flex-1 overflow-hidden">
                                         <h4 className="font-bold text-black dark:text-white truncate">{otherName}</h4>
                                         <p className="text-[10px] text-stone-400 uppercase font-bold">{otherRole}</p>
