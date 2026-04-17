@@ -9,6 +9,7 @@ import ReviewModal from '../../components/modals/ReviewModal';
 import ReceiptModal from '../../components/modals/ReceiptModal';
 import OrderDetailModal from '../../components/modals/OrderDetailModal';
 import TransparencyModal from '../../components/modals/TransparencyModal';
+import DashboardGreeting from '../../components/ui/DashboardGreeting';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
@@ -344,12 +345,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-7xl mx-auto">
-            <div className="mb-10">
-                <h1 className="text-4xl font-black text-black dark:text-white mb-1">
-                    Welcome back, <span className="text-green-700 dark:text-green-400">{user?.name?.split(' ')[0]}!</span>
-                </h1>
-                <p className="text-stone-500 font-medium">Here's a summary of your FarmLink activity.</p>
-            </div>
+            <DashboardGreeting user={user} />
 
             {/* Stats - Clickable */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mb-12">

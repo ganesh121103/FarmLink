@@ -9,7 +9,7 @@ import CropScannerModal from '../../components/modals/CropScannerModal';
 import VerificationModal from '../../components/modals/VerificationModal';
 import { CATEGORIES, LOCATIONS } from '../../constants';
 import { ConversationSkeleton } from '../../components/ui/Skeletons';
-
+import DashboardGreeting from '../../components/ui/DashboardGreeting';
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
@@ -207,16 +207,13 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                    <h1 className="text-4xl font-black flex items-center gap-3 text-black dark:text-white"><Sprout className="text-green-600" /> {t('farmerDashboard')}</h1>
-                    <p className="text-stone-500 mt-1 font-medium">Welcome back, {user?.name?.split(' ')[0]}! {t('manageInventory')}</p>
-                </div>
-                <div className="flex gap-3">
+            <DashboardGreeting
+                user={user}
+                extra={<>
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
                     <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
-                </div>
-            </div>
+                </>}
+            />
 
             {!user?.verified && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl p-5 mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
