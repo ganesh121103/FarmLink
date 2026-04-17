@@ -44,19 +44,19 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
             }).addTo(mapInstance.current);
             L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
         }
-        return () => {}; // Cleanup skipped for HMR stability on persistent routes
+        return () => { }; // Cleanup skipped for HMR stability on persistent routes
     }, []);
 
     useEffect(() => {
         if (!mapInstance.current) return;
-        
+
         let center = CITY_COORDINATES[activeLocation] || [19.7515, 75.7139];
         let zoom = activeLocation === 'All' ? 6 : 11;
-        
+
         // If the user's city matches their active filter, use their EXACT high-precision street coordinates and zoom in closer
         if (exactUserLocation && (activeLocation !== 'All')) {
-             center = exactUserLocation;
-             zoom = 13; // Higher zoom for neighborhood level
+            center = exactUserLocation;
+            zoom = 13; // Higher zoom for neighborhood level
         }
 
         mapInstance.current.flyTo(center, zoom, { duration: 1.5 });
@@ -91,7 +91,7 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
             const baseCoords = CITY_COORDINATES[p.location] || [19.7515, 75.7139];
             const offsetLat = baseCoords[0] + (Math.sin(i * 10) * 0.02);
             const offsetLng = baseCoords[1] + (Math.cos(i * 10) * 0.02);
-            
+
             const marker = L.marker([offsetLat, offsetLng], { icon: productIcon }).addTo(mapInstance.current);
             const popupContent = document.createElement('div');
             popupContent.className = "text-center w-40 cursor-pointer m-0 p-1";
@@ -214,7 +214,7 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
             addToast('⚠️ Could not copy automatically. Please copy the URL from your browser address bar.');
         }
     };
-    
+
     // Review States
     const [newReviewRating, setNewReviewRating] = useState(5);
     const [newReviewComment, setNewReviewComment] = useState('');
@@ -242,17 +242,17 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         if (!newReviewComment.trim()) return;
         setSubmittingReview(true);
         try {
-            const { data } = await apiCall(`/products/${selectedProduct._id}/reviews`, "POST", { 
-                rating: newReviewRating, 
+            const { data } = await apiCall(`/products/${selectedProduct._id}/reviews`, "POST", {
+                rating: newReviewRating,
                 comment: newReviewComment,
                 images: newReviewImages
             });
-            
+
             setSelectedProduct(data);
             setNewReviewComment('');
             setNewReviewRating(5);
             setNewReviewImages([]);
-            
+
             // Properly update parent state for real-time reactivity
             if (setProducts) {
                 setProducts(prev => prev.map(p => p._id === data._id ? data : p));
@@ -315,35 +315,12 @@ ${productList}`;
     const debouncedSearch = useDebounce(localSearch, 400);
     const currentFarmer = selectedFarmer || (filterByLocation ? null : null);
 
-    // Recently Viewed — persisted in localStorage, max 5 products
-    const [recentlyViewed, setRecentlyViewed] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('farmlink_recently_viewed')) || []; }
-        catch { return []; }
-    });
-
-    // handleSelectProduct defined early so deep-link useEffect can reference it
-    const handleSelectProduct = (p) => {
-        setSelectedProduct(p);
-        setCurrentMediaIndex(0);
-        setNewReviewComment('');
-        setNewReviewRating(5);
-        setNewReviewImages([]);
-        window.scrollTo(0, 0);
-        fetchAIRecs(p);
-
-        // Track recently viewed in localStorage
-        setRecentlyViewed(prev => {
-            const filtered = prev.filter(rv => rv._id !== p._id);
-            const updated = [p, ...filtered].slice(0, 5);
-            try { localStorage.setItem('farmlink_recently_viewed', JSON.stringify(updated)); } catch { /* ignore */ }
-            return updated;
-        });
-    };
-
     // Deep-link handler: opens product detail when a shared URL is loaded
     useEffect(() => {
         const handler = (e) => {
-            if (e.detail) handleSelectProduct(e.detail);
+            if (e.detail) {
+                handleSelectProduct(e.detail);
+            }
         };
         window.addEventListener('farmlink:open-product', handler);
         return () => window.removeEventListener('farmlink:open-product', handler);
@@ -373,7 +350,7 @@ ${productList}`;
                     setExactUserLocation([latitude, longitude]);
                     const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
                     const data = await res.json();
-                    
+
                     const city = data.city || data.locality || data.principalSubdivision;
                     if (city) {
                         if (!dynamicLocations.includes(city)) setDynamicLocations([...dynamicLocations, city]);
@@ -389,6 +366,8 @@ ${productList}`;
             () => { setIsLocating(false); }
         );
     };
+
+    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); setNewReviewComment(''); setNewReviewRating(5); setNewReviewImages([]); window.scrollTo(0, 0); fetchAIRecs(p); };
 
     let filteredProducts = products;
     if (currentFarmer) filteredProducts = filteredProducts.filter(p => p.farmer === currentFarmer._id || p.farmerName === currentFarmer.name);
@@ -477,11 +456,9 @@ ${productList}`;
                         <div className="flex flex-col gap-3">
                             <AddToCartButton product={selectedProduct} fullWidth />
                             <div className="flex gap-3">
-                                {user?.role === 'customer' && (
-                                    <button onClick={() => toggleWishlist(selectedProduct)} className={`flex-1 flex items-center justify-center gap-2 py-3 border-2 rounded-xl font-bold text-sm transition-colors ${isWishlisted ? 'border-red-500 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 hover:border-stone-400'}`}>
-                                        <Heart size={18} className={isWishlisted ? 'fill-current' : ''} /> {isWishlisted ? 'Wishlisted' : 'Wishlist'}
-                                    </button>
-                                )}
+                                <button onClick={() => toggleWishlist(selectedProduct)} className={`flex-1 flex items-center justify-center gap-2 py-3 border-2 rounded-xl font-bold text-sm transition-colors ${isWishlisted ? 'border-red-500 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 hover:border-red-400 hover:text-red-500'}`}>
+                                    <Heart size={18} className={isWishlisted ? 'fill-current' : ''} /> {isWishlisted ? 'Wishlisted' : 'Wishlist'}
+                                </button>
                                 {farmerInfo && (
                                     <button onClick={(e) => { e.stopPropagation(); openChat(farmerInfo); }} className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-green-400 hover:text-green-600 transition-colors">
                                         <MessageSquare size={18} /> Chat
@@ -490,11 +467,10 @@ ${productList}`;
                                 <button
                                     onClick={() => handleShare(selectedProduct)}
                                     title="Share this product"
-                                    className={`flex items-center justify-center gap-2 py-3 px-4 border-2 rounded-xl font-bold text-sm transition-all duration-200 ${
-                                        shareCopied
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 border-2 rounded-xl font-bold text-sm transition-all duration-200 ${shareCopied
                                             ? 'border-green-500 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                                             : 'border-stone-200 dark:border-slate-600 text-stone-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:text-blue-400'
-                                    }`}
+                                        }`}
                                 >
                                     {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
                                     <span className="hidden sm:inline">{shareCopied ? 'Copied!' : 'Share'}</span>
@@ -535,7 +511,7 @@ ${productList}`;
                 {/* Reviews Summary & Breakdown */}
                 <div className="mb-12">
                     <h3 className="text-2xl font-black mb-6 text-black dark:text-white">Customer Reviews</h3>
-                    
+
                     <div className="grid md:grid-cols-2 gap-8 mb-10 items-center">
                         <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-800 rounded-3xl border border-stone-100 dark:border-slate-700 shadow-sm text-center">
                             <span className="text-6xl font-black text-black dark:text-white mb-2">{selectedProduct.rating?.toFixed(1) || '0.0'}</span>
@@ -544,9 +520,9 @@ ${productList}`;
                             </div>
                             <span className="text-stone-500 dark:text-slate-400 font-bold">{selectedProduct.reviewsCount || 0} reviews</span>
                         </div>
-                        
+
                         <div className="space-y-3">
-                            {[5,4,3,2,1].map(star => {
+                            {[5, 4, 3, 2, 1].map(star => {
                                 const count = selectedProduct.reviews?.filter(r => r.rating === star).length || 0;
                                 const pct = selectedProduct.reviewsCount ? (count / selectedProduct.reviewsCount) * 100 : 0;
                                 return (
@@ -561,7 +537,7 @@ ${productList}`;
                             })}
                         </div>
                     </div>
-                    
+
                     <div className="space-y-4 mb-8">
                         {(!selectedProduct.reviews || selectedProduct.reviews.length === 0) ? (
                             <p className="text-stone-500 dark:text-slate-400 bg-stone-50 dark:bg-slate-800 p-8 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600 text-center italic font-medium">No reviews yet. Be the first to share your experience!</p>
@@ -614,10 +590,10 @@ ${productList}`;
                     {user && user.role === 'customer' ? (
                         (() => {
                             const currentUserId = (user._id || user.id)?.toString();
-                            const hasReviewed = selectedProduct.reviews?.some(r => 
+                            const hasReviewed = selectedProduct.reviews?.some(r =>
                                 r.user?.toString() === currentUserId
                             );
-                            
+
                             if (hasReviewed && !isEditingReview) {
                                 return (
                                     <div className="bg-stone-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-stone-200 dark:border-slate-700 text-center flex flex-col items-center">
@@ -626,7 +602,7 @@ ${productList}`;
                                         </div>
                                         <p className="text-stone-700 dark:text-slate-200 font-bold mb-1">Thank you for your feedback!</p>
                                         <p className="text-stone-500 dark:text-slate-400 text-sm font-medium italic mb-4">You have already shared a review for this product.</p>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 const myReview = selectedProduct.reviews.find(r => r.user?.toString() === currentUserId);
                                                 if (myReview) {
@@ -651,35 +627,35 @@ ${productList}`;
                                 <div className="bg-gradient-to-br from-stone-50 to-white dark:from-slate-800 dark:to-slate-800/80 rounded-2xl p-6 border border-stone-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
                                     <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
                                     <h4 className="font-black text-lg mb-4 text-stone-800 dark:text-white flex items-center gap-2"><Sparkles className="text-green-500" size={18} /> Write a Review</h4>
-                                    
+
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 p-4 bg-white dark:bg-slate-900/50 rounded-xl border border-stone-100 dark:border-slate-700">
                                         <span className="text-sm font-bold text-stone-600 dark:text-slate-400 uppercase tracking-wider">Your Rating</span>
                                         <div className="flex cursor-pointer gap-1.5">
                                             {[1, 2, 3, 4, 5].map((star) => (
-                                                <Star 
-                                                    key={star} 
-                                                    size={28} 
+                                                <Star
+                                                    key={star}
+                                                    size={28}
                                                     onClick={() => setNewReviewRating(star)}
-                                                    className={`${star <= newReviewRating ? "text-yellow-400 fill-current drop-shadow-sm scale-110" : "text-stone-300 dark:text-slate-600 hover:text-yellow-200 hover:scale-110"} transition-all`} 
+                                                    className={`${star <= newReviewRating ? "text-yellow-400 fill-current drop-shadow-sm scale-110" : "text-stone-300 dark:text-slate-600 hover:text-yellow-200 hover:scale-110"} transition-all`}
                                                 />
                                             ))}
                                         </div>
                                     </div>
-                                    
+
                                     <textarea
                                         value={newReviewComment}
                                         onChange={(e) => setNewReviewComment(e.target.value)}
                                         placeholder="What did you like or dislike about this product?"
                                         className="w-full p-4 rounded-xl border-2 border-transparent bg-stone-100 dark:bg-slate-900 text-sm focus:border-green-500 outline-none mb-3 min-h-[100px] resize-y font-medium text-stone-700 dark:text-slate-200 transition-colors shadow-inner"
                                     />
-                                    
+
                                     <div className="mb-5">
                                         <label className="cursor-pointer inline-flex items-center gap-2 border border-stone-300 dark:border-slate-600 rounded-lg px-4 py-2 hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors">
                                             <input type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleReviewImageChange} />
                                             <ImageIcon size={18} className="text-stone-500" />
                                             <span className="text-sm font-bold text-stone-600 dark:text-slate-300">Add Photos</span>
                                         </label>
-                                        
+
                                         {newReviewImages.length > 0 && (
                                             <div className="flex flex-wrap gap-2 mt-3 p-3 bg-stone-50 dark:bg-slate-900/50 rounded-xl border border-stone-100 dark:border-slate-700">
                                                 {newReviewImages.map((img, i) => (
@@ -689,8 +665,8 @@ ${productList}`;
                                                         ) : (
                                                             <img src={img} alt="Upload preview" className="w-full h-full object-cover rounded-lg border border-stone-200 dark:border-slate-600" />
                                                         )}
-                                                        <button 
-                                                            onClick={() => removeReviewImage(i)} 
+                                                        <button
+                                                            onClick={() => removeReviewImage(i)}
                                                             className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md"
                                                         >
                                                             <X size={10} />
@@ -700,7 +676,7 @@ ${productList}`;
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex justify-end">
                                         <button onClick={handleSubmitReview} disabled={submittingReview || !newReviewComment.trim()} className="bg-green-600 hover:bg-green-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center min-w-[160px]">
                                             {submittingReview ? <Loader2 size={18} className="animate-spin mr-2 inline" /> : "Submit Review"}
@@ -863,11 +839,11 @@ ${productList}`;
 
             {showMap && (
                 <div className="w-full h-72 md:h-96 bg-stone-200 dark:bg-slate-700 rounded-2xl mb-8 overflow-hidden relative animate-fade-in-down shadow-inner border border-stone-200 dark:border-slate-700 flex items-center justify-center">
-                    <VanillaMap 
-                        activeLocation={activeLocation} 
+                    <VanillaMap
+                        activeLocation={activeLocation}
                         exactUserLocation={exactUserLocation}
-                        filteredProducts={filteredProducts} 
-                        handleSelectProduct={handleSelectProduct} 
+                        filteredProducts={filteredProducts}
+                        handleSelectProduct={handleSelectProduct}
                     />
                 </div>
             )}
@@ -890,14 +866,16 @@ ${productList}`;
                                 {product.tags?.map((tag, i) => (<span key={i} className="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-black dark:text-slate-200 text-xs font-bold px-3 py-1 rounded-full z-10 shadow-sm flex items-center border border-stone-100 dark:border-slate-700"><SparklesIcon /> {tag}</span>))}
                                 <div className="h-48 md:h-56 overflow-hidden relative">
                                     <img src={product.images?.[0] || product.image} loading="lazy" alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    {user?.role === 'customer' && (
-                                        <button aria-label="Toggle Wishlist" onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }} className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm hover:scale-110 transition-transform">
-                                            <Heart size={18} className={isWishlisted ? "fill-red-500 text-red-500" : "text-stone-400"} />
-                                        </button>
-                                    )}
-                                    <button 
-                                        aria-label="View Transparency Details" 
-                                        onClick={(e) => { e.stopPropagation(); setTransparencyProduct(product); }} 
+                                    <button
+                                        aria-label="Toggle Wishlist"
+                                        onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
+                                        className="absolute top-3 right-3 bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm p-2 rounded-full shadow-sm hover:scale-110 transition-transform"
+                                    >
+                                        <Heart size={18} className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-stone-400 hover:text-red-400'} />
+                                    </button>
+                                    <button
+                                        aria-label="View Transparency Details"
+                                        onClick={(e) => { e.stopPropagation(); setTransparencyProduct(product); }}
                                         className="absolute bottom-3 right-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition-transform hover:text-green-600 dark:hover:text-green-400 z-10"
                                         title="Scan for Manufacturing Details"
                                     >
@@ -910,7 +888,7 @@ ${productList}`;
                                         {product.farmerName}
                                         {farmers?.find(f => f.name === product.farmerName || f._id === product.farmer)?.verified && <BadgeCheck size={14} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}
                                     </p>
-                                    
+
                                     <div className="flex items-center gap-1.5 mb-4">
                                         <div className="flex bg-stone-50 dark:bg-slate-900/50 px-1.5 py-0.5 rounded-md border border-stone-100 dark:border-slate-700">
                                             {[...Array(5)].map((_, i) => <Star key={i} size={12} className={i < Math.round(product.rating || 0) ? "text-yellow-400 fill-current" : "text-stone-300 dark:text-slate-600"} />)}
@@ -929,61 +907,6 @@ ${productList}`;
                 </div>
             )}
             <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
-
-            {/* Recently Viewed Section */}
-            {recentlyViewed.length > 0 && (
-                <div className="mt-16 mb-4">
-                    <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-black dark:text-white">Recently Viewed</h2>
-                                <p className="text-xs text-stone-400 dark:text-slate-500 font-medium">Pick up where you left off</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => {
-                                setRecentlyViewed([]);
-                                try { localStorage.removeItem('farmlink_recently_viewed'); } catch { /* ignore */ }
-                            }}
-                            className="text-xs font-bold text-stone-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                            Clear history
-                        </button>
-                    </div>
-
-                    <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d6d3d1 transparent' }}>
-                        {recentlyViewed.map((p) => (
-                            <button
-                                key={p._id}
-                                onClick={() => handleSelectProduct(p)}
-                                className="flex-shrink-0 w-44 group bg-white dark:bg-slate-800 rounded-2xl border border-stone-100 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300 text-left"
-                            >
-                                <div className="h-28 overflow-hidden relative">
-                                    <img
-                                        src={p.images?.[0] || p.image}
-                                        alt={p.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
-                                <div className="p-3">
-                                    <p className="font-bold text-sm text-black dark:text-white leading-tight line-clamp-1 mb-1 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">{p.name}</p>
-                                    <p className="text-[10px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-wide mb-2 line-clamp-1">{p.farmerName}</p>
-                                    <div className="flex items-center gap-1 mb-1">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} size={10} className={i < Math.round(p.rating || 0) ? 'text-yellow-400 fill-current' : 'text-stone-300 dark:text-slate-600'} />
-                                        ))}
-                                    </div>
-                                    <p className="text-green-700 dark:text-green-400 font-black text-sm">₹{p.price}<span className="text-[10px] text-stone-400 font-bold">/kg</span></p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
