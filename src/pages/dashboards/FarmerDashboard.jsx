@@ -11,6 +11,7 @@ import { CATEGORIES, LOCATIONS } from '../../constants';
 import { ConversationSkeleton } from '../../components/ui/Skeletons';
 import DashboardGreeting from '../../components/ui/DashboardGreeting';
 import UserAvatar from '../../components/ui/UserAvatar';
+import RevenueChart from '../../components/ui/RevenueChart';
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
@@ -32,6 +33,24 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [expenses, setExpenses] = useState([]);
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
     const [newExpense, setNewExpense] = useState({ cropName: '', amount: '', description: '' });
+
+    // ── Revenue Chart State ───────────────────────────────────────────
+    const [revenueChartData, setRevenueChartData] = useState([]);
+    const [loadingChart, setLoadingChart] = useState(false);
+
+    // Fetch revenue chart data whenever the financials tab becomes active
+    useEffect(() => {
+        if (activeTab === 'financials' && user?._id) {
+            setLoadingChart(true);
+            // Pass farmerName as query param so backend can match by name too
+            const nameParam = user.name ? `?farmerName=${encodeURIComponent(user.name)}` : '';
+            apiCall(`/orders/revenue-chart/${user._id}${nameParam}`)
+                .then(({ data }) => setRevenueChartData(Array.isArray(data) ? data : []))
+                .catch(err => console.error('[RevenueChart] fetch error:', err.message))
+                .finally(() => setLoadingChart(false));
+        }
+    }, [activeTab, user?._id]);
+    // ─────────────────────────────────────────────────────────────────
 
     useEffect(() => {
         if (user?._id) {
@@ -439,6 +458,14 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
             {activeTab === 'financials' && (
                 <div className="animate-fade-in-up space-y-8">
+
+                    {/* ── Revenue Chart ── */}
+                    <RevenueChart
+                        data={revenueChartData}
+                        loading={loadingChart}
+                        totalRevenue={totalRevenue}
+                    />
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card className="p-6 border-l-4 border-l-blue-500">
                             <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Earnings</p>
