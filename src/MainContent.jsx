@@ -31,6 +31,12 @@ const MainContent = () => {
     const [isLoadingFarmers, setIsLoadingFarmers] = useState(true);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [selectedFarmer, setSelectedFarmer] = useState(null);
+    // Deep-link: product ID from ?product= URL param (consumed after products load)
+    const [pendingProductId] = useState(() => {
+        try {
+            return new URLSearchParams(window.location.search).get('product') || null;
+        } catch { return null; }
+    });
 
     // Expose globally so ProductsView "Visit Store" button can redirect
     React.useEffect(() => {
@@ -74,6 +80,23 @@ const MainContent = () => {
 
     useEffect(() => { fetchFarmers(); fetchProducts(); }, []);
     useEffect(() => { fetchOrders(); }, [user]);
+
+    // Deep-link: once products are loaded, open the product from the shared URL
+    useEffect(() => {
+        if (!pendingProductId || products.length === 0) return;
+        const match = products.find(p => p._id === pendingProductId);
+        if (match) {
+            // Navigate to products view first, then open product detail
+            if (view !== 'products') navigate('products');
+            // Expose the product to ProductsView via a window event
+            window.dispatchEvent(new CustomEvent('farmlink:open-product', { detail: match }));
+            // Clean the URL so it looks normal after navigation
+            try {
+                const clean = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, '', clean);
+            } catch { /* ignore */ }
+        }
+    }, [products, pendingProductId]);
 
     const goBack = () => {
         if (history.length > 1) {

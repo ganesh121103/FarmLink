@@ -9,6 +9,8 @@ import ReviewModal from '../../components/modals/ReviewModal';
 import ReceiptModal from '../../components/modals/ReceiptModal';
 import OrderDetailModal from '../../components/modals/OrderDetailModal';
 import TransparencyModal from '../../components/modals/TransparencyModal';
+import DashboardGreeting from '../../components/ui/DashboardGreeting';
+import UserAvatar from '../../components/ui/UserAvatar';
 import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
@@ -300,13 +302,12 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                                     </span>
                                 )}
                                 <div className="flex items-center gap-4 mb-3 pr-8">
-                                    <div className="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 font-black text-lg overflow-hidden flex-shrink-0">
-                                        {otherImage ? (
-                                            <img src={otherImage} alt={otherName} className="w-full h-full object-cover" />
-                                        ) : (
-                                            otherName.charAt(0)?.toUpperCase() || 'F'
-                                        )}
-                                    </div>
+                                    <UserAvatar
+                                        name={otherName}
+                                        image={otherImage}
+                                        size="w-12 h-12"
+                                        textSize="text-lg"
+                                    />
                                     <div className="flex-1 overflow-hidden">
                                         <h4 className="font-bold text-black dark:text-white truncate">{otherName}</h4>
                                         <p className="text-[10px] text-stone-400 uppercase font-bold">{otherRole}</p>
@@ -344,12 +345,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-7xl mx-auto">
-            <div className="mb-10">
-                <h1 className="text-4xl font-black text-black dark:text-white mb-1">
-                    Welcome back, <span className="text-green-700 dark:text-green-400">{user?.name?.split(' ')[0]}!</span>
-                </h1>
-                <p className="text-stone-500 font-medium">Here's a summary of your FarmLink activity.</p>
-            </div>
+            <DashboardGreeting user={user} />
 
             {/* Stats - Clickable */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mb-12">

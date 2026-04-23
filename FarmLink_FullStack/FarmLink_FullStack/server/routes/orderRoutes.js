@@ -27,6 +27,105 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+/* ─────────────────────────────────────────────────────────────
+   GET /api/orders/revenue-chart/:farmerId?farmerName=<name>
+   Returns last 6 months of monthly revenue for a specific farmer.
+   Uses MongoDB aggregation on the items sub-array.
+   ───────────────────────────────────────────────────────────── */
+router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const { farmerId } = req.params;
+    // farmerName passed as query param (GET requests have no request body)
+    const farmerName = req.query.farmerName || "";
+
+    // Safely parse farmerId into an ObjectId
+    let farmerObjId = null;
+    try {
+      farmerObjId = new mongoose.Types.ObjectId(farmerId);
+    } catch (_) { /* invalid ObjectId – will rely on name match */ }
+
+    // Build the last 6 calendar months (inclusive of current)
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        year: d.getFullYear(),
+        month: d.getMonth() + 1, // 1-based
+        label: d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+      });
+    }
+
+    // Build OR conditions for farmer matching:
+    //  - items.farmer stored as ObjectId  (normal case)
+    //  - items.farmer stored as string    (legacy/edge case)
+    //  - items.farmerName string match    (most reliable fallback)
+    const farmerMatchConditions = [];
+    if (farmerObjId) farmerMatchConditions.push({ "items.farmer": farmerObjId });
+    if (farmerId)    farmerMatchConditions.push({ "items.farmer": farmerId });
+    if (farmerName)  farmerMatchConditions.push({ "items.farmerName": farmerName });
+
+    if (farmerMatchConditions.length === 0) {
+      return res.status(400).json({ message: "farmerId or farmerName required" });
+    }
+
+    // Aggregation pipeline
+    const raw = await Order.aggregate([
+      // Pre-filter: non-cancelled orders within last 6 months
+      {
+        $match: {
+          status: { $ne: "Cancelled" },
+          createdAt: { $gte: sixMonthsAgo },
+        },
+      },
+      // Unwind items array so we can match per-farmer item
+      { $unwind: "$items" },
+      // Keep only this farmer's items
+      { $match: { $or: farmerMatchConditions } },
+      // Group by year + month
+      {
+        $group: {
+          _id: {
+            year:  { $year:  "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          revenue:  { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+          orderIds: { $addToSet: "$_id" },
+        },
+      },
+    ]);
+
+    console.log(`[RevenueChart] farmerId=${farmerId} farmerName=${farmerName} -> raw groups:`, JSON.stringify(raw));
+
+    // Map to month-keyed lookup
+    const lookup = {};
+    raw.forEach((r) => {
+      const key = `${r._id.year}-${r._id.month}`;
+      lookup[key] = {
+        revenue: Math.round(r.revenue),
+        orders: r.orderIds.length,
+      };
+    });
+
+    // Final 6-month array with zero-fill for months without data
+    const chart = months.map((m) => {
+      const key = `${m.year}-${m.month}`;
+      return {
+        month: m.label,
+        revenue: lookup[key]?.revenue || 0,
+        orders:  lookup[key]?.orders  || 0,
+      };
+    });
+
+    res.json(chart);
+  } catch (err) {
+    console.error("[Revenue Chart] Error:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 /* POST order – authenticated users */
 router.post("/", verifyToken, async (req, res) => {
   try {
