@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, MessageSquare, Phone, Mail, BadgeCheck, Store } from 'lucide-react';
+import { Search, MapPin, Star, MessageSquare, Phone, Mail, BadgeCheck, Store, Package } from 'lucide-react';
 import { FarmerSkeleton } from '../components/ui/Skeletons';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import UserAvatar from '../components/ui/UserAvatar';
 import { useAppContext } from '../context/AppContext';
 
 const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, isLoading }) => {
@@ -27,16 +28,17 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
     };
 
     const getFarmerRating = (farmer) => {
-        if (!products || products.length === 0) return farmer.rating || 0; // fallback
+        if (!products || products.length === 0) return farmer.rating || 0;
         const farmerProducts = products.filter(p => p.farmer === farmer._id || p.farmerName === farmer.name);
         const ratedProducts = farmerProducts.filter(p => p.rating > 0);
-        
-        if (ratedProducts.length === 0) {
-            return farmer.rating || 0; // fallback to 0 instead of fake 4.5
-        }
-        
+        if (ratedProducts.length === 0) return farmer.rating || 0;
         const totalRating = ratedProducts.reduce((sum, p) => sum + p.rating, 0);
         return (totalRating / ratedProducts.length).toFixed(1);
+    };
+
+    const getFarmerProductCount = (farmer) => {
+        if (!products || products.length === 0) return 0;
+        return products.filter(p => p.farmer === farmer._id || p.farmerName === farmer.name).length;
     };
 
     return (
@@ -67,13 +69,12 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                     {filtered.map(farmer => (
                         <Card key={farmer._id} className="p-6 flex flex-col gap-4 h-full">
                             <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-2xl font-black text-green-700 dark:text-green-500 flex-shrink-0 overflow-hidden">
-                                    {farmer.image ? (
-                                        <img src={farmer.image} alt={farmer.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        farmer.name.charAt(0).toUpperCase()
-                                    )}
-                                </div>
+                                <UserAvatar
+                                    name={farmer.name}
+                                    image={farmer.image}
+                                    size="w-16 h-16"
+                                    textSize="text-2xl"
+                                />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
                                         <h3 className="font-black text-lg leading-tight text-black dark:text-white flex items-center gap-1.5">{farmer.name} {farmer.verified && <BadgeCheck size={18} className="text-blue-500 fill-blue-50 dark:fill-blue-950" />}</h3>
@@ -88,8 +89,12 @@ const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, i
                                 {farmer.bio || "Dedicated local farmer providing fresh, high-quality produce."}
                             </p>
 
-                            <div className="flex gap-4 text-sm font-bold text-stone-700 dark:text-slate-300 border-t border-stone-100 dark:border-slate-700 pt-4">
+                            <div className="flex flex-wrap gap-4 text-sm font-bold text-stone-700 dark:text-slate-300 border-t border-stone-100 dark:border-slate-700 pt-4">
                                 <div className="flex items-center gap-1"><Star size={14} className="text-yellow-500 fill-current" /> {getFarmerRating(farmer)}</div>
+                                <div className="flex items-center gap-1.5">
+                                    <Package size={14} className="text-green-600" />
+                                    <span>{getFarmerProductCount(farmer)} product{getFarmerProductCount(farmer) !== 1 ? 's' : ''}</span>
+                                </div>
                                 {farmer.phone && <div className="flex items-center gap-1"><Phone size={14} className="text-green-600" /> {farmer.phone}</div>}
                             </div>
 

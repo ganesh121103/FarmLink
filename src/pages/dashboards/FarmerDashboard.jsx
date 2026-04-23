@@ -9,7 +9,9 @@ import CropScannerModal from '../../components/modals/CropScannerModal';
 import VerificationModal from '../../components/modals/VerificationModal';
 import { CATEGORIES, LOCATIONS } from '../../constants';
 import { ConversationSkeleton } from '../../components/ui/Skeletons';
-
+import DashboardGreeting from '../../components/ui/DashboardGreeting';
+import UserAvatar from '../../components/ui/UserAvatar';
+import RevenueChart from '../../components/ui/RevenueChart';
 import { apiCall } from '../../api/apiCall';
 import { useAppContext } from '../../context/AppContext';
 
@@ -31,6 +33,24 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [expenses, setExpenses] = useState([]);
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
     const [newExpense, setNewExpense] = useState({ cropName: '', amount: '', description: '' });
+
+    // ── Revenue Chart State ───────────────────────────────────────────
+    const [revenueChartData, setRevenueChartData] = useState([]);
+    const [loadingChart, setLoadingChart] = useState(false);
+
+    // Fetch revenue chart data whenever the financials tab becomes active
+    useEffect(() => {
+        if (activeTab === 'financials' && user?._id) {
+            setLoadingChart(true);
+            // Pass farmerName as query param so backend can match by name too
+            const nameParam = user.name ? `?farmerName=${encodeURIComponent(user.name)}` : '';
+            apiCall(`/orders/revenue-chart/${user._id}${nameParam}`)
+                .then(({ data }) => setRevenueChartData(Array.isArray(data) ? data : []))
+                .catch(err => console.error('[RevenueChart] fetch error:', err.message))
+                .finally(() => setLoadingChart(false));
+        }
+    }, [activeTab, user?._id]);
+    // ─────────────────────────────────────────────────────────────────
 
     useEffect(() => {
         if (user?._id) {
@@ -207,16 +227,13 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
     return (
         <div className="pt-32 px-6 pb-24 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-                <div>
-                    <h1 className="text-4xl font-black flex items-center gap-3 text-black dark:text-white"><Sprout className="text-green-600" /> {t('farmerDashboard')}</h1>
-                    <p className="text-stone-500 mt-1 font-medium">Welcome back, {user?.name?.split(' ')[0]}! {t('manageInventory')}</p>
-                </div>
-                <div className="flex gap-3">
+            <DashboardGreeting
+                user={user}
+                extra={<>
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
                     <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
-                </div>
-            </div>
+                </>}
+            />
 
             {!user?.verified && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl p-5 mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -397,13 +414,12 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                             </span>
                                         )}
                                         <div className="flex items-center gap-4 mb-3">
-                                            <div className="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 font-black text-lg overflow-hidden flex-shrink-0">
-                                                {otherImage ? (
-                                                    <img src={otherImage} alt={otherName} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    otherName.charAt(0).toUpperCase()
-                                                )}
-                                            </div>
+                                            <UserAvatar
+                                                name={otherName}
+                                                image={otherImage}
+                                                size="w-12 h-12"
+                                                textSize="text-lg"
+                                            />
                                             <div className="flex-1 overflow-hidden">
                                                 <h4 className="font-bold text-black dark:text-white truncate">{otherName}</h4>
                                                 <p className="text-[10px] text-stone-400 uppercase font-bold">{otherRole}</p>
@@ -442,6 +458,14 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
             {activeTab === 'financials' && (
                 <div className="animate-fade-in-up space-y-8">
+
+                    {/* ── Revenue Chart ── */}
+                    <RevenueChart
+                        data={revenueChartData}
+                        loading={loadingChart}
+                        totalRevenue={totalRevenue}
+                    />
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card className="p-6 border-l-4 border-l-blue-500">
                             <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Earnings</p>

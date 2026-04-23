@@ -1,12 +1,16 @@
-import React from 'react';
-import { Leaf, ShoppingBasket, User, LogOut, Sun, Moon, Globe, Menu, X, ChevronDown, ShoppingCart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Leaf, ShoppingBasket, User, LogOut, Sun, Moon, Globe, Menu, X, ChevronDown, Heart } from 'lucide-react';
 import Badge from '../ui/Badge';
 import NotificationBell from '../ui/NotificationBell';
+import WishlistDrawer from '../ui/WishlistDrawer';
+import UserAvatar from '../ui/UserAvatar';
 import { useAppContext } from '../../context/AppContext';
 
 const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
-    const { user, cart, t, isDarkMode, toggleDarkMode, language, setLanguage, navigate, handleLogout, view } = useAppContext();
+    const { user, cart, wishlist, t, isDarkMode, toggleDarkMode, language, setLanguage, navigate, handleLogout, view } = useAppContext();
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const wishlistCount = wishlist?.length || 0;
+    const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
     // When a notification links to a product, navigate there
     const handleNotificationProductClick = (productId) => {
@@ -28,6 +32,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
     };
 
     return (
+        <>
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-colors duration-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between gap-4">
@@ -88,12 +93,35 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
-                            {isDarkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-gray-600 dark:text-gray-300" />}
+                            {isDarkMode
+                                ? <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                : <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                            }
                         </button>
 
                         {/* Notification Bell — logged-in users only */}
                         {user && (
                             <NotificationBell onProductClick={handleNotificationProductClick} />
+                        )}
+
+                        {/* Wishlist Heart — customers & farmers only */}
+                        {user && user.role !== 'admin' && (
+                            <button
+                                onClick={() => setIsWishlistOpen(true)}
+                                className="relative p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+                                aria-label={`Wishlist: ${wishlistCount} items`}
+                                title="My Wishlist"
+                            >
+                                <Heart
+                                    size={22}
+                                    className={`transition-colors ${wishlistCount > 0 ? 'text-red-500 fill-red-500' : 'text-gray-600 dark:text-gray-300 group-hover:text-red-400'}`}
+                                />
+                                {wishlistCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
+                                        {wishlistCount}
+                                    </span>
+                                )}
+                            </button>
                         )}
 
                         {/* Cart Button */}
@@ -125,12 +153,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                     onClick={() => navigate('profile')}
                                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 >
-                                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 overflow-hidden">
-                                        {user.image
-                                            ? <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-                                            : <User size={16} />
-                                        }
-                                    </div>
+                                    <UserAvatar name={user.name} image={user.image} size="w-8 h-8" textSize="text-sm" />
                                     <span className="text-sm font-bold text-gray-900 dark:text-white max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
                                     {user.role === 'admin' && <Badge color="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">Admin</Badge>}
                                 </button>
@@ -192,6 +215,20 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                 <button onClick={() => { navigate('dashboard'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                     {t('dashboard')}
                                 </button>
+                                {user.role !== 'admin' && (
+                                    <button
+                                        onClick={() => { setIsWishlistOpen(true); setIsMenuOpen(false); }}
+                                        className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400"
+                                    >
+                                        <Heart size={18} className={wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''} />
+                                        Wishlist
+                                        {wishlistCount > 0 && (
+                                            <span className="ml-auto bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-black px-2 py-0.5 rounded-full">
+                                                {wishlistCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
                                 <button onClick={() => { navigate('profile'); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
                                     <User size={18} /> {t('myProfile')}
                                 </button>
@@ -227,6 +264,10 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                 </div>
             )}
         </nav>
+
+        {/* Wishlist Drawer — rendered outside nav so it covers full viewport */}
+        <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+        </>
     );
 };
 
