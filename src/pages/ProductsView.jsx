@@ -231,10 +231,14 @@ From this product list, pick exactly 4 IDs that would be best recommendations. R
 Products:
 ${productList}`;
 
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE") {
+                throw new Error("Dummy API key detected, skipping AI fetch to prevent console errors.");
+            }
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
+            if (!res.ok) throw new Error("Gemini API key is invalid or model not found");
             const data = await res.json();
             let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]';
             text = text.replace(/```json/gi, '').replace(/```/g, '').trim();

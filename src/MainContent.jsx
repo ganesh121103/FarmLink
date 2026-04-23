@@ -87,10 +87,18 @@ const MainContent = () => {
         }
     };
 
-    const handlePlaceOrder = async (details) => {
+    const handlePlaceOrder = async (details, alreadyCreatedOrder = null) => {
+        // If the order was already created by the Razorpay verify endpoint,
+        // just add it to local state — no need to POST /orders again.
+        if (alreadyCreatedOrder) {
+            setOrders(prev => [alreadyCreatedOrder, ...prev]);
+            return;
+        }
+
+        // COD / legacy path — POST to /orders directly
         const cartTotal = cart.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
         const orderItems = cart.map(item => ({ productId: item._id, name: item.name, price: item.price, quantity: item.quantity, farmerName: item.farmerName, farmer: item.farmer, image: item.images?.[0] || item.image }));
-        const orderPayload = { items: orderItems, total: cartTotal, address: details.address, paymentMethod: details.paymentMethod, userId: user._id, userName: user.name || 'Customer' };
+        const orderPayload = { items: orderItems, total: cartTotal, address: details.address, paymentMethod: details.paymentMethod, paymentStatus: details.paymentStatus || 'cod', userId: user._id, userName: user.name || 'Customer' };
         try {
             const { data } = await apiCall('/orders', 'POST', orderPayload);
             setOrders(prev => [data, ...prev]);

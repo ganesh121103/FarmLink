@@ -39,6 +39,7 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
 
         let response;
         try {
+            console.log(`[apiCall] Fetching: ${API_BASE_URL}${endpoint}`);
             response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         } catch (fetchErr) {
             clearTimeout(timeoutId);
@@ -63,6 +64,7 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
         }
 
         if (!response.ok) {
+            console.error("Backend returned error status:", response.status, "Payload:", data);
             throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
         }
 

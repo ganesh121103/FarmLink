@@ -23,6 +23,10 @@ const CustomerActivityView = ({ orders, setOrders, BackBtn, setIsCheckoutOpen, f
         if (window.location.hash) {
             window.history.replaceState(null, '', window.location.pathname);
         }
+        
+        const handleOpenOrders = () => setActiveTab('orders');
+        document.addEventListener('open-orders-tab', handleOpenOrders);
+        return () => document.removeEventListener('open-orders-tab', handleOpenOrders);
     }, []);
 
     const handleCancelOrder = async (orderId) => {

@@ -43,7 +43,11 @@ export const requestForToken = async () => {
       return null;
     }
   } catch (err) {
-    console.error("An error occurred while retrieving token. ", err);
+    if (err.code === 'messaging/permission-blocked') {
+      console.warn("🔔 Push Notifications: Permission blocked or denied by user (Safe to ignore).");
+    } else {
+      console.error("An error occurred while retrieving token. ", err);
+    }
     return null;
   }
 };

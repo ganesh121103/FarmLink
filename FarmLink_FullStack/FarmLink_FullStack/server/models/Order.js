@@ -26,7 +26,19 @@ const orderSchema = new mongoose.Schema(
         enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
         default: "Placed" 
     },
-    blockchainTxHash: { type: String }
+    blockchainTxHash: { type: String },
+    // ── Razorpay Payment Fields ──────────────────────────────────────────
+    razorpayOrderId:  { type: String, index: true },   // rzp order id from create-order
+    razorpayPaymentId: { type: String },               // rzp payment id after capture
+    razorpaySignature: { type: String },               // verified HMAC signature
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded', 'cod'],
+      default: 'pending'
+    },
+    refundId: { type: String },                        // razorpay refund id if refunded
+    refundedAt: { type: Date }
+    // ────────────────────────────────────────────────────────────────────
   },
   { timestamps: true }
 );

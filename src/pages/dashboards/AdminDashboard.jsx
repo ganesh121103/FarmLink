@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Users, Package, Activity, Sprout, Sparkles, X, FileText, Star, CheckCircle, Clock, BadgeCheck, Search, Calendar, AlertTriangle } from 'lucide-react';
+import { Shield, Users, Package, Sprout, Sparkles, X, FileText, CheckCircle, Clock, BadgeCheck, Search, Calendar, AlertTriangle, CreditCard, IndianRupee, TrendingUp, RefreshCw, Loader2 } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -19,6 +19,13 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
     const [reviewingUser, setReviewingUser] = useState(null);
     const [previewProduct, setPreviewProduct] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    // ── Payments tab state ──────────────────────────────────────────
+    const [payments, setPayments] = useState([]);
+    const [paymentSummary, setPaymentSummary] = useState(null);
+    const [paymentFilter, setPaymentFilter] = useState('all');
+    const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+    const [refundingId, setRefundingId] = useState(null);
+    // ───────────────────────────────────────────────────────────────
 
     // Fetch all users (customers + admins)
     useEffect(() => {
@@ -53,6 +60,44 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
         };
         fetchFarmers();
     }, []);
+
+    // Fetch payment transactions (admin only)
+    const fetchPayments = async (statusFilter = 'all') => {
+        setIsLoadingPayments(true);
+        try {
+            const query = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
+            const { data } = await apiCall(`/payment/transactions${query}`);
+            setPayments(data.orders || []);
+            setPaymentSummary(data.summary || null);
+        } catch (err) {
+            addToast('Failed to load payment data');
+        } finally {
+            setIsLoadingPayments(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'payments') fetchPayments(paymentFilter);
+    }, [activeTab]);
+
+    const handlePaymentFilterChange = (f) => {
+        setPaymentFilter(f);
+        fetchPayments(f);
+    };
+
+    const handleRefund = async (order) => {
+        if (!window.confirm(`Refund ₹${order.total} for order #${order._id?.slice(-6).toUpperCase()}?`)) return;
+        setRefundingId(order._id);
+        try {
+            await apiCall('/payment/refund', 'POST', { orderId: order._id });
+            addToast('✅ Refund issued successfully');
+            fetchPayments(paymentFilter);
+        } catch (err) {
+            addToast(err.message || 'Refund failed');
+        } finally {
+            setRefundingId(null);
+        }
+    };
 
     // Merge allFarmers into allUsers for the Manage Users tab
     const mergedUsers = useMemo(() => {
@@ -130,6 +175,9 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                 </button>
                 <button onClick={() => setActiveTab('products')} className={tabClass('products')}>{t('manageProducts')} ({products.length})</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>Orders ({orders?.length || 0})</button>
+                <button onClick={() => setActiveTab('payments')} className={`${tabClass('payments')} flex items-center gap-2`}>
+                    <CreditCard size={15} /> Payments
+                </button>
             </div>
 
             {/* OVERVIEW */}
@@ -423,6 +471,166 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* PAYMENTS TAB */}
+            {activeTab === 'payments' && (
+                <div className="animate-fade-in-up space-y-6">
+
+                    {/* Summary Cards */}
+                    {paymentSummary && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            <div className="col-span-2 bg-gradient-to-br from-green-600 to-emerald-700 text-white p-5 rounded-2xl shadow-lg flex items-center gap-4">
+                                <div className="bg-white/20 p-3 rounded-xl"><IndianRupee size={26} /></div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase opacity-80">Total Revenue</p>
+                                    <p className="text-3xl font-black">₹{paymentSummary.totalRevenue?.toLocaleString('en-IN')}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                                <div className="bg-green-100 dark:bg-green-900/30 p-2.5 rounded-xl text-green-600"><CheckCircle size={20} /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-stone-400 uppercase">Paid</p>
+                                    <p className="text-2xl font-black text-black dark:text-white">{paymentSummary.paidOrders}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2.5 rounded-xl text-yellow-600"><Clock size={20} /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-stone-400 uppercase">Pending</p>
+                                    <p className="text-2xl font-black text-black dark:text-white">{paymentSummary.pendingOrders}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                                <div className="bg-red-100 dark:bg-red-900/30 p-2.5 rounded-xl text-red-500"><AlertTriangle size={20} /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-stone-400 uppercase">Failed</p>
+                                    <p className="text-2xl font-black text-black dark:text-white">{paymentSummary.failedOrders}</p>
+                                </div>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800 border border-stone-100 dark:border-slate-700 p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                                <div className="bg-purple-100 dark:bg-purple-900/30 p-2.5 rounded-xl text-purple-600"><RefreshCw size={20} /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-stone-400 uppercase">Refunded</p>
+                                    <p className="text-2xl font-black text-black dark:text-white">{paymentSummary.refundedOrders}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Filter Buttons */}
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
+                        <div className="flex gap-2 flex-wrap">
+                            {['all','paid','pending','failed','refunded','cod'].map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => handlePaymentFilterChange(f)}
+                                    className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors capitalize ${
+                                        paymentFilter === f
+                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-300'
+                                    }`}
+                                >{f === 'all' ? 'All Transactions' : f}</button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => fetchPayments(paymentFilter)}
+                            className="flex items-center gap-2 text-sm font-bold text-stone-500 hover:text-black dark:hover:text-white transition-colors"
+                        >
+                            <RefreshCw size={14} /> Refresh
+                        </button>
+                    </div>
+
+                    {/* Transaction Table */}
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-stone-100 dark:border-slate-700 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            {isLoadingPayments ? (
+                                <div className="flex items-center justify-center py-16 gap-3 text-stone-400">
+                                    <Loader2 size={24} className="animate-spin" />
+                                    <span className="font-medium">Loading transactions…</span>
+                                </div>
+                            ) : payments.length === 0 ? (
+                                <div className="flex flex-col items-center py-16 text-stone-400">
+                                    <CreditCard size={40} className="mb-3 opacity-30" />
+                                    <p className="font-bold">No transactions found</p>
+                                    <p className="text-sm mt-1">Payments will appear here once customers complete checkout.</p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-stone-200 dark:border-slate-700 text-xs font-bold uppercase text-stone-500 tracking-wider">
+                                            <th className="p-4">Order ID</th>
+                                            <th className="p-4">Customer</th>
+                                            <th className="p-4">Amount</th>
+                                            <th className="p-4">Method</th>
+                                            <th className="p-4">Payment Status</th>
+                                            <th className="p-4">Razorpay ID</th>
+                                            <th className="p-4">Date</th>
+                                            <th className="p-4">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-100 dark:divide-slate-700/50">
+                                        {payments.map(p => (
+                                            <tr key={p._id} className="hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="p-4">
+                                                    <span className="font-black text-stone-700 dark:text-stone-300 text-xs">
+                                                        #{p._id?.slice(-6).toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <p className="font-bold text-black dark:text-white text-sm">{p.userName || 'Customer'}</p>
+                                                    <p className="text-xs text-stone-400">{p.items?.length || 0} item(s)</p>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="font-black text-green-700 dark:text-green-400">₹{p.total?.toLocaleString('en-IN')}</span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="text-xs font-bold text-stone-500 uppercase">{p.paymentMethod || 'upi'}</span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black ${
+                                                        p.paymentStatus === 'paid'     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                        p.paymentStatus === 'refunded' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                                        p.paymentStatus === 'failed'   ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                        p.paymentStatus === 'cod'      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                    }`}>
+                                                        {p.paymentStatus === 'paid'     ? '✓ PAID' :
+                                                         p.paymentStatus === 'refunded' ? '↩ REFUNDED' :
+                                                         p.paymentStatus === 'failed'   ? '✗ FAILED' :
+                                                         p.paymentStatus === 'cod'      ? '💵 COD' : '⏳ PENDING'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="text-xs text-stone-400 font-mono">
+                                                        {p.razorpayPaymentId ? p.razorpayPaymentId.substring(0, 14) + '…' : '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="text-xs text-stone-500">
+                                                        {p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4">
+                                                    {(p.paymentStatus === 'paid' && p.razorpayPaymentId) ? (
+                                                        <button
+                                                            onClick={() => handleRefund(p)}
+                                                            disabled={refundingId === p._id}
+                                                            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {refundingId === p._id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                                            Refund
+                                                        </button>
+                                                    ) : <span className="text-xs text-stone-300">—</span>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
