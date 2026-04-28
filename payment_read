@@ -1,0 +1,11 @@
+To simulate a Successful Payment:
+
+Select Card as the payment method.
+Enter this Razorpay Test Card Number: 4111 1111 1111 1111
+Expiry: 12 / 25 (or any future date)
+CVV: 123
+On the next screen, click Success.
+To simulate a UPI Payment (also free):
+
+Select UPI -> Google Pay/PhonePe.
+It will show a testing screen where you can simply click Success to mock a successful payment flow.

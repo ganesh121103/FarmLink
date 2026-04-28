@@ -50,7 +50,11 @@ export const requestForToken = async () => {
       return null;
     }
   } catch (err) {
-    console.error("❌ FCM token error:", err);
+    if (err.code === 'messaging/permission-blocked') {
+      console.warn("🔔 Push Notifications: Permission blocked or denied by user (Safe to ignore).");
+    } else {
+      console.error("❌ FCM token error:", err);
+    }
     return null;
   }
 };

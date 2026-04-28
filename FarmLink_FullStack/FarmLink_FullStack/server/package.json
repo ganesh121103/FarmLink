@@ -22,6 +22,7 @@
     "mongoose": "^9.1.6",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.4",
+    "razorpay": "^2.9.6",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {

@@ -7,7 +7,7 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
     const variants = {
         primary: "bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-500 text-white shadow-lg shadow-green-200 dark:shadow-green-900/30 border-none",
         secondary: "bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30",
-        outline: "bg-transparent border-2 border-green-700 text-green-900 hover:bg-green-50 dark:border-green-500 dark:text-green-400 dark:hover:bg-slate-800",
+        outline: "bg-transparent border-2 border-green-700 text-green-900 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-slate-700",
         white: "bg-white text-black hover:bg-stone-100 shadow-lg dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700",
         danger: "bg-red-600 hover:bg-red-700 text-white shadow-md"
     };
