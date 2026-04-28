@@ -9,7 +9,7 @@ export default defineConfig({
     allowedHosts: ["southampton-allocated-handheld-released.trycloudflare.com"],
     headers: {
       // Allow Firebase Google sign-in popup to communicate without warnings
-      "Cross-Origin-Opener-Policy": "unsafe-none",
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
       "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
   },

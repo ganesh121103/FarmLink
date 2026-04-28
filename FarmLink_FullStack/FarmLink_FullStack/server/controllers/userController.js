@@ -144,6 +144,29 @@ exports.loginUser = async (req, res) => {
 
     const token = signToken(user);
 
+    // ✅ Send login security alert email for standard login
+    setImmediate(async () => {
+      try {
+        const loginHtml = buildHtmlEmail(
+          `New Login Alert - FarmLink`,
+          `
+            <h2>New Login Detected 🔐</h2>
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>We noticed a new login to your FarmLink account.</p>
+            <div class="highlight-box">
+              <strong>Time:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' })}<br/>
+              <strong>Email:</strong> ${user.email}
+            </div>
+            <p>If this was you, no further action is needed.</p>
+            <p style="color:#d9534f;font-size:13px;font-weight:bold;">If you did not authorize this login, please reset your password immediately via the Forgot Password page.</p>
+          `
+        );
+        await sendEmail(user.email, `New Login Alert - FarmLink 🔐`, loginHtml);
+      } catch (e) {
+        console.error("[Login Email] Failed:", e.message);
+      }
+    });
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -191,23 +214,21 @@ exports.updateUser = async (req, res) => {
     const targetRole = req.body.role || 'customer';
     const Model = getModelByRole(targetRole);
 
-    const updateFields = {
-      name: req.body.name,
-      email: req.body.email,
-      phone: phone || "",
-      address: req.body.address,
-      bio: req.body.bio,
-      specialization: req.body.specialization,
-      image: req.body.image,
-    };
-    
-    if (fcmToken) {
-        updateFields.fcmToken = fcmToken;
-    }
+    // Only include fields that were explicitly provided — prevents a
+    // partial update (e.g. FCM-token-only) from clearing other fields.
+    const updateFields = {};
+    if (req.body.name !== undefined)           updateFields.name           = req.body.name;
+    if (req.body.email !== undefined)          updateFields.email          = req.body.email;
+    if (phone !== undefined)                   updateFields.phone          = phone || "";
+    if (req.body.address !== undefined)        updateFields.address        = req.body.address;
+    if (req.body.bio !== undefined)            updateFields.bio            = req.body.bio;
+    if (req.body.specialization !== undefined) updateFields.specialization = req.body.specialization;
+    if (req.body.image !== undefined)          updateFields.image          = req.body.image;
+    if (fcmToken)                              updateFields.fcmToken       = fcmToken;
 
     const updatedUser = await Model.findByIdAndUpdate(
       id,
-      updateFields,
+      { $set: updateFields },
       { new: true }
     );
 
@@ -265,6 +286,7 @@ exports.firebaseAuth = async (req, res) => {
 
     // 1. Check if user already exists by firebaseUid or email in their specific role collection
     let user = await Model.findOne({ $or: [{ firebaseUid }, { email }] });
+    let isNewUser = false;
 
     if (user) {
         if (!user.firebaseUid) {
@@ -279,6 +301,7 @@ exports.firebaseAuth = async (req, res) => {
         await user.save();
     } else {
       // 3. If not found, create new user in the specific role collection
+      isNewUser = true;
       user = await Model.create({
         firebaseUid,
         name: name || "User",
@@ -291,9 +314,58 @@ exports.firebaseAuth = async (req, res) => {
         address: "",
         ...(targetRole !== 'admin' && { bio: "", specialization: "" })
       });
+
+      // ✅ Send welcome email (non-blocking)
+      setImmediate(async () => {
+        try {
+          const welcomeHtml = buildHtmlEmail(
+            `Welcome to FarmLink, ${user.name}!`,
+            `
+              <h2>Welcome to FarmLink! 🌱</h2>
+              <p>Hi <strong>${user.name}</strong>,</p>
+              <p>Your account has been created successfully via Google Sign-In. You can now browse fresh produce directly from local farmers.</p>
+              <div class="highlight-box">
+                <strong>Your Account Details:</strong><br/>
+                Email: ${user.email}<br/>
+                Role: ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)}
+              </div>
+              <p>Start exploring and support local farmers today!</p>
+              <p style="color:#888;font-size:13px;">If you did not create this account, please ignore this email.</p>
+            `
+          );
+          await sendEmail(user.email, `Welcome to FarmLink, ${user.name}! 🌱`, welcomeHtml);
+        } catch (e) {
+          console.error("[Welcome Email] Failed:", e.message);
+        }
+      });
     }
 
     const token = signToken(user);
+
+    // ✅ Send login security alert email for returning users
+    // (New users already get the Welcome email, so we only send login alerts to returning users)
+    if (!isNewUser) {
+      setImmediate(async () => {
+        try {
+          const loginHtml = buildHtmlEmail(
+            `New Login Alert - FarmLink`,
+            `
+              <h2>New Login Detected 🔐</h2>
+              <p>Hi <strong>${user.name}</strong>,</p>
+              <p>We noticed a new Google Sign-In to your FarmLink account.</p>
+              <div class="highlight-box">
+                <strong>Time:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' })}<br/>
+                <strong>Email:</strong> ${user.email}
+              </div>
+              <p>If this was you, no further action is needed.</p>
+            `
+          );
+          await sendEmail(user.email, `New Login Alert - FarmLink 🔐`, loginHtml);
+        } catch (e) {
+          console.error("[Login Email] Failed:", e.message);
+        }
+      });
+    }
 
     res.json({
       _id: user._id,

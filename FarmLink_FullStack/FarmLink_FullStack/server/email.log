@@ -1,0 +1,10 @@
+[2026-04-27T06:17:23.066Z] ⚠️ Gmail SMTP disabled: GMAIL_USER or GMAIL_APP_PASS missing in .env.
+[2026-04-27T06:17:23.073Z] 📧 [MOCK EMAIL] No transporter. To: ganeshpa@gmail.com | Subject: Test Logs
+[2026-04-27T06:20:22.683Z] ✅ Gmail SMTP transporter initialized for: pratikpawar0603@gmail.com
+[2026-04-27T06:20:22.689Z] 📤 Sending email → testuser_email123@example.com | Subject: "Welcome to FarmLink, Test User! 🌱"
+[2026-04-27T06:20:25.560Z] ✅ Email sent successfully: <2423d42e-b258-d57c-831e-ea077f43add4@gmail.com>
+[2026-04-27T06:24:56.633Z] 📤 Sending email → testuser_email123@example.com | Subject: "New Login Alert - FarmLink 🔐"
+[2026-04-27T06:25:09.851Z] ✅ Email sent successfully: <d1e7e072-45bd-67d0-8589-74393100c9e8@gmail.com>
+[2026-04-27T08:14:13.583Z] ✅ Gmail SMTP transporter initialized for: pratikpawar0603@gmail.com
+[2026-04-27T08:14:13.598Z] 📤 Sending email → ganeshp121103@gmail.com | Subject: "New Login Alert - FarmLink 🔐"
+[2026-04-27T08:14:17.189Z] ✅ Email sent successfully: <90c5ee6b-5097-6003-471f-f4f92c24eca8@gmail.com>

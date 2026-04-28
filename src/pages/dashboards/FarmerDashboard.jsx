@@ -77,7 +77,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
             await apiCall(`/chat/conversation/${conversationId}?userId=${user._id}`, 'DELETE');
             setConversations(prev => prev.filter(c => c._id !== conversationId));
             addToast("Chat deleted successfully");
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             addToast("Failed to delete chat");
         }
@@ -211,12 +211,12 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         myOrders.forEach(o => {
             const farmerItems = o.items?.filter(item => item.farmerName === user?.name || item.farmer === user?._id) || [];
             farmerItems.forEach(item => {
-                if(!data[item.name]) data[item.name] = { revenue: 0, expense: 0 };
+                if (!data[item.name]) data[item.name] = { revenue: 0, expense: 0 };
                 data[item.name].revenue += (parseInt(item.price || 0) * (item.quantity || 1));
             });
         });
         expenses.forEach(e => {
-            if(!data[e.cropName]) data[e.cropName] = { revenue: 0, expense: 0 };
+            if (!data[e.cropName]) data[e.cropName] = { revenue: 0, expense: 0 };
             data[e.cropName].expense += e.amount;
         });
         return data;
@@ -243,13 +243,13 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                             {user?.verificationStatus === 'Pending' ? 'Verification Pending' : 'Unverified Profile'}
                         </h3>
                         <p className="text-yellow-700 dark:text-yellow-600/80 text-sm">
-                            {user?.verificationStatus === 'Pending' 
-                                ? 'Your documents are currently under review by our team. This usually takes 1-2 business days.' 
+                            {user?.verificationStatus === 'Pending'
+                                ? 'Your documents are currently under review by our team. This usually takes 1-2 business days.'
                                 : 'Upload your official documents to get verified and build trust with customers.'}
                         </p>
                     </div>
                     {user?.verificationStatus !== 'Pending' && (
-                        <button 
+                        <button
                             onClick={() => setIsVerificationOpen(true)}
                             className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded-lg transition-colors whitespace-nowrap whitespace-nowrap"
                         >
@@ -270,7 +270,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 <button onClick={() => setActiveTab('inventory')} className={tabClass('inventory')}>{t('myStock')}</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>{t('orders')} ({myOrders.length})</button>
                 <button onClick={() => setActiveTab('messages')} className={tabClass('messages')}>Messages</button>
-                <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>Financials <BarChart3 size={16} className="inline ml-1 mb-1"/></button>
+                <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>Financials <BarChart3 size={16} className="inline ml-1 mb-1" /></button>
                 <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>Weather & Forecast</button>
             </div>
 
@@ -295,55 +295,53 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 const isExpiringSoon = daysLeft !== null && daysLeft <= 1;
                                 const isExpired = daysLeft !== null && daysLeft <= 0;
                                 return (
-                                <Card key={p._id} className={`overflow-hidden flex flex-col ${isExpiringSoon ? 'ring-2 ring-orange-400 dark:ring-orange-500' : ''} ${isExpired ? 'ring-2 ring-red-500 opacity-75' : ''}`}>
-                                    <div className="h-40 overflow-hidden relative">
-                                        {(p.images?.[0] || p.image)?.includes('.mp4') ? <video src={p.images?.[0] || p.image} className="w-full h-full object-cover" muted /> : <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover" />}
-                                        <div className="absolute bottom-2 right-2"><Badge color={p.stock < 20 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>{p.stock}kg left</Badge></div>
-                                        {/* Expiry overlay badge */}
-                                        {expiresAt && (
-                                            <div className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                                isExpired ? 'bg-red-600 text-white' :
-                                                isExpiringSoon ? 'bg-orange-500 text-white' :
-                                                'bg-black/60 text-white'
-                                            }`}>
-                                                {isExpired ? <AlertTriangle size={10} /> : <Clock size={10} />}
-                                                {isExpired ? 'Expired' : daysLeft === 1 ? 'Expires today!' : `${daysLeft}d left`}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="p-4 flex-1 flex flex-col">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-base">{p.name}</h3>
-                                            <Badge>{p.category}</Badge>
-                                        </div>
-                                        <p className="text-2xl font-black text-green-700 dark:text-green-500 mb-2">₹{p.price}/kg</p>
-                                        {/* Freshness info row */}
-                                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                                            {addedDaysAgo !== null && (
-                                                <span className="flex items-center gap-1 text-[10px] font-bold text-stone-400 dark:text-slate-500">
-                                                    <Calendar size={10} /> Added {addedDaysAgo === 0 ? 'today' : `${addedDaysAgo}d ago`}
-                                                </span>
-                                            )}
+                                    <Card key={p._id} className={`overflow-hidden flex flex-col ${isExpiringSoon ? 'ring-2 ring-orange-400 dark:ring-orange-500' : ''} ${isExpired ? 'ring-2 ring-red-500 opacity-75' : ''}`}>
+                                        <div className="h-40 overflow-hidden relative">
+                                            {(p.images?.[0] || p.image)?.includes('.mp4') ? <video src={p.images?.[0] || p.image} className="w-full h-full object-cover" muted /> : <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover" />}
+                                            <div className="absolute bottom-2 right-2"><Badge color={p.stock < 20 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>{p.stock}kg left</Badge></div>
+                                            {/* Expiry overlay badge */}
                                             {expiresAt && (
-                                                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                    isExpired ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                    isExpiringSoon ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                                                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                                }`}>
-                                                    <Clock size={10} />
-                                                    {isExpired
-                                                        ? 'Auto-deleted soon'
-                                                        : `Deletes on ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-                                                    }
-                                                </span>
+                                                <div className={`absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black ${isExpired ? 'bg-red-600 text-white' :
+                                                        isExpiringSoon ? 'bg-orange-500 text-white' :
+                                                            'bg-black/60 text-white'
+                                                    }`}>
+                                                    {isExpired ? <AlertTriangle size={10} /> : <Clock size={10} />}
+                                                    {isExpired ? 'Expired' : daysLeft === 1 ? 'Expires today!' : `${daysLeft}d left`}
+                                                </div>
                                             )}
                                         </div>
-                                        <div className="flex gap-2 mt-auto">
-                                            <button onClick={() => openEdit(p)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-stone-200 dark:border-slate-600 rounded-lg font-bold text-sm text-stone-600 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors"><Edit size={16} /> {t('edit')}</button>
-                                            <button onClick={() => openDelete(p._id)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-red-200 dark:border-red-900/50 rounded-lg font-bold text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 size={16} /> {t('delete')}</button>
+                                        <div className="p-4 flex-1 flex flex-col">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-bold text-base">{p.name}</h3>
+                                                <Badge>{p.category}</Badge>
+                                            </div>
+                                            <p className="text-2xl font-black text-green-700 dark:text-green-500 mb-2">₹{p.price}/kg</p>
+                                            {/* Freshness info row */}
+                                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                                                {addedDaysAgo !== null && (
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold text-stone-400 dark:text-slate-500">
+                                                        <Calendar size={10} /> Added {addedDaysAgo === 0 ? 'today' : `${addedDaysAgo}d ago`}
+                                                    </span>
+                                                )}
+                                                {expiresAt && (
+                                                    <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${isExpired ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                            isExpiringSoon ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                                'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                        }`}>
+                                                        <Clock size={10} />
+                                                        {isExpired
+                                                            ? 'Auto-deleted soon'
+                                                            : `Deletes on ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                                                        }
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2 mt-auto">
+                                                <button onClick={() => openEdit(p)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-stone-200 dark:border-slate-600 rounded-lg font-bold text-sm text-stone-600 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors"><Edit size={16} /> {t('edit')}</button>
+                                                <button onClick={() => openDelete(p._id)} className="flex-1 flex items-center justify-center gap-2 py-2 border border-red-200 dark:border-red-900/50 rounded-lg font-bold text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 size={16} /> {t('delete')}</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </Card>);
+                                    </Card>);
                             })}
                         </div>
                     )}
@@ -358,7 +356,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 <div>
                                     <p className="font-bold text-black dark:text-white">Order #{o._id} — <span className="text-stone-500 font-medium">{o.userName}</span></p>
                                     <p className="text-sm text-stone-500 mt-1 mb-3">{o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => `${i.name} x${i.quantity}`).join(', ')}</p>
-                                    <button 
+                                    <button
                                         onClick={() => openChat({ _id: o.userId, name: o.userName, role: 'customer' })}
                                         className="text-xs font-bold flex items-center gap-1.5 text-green-700 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 transition-colors w-max"
                                     >
@@ -394,10 +392,10 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 const otherName = conv.senderId === user._id ? 'Customer' : conv.senderName;
                                 const otherRole = conv.senderId === user._id ? 'customer' : conv.senderRole;
                                 const otherImage = conv.otherUserImage;
-                                
+
                                 return (
-                                    <Card 
-                                        key={conv._id} 
+                                    <Card
+                                        key={conv._id}
                                         className="p-5 cursor-pointer hover:border-green-400 transition-colors relative group"
                                         onClick={() => openChat({ _id: otherId, name: otherName, role: otherRole, image: otherImage })}
                                     >
@@ -508,7 +506,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                         <Card className="p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-lg text-black dark:text-white">Expense Tracking</h3>
-                                <Button size="sm" onClick={() => setIsAddExpenseOpen(true)} className="flex items-center gap-1"><PlusCircle size={16}/> Add</Button>
+                                <Button size="sm" onClick={() => setIsAddExpenseOpen(true)} className="flex items-center gap-1"><PlusCircle size={16} /> Add</Button>
                             </div>
                             {expenses.length === 0 ? (
                                 <p className="text-stone-500 text-sm">No expenses recorded yet.</p>
@@ -520,7 +518,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                                 <p className="font-bold text-sm">{e.cropName} - <span className="text-red-500 font-black">₹{e.amount}</span></p>
                                                 <p className="text-xs text-stone-500">{e.description} | {new Date(e.date).toLocaleDateString()}</p>
                                             </div>
-                                            <button onClick={() => handleDeleteExpense(e._id)} className="text-red-400 hover:text-red-600 transition-colors p-2"><Trash2 size={16}/></button>
+                                            <button onClick={() => handleDeleteExpense(e._id)} className="text-red-400 hover:text-red-600 transition-colors p-2"><Trash2 size={16} /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -630,12 +628,12 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
             <DeleteConfirmationModal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={handleDeleteProduct} isLoading={isLoading} />
             <CropScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
-            <VerificationModal 
-                isOpen={isVerificationOpen} 
-                onClose={() => setIsVerificationOpen(false)} 
+            <VerificationModal
+                isOpen={isVerificationOpen}
+                onClose={() => setIsVerificationOpen(false)}
                 onVerificationSubmit={() => {
-                   // Optional: refresh user or show some update
-                }} 
+                    // Optional: refresh user or show some update
+                }}
             />
         </div>
     );

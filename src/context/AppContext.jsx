@@ -11,7 +11,7 @@ export const useAppContext = () => useContext(AppContext);
 export const AppProvider = ({ children }) => {
     const [language, setLanguage] = useState(() => { try { return localStorage.getItem('farmlink_language') || 'en'; } catch { return 'en'; } });
     const t = (key) => TRANSLATIONS[language]?.[key] || key;
-    
+
     useEffect(() => { localStorage.setItem('farmlink_language', language); }, [language]);
 
     const [view, setView] = useState(() => {
@@ -31,6 +31,38 @@ export const AppProvider = ({ children }) => {
             return ['home'];
         }
     });
+    // ─── Process Google Redirect Sign-In Globally ───────────────────────────
+    useEffect(() => {
+        const checkRedirect = async () => {
+            try {
+                const { checkGoogleRedirectResult } = await import('../auth/firebaseAuth');
+                const { user: firebaseUser, error } = await checkGoogleRedirectResult();
+                
+                if (firebaseUser) {
+                    const savedRole = sessionStorage.getItem('farmlink_pending_role') || 'customer';
+                    sessionStorage.removeItem('farmlink_pending_role');
+
+                    const userData = {
+                        firebaseUid: firebaseUser.uid,
+                        name: firebaseUser.displayName || 'User',
+                        email: firebaseUser.email,
+                        role: savedRole,
+                        image: firebaseUser.photoURL || '',
+                    };
+
+                    const { data } = await apiCall('/users/firebase-auth', 'POST', userData);
+                    setUser(data);
+                    localStorage.setItem('farmlink_user', JSON.stringify(data));
+                    addToast(`Welcome, ${data.name}! 🎉`);
+                    navigate('dashboard');
+                } else if (error) {
+                    addToast(`Google Sign-In failed: ${error}`);
+                }
+            } catch (err) { }
+        };
+        checkRedirect();
+    }, []);
+
     const [activeChat, setActiveChat] = useState(null);
 
     const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('farmlink_user')) || null; } catch { return null; } });
@@ -108,29 +140,37 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         if (!user || user.role === 'admin') return;
 
+        let unsubscribeFCM = () => {};
+
         const setupFCM = async () => {
             try {
-                // Request token
+                // Request permission + get token
                 const fcmToken = await requestForToken();
                 if (fcmToken) {
-                    // Send to backend
-                    await apiCall(`/users/${user._id || user.id}`, 'PUT', { fcmToken });
+                    // Send token + role so updateUser picks the correct DB model
+                    await apiCall(`/users/${user._id || user.id}`, 'PUT', {
+                        fcmToken,
+                        role: user.role || 'customer',
+                    });
+                    console.log('✅ FCM token saved to backend');
                 }
             } catch (err) {
-                console.warn("FCM Token setup failed:", err);
+                console.warn('FCM Token setup failed:', err);
             }
+
+            // Persistent foreground message listener
+            unsubscribeFCM = onMessageListener((payload) => {
+                if (payload?.notification) {
+                    addToast(`🔔 ${payload.notification.title}`);
+                    fetchNotifications(); // Refresh the bell
+                }
+            });
         };
 
         setupFCM();
 
-        // Listen for foreground messages
-        onMessageListener().then(payload => {
-            if (payload?.notification) {
-                addToast(`🔔 ${payload.notification.title}`);
-                fetchNotifications(); // Refresh the bell
-            }
-        }).catch(err => console.log('failed to setup listener: ', err));
-
+        return () => { unsubscribeFCM(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?._id, user?.token]);
     // ────────────────────────────────────────────────────────────────────
 
@@ -146,7 +186,7 @@ export const AppProvider = ({ children }) => {
         if (user?._id) {
             const SOCKET_URL = API_BASE_URL.replace('/api', '');
             const socket = io(SOCKET_URL, { query: { userId: user._id }, transports: ['websocket', 'polling'] });
-            
+
             socket.on('receive_message', (msg) => {
                 const isWatchingConversation = activeChatRef.current?.id === msg.senderId;
                 if (!isWatchingConversation && msg.senderId !== user._id) {
@@ -175,9 +215,9 @@ export const AppProvider = ({ children }) => {
 
     const openChat = (chatUser) => {
         if (!user) { addToast('Please login to chat.'); navigate('login'); return; }
-        setActiveChat({ 
-            id: chatUser._id || chatUser.id, 
-            name: chatUser.name, 
+        setActiveChat({
+            id: chatUser._id || chatUser.id,
+            name: chatUser.name,
             role: chatUser.role || 'farmer',
             image: chatUser.image
         });

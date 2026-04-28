@@ -9,7 +9,7 @@ import { useAppContext } from '../../context/AppContext';
 const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 1)  return 'Just now';
+    if (m < 1) return 'Just now';
     if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
     if (h < 24) return `${h}h ago`;
@@ -17,13 +17,13 @@ const timeAgo = (dateStr) => {
 };
 
 export const typeConfig = {
-    Wishlist:       { icon: Star,          color: 'text-pink-500',    bg: 'bg-pink-50 dark:bg-pink-900/20',    label: 'Wishlist' },
-    Recommendation: { icon: ShoppingBag,   color: 'text-green-600',   bg: 'bg-green-50 dark:bg-green-900/20',  label: 'Recommendation' },
-    NewArrival:     { icon: Sparkles,       color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'New Arrival' },
-    OutOfStock:     { icon: AlertTriangle,  color: 'text-red-500',     bg: 'bg-red-50 dark:bg-red-900/20',      label: 'Out of Stock' },
-    PriceDrop:      { icon: TrendingDown,   color: 'text-amber-600',   bg: 'bg-amber-50 dark:bg-amber-900/20',  label: 'Price Drop' },
-    Order:          { icon: Package,        color: 'text-blue-500',    bg: 'bg-blue-50 dark:bg-blue-900/20',    label: 'Order' },
-    System:         { icon: Info,           color: 'text-gray-500',    bg: 'bg-gray-100 dark:bg-gray-800',      label: 'System' },
+    Wishlist: { icon: Star, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20', label: 'Wishlist' },
+    Recommendation: { icon: ShoppingBag, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', label: 'Recommendation' },
+    NewArrival: { icon: Sparkles, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'New Arrival' },
+    OutOfStock: { icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Out of Stock' },
+    PriceDrop: { icon: TrendingDown, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', label: 'Price Drop' },
+    Order: { icon: Package, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Order' },
+    System: { icon: Info, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-800', label: 'System' },
 };
 
 /* ── Component ────────────────────────────────────────────────── */
@@ -31,6 +31,7 @@ const NotificationBell = ({ onProductClick }) => {
     const {
         notifications, unreadCount,
         markNotificationRead, markAllNotificationsRead, clearAllNotifications,
+        deleteNotification,
         navigate
     } = useAppContext();
     const [open, setOpen] = useState(false);
@@ -133,10 +134,13 @@ const NotificationBell = ({ onProductClick }) => {
                                 const cfg = typeConfig[notif.type] || typeConfig.System;
                                 const Icon = cfg.icon;
                                 return (
-                                    <button
+                                    <div
                                         key={notif._id}
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => handleClick(notif)}
-                                        className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${!notif.isRead ? 'bg-green-50/60 dark:bg-green-900/10' : ''}`}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(notif); }}
+                                        className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${!notif.isRead ? 'bg-green-50/60 dark:bg-green-900/10' : ''}`}
                                     >
                                         {/* Image or icon */}
                                         <div className="flex-shrink-0 w-11 h-11 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -144,7 +148,7 @@ const NotificationBell = ({ onProductClick }) => {
                                                 ? <img src={notif.image} alt="" className="w-full h-full object-cover" />
                                                 : <div className={`w-full h-full flex items-center justify-center ${cfg.bg}`}>
                                                     <Icon size={20} className={cfg.color} />
-                                                  </div>
+                                                </div>
                                             }
                                         </div>
 
@@ -174,15 +178,15 @@ const NotificationBell = ({ onProductClick }) => {
                                             {notif.link && (
                                                 <ArrowRight size={14} className="flex-shrink-0 text-gray-300 dark:text-gray-600 mb-2" />
                                             )}
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); useAppContext().deleteNotification(notif._id); }} 
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); deleteNotification(notif._id); }}
                                                 className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                                                 title="Delete notification"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
-                                    </button>
+                                    </div>
                                 );
                             })
                         )}

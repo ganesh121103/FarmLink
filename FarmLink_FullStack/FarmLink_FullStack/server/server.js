@@ -5,6 +5,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const Message = require("./models/Message");
 require("dotenv").config();
+const { startWishlistAlertJob } = require("./utils/wishlistAlerts");
 
 /* ════════════════════════════════════════════════════════════════
    Auto-delete expired products (runs every hour)
@@ -14,7 +15,7 @@ const startExpiryCleanupJob = () => {
   const runCleanup = async () => {
     try {
       const Product = require("./models/Product");
-      const result  = await Product.deleteMany({
+      const result = await Product.deleteMany({
         expiresAt: { $ne: null, $lt: new Date() }
       });
       if (result.deletedCount > 0) {
@@ -68,7 +69,7 @@ io.on("connection", (socket) => {
       const { senderId, receiverId, senderName, senderRole, text } = data;
       console.log(`[SOCKET] send_message from ${senderId} to ${receiverId}`);
       console.log(`[SOCKET] Online users:`, Array.from(onlineUsers.keys()));
-      
+
       const conversationId = Message.getConversationId(senderId, receiverId);
 
       const message = await Message.create({
@@ -138,6 +139,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => {
     console.log("✅ MongoDB Connected");
     startExpiryCleanupJob(); // start the expired-product auto-delete job
+    startWishlistAlertJob(); // start the wishlist alerts hourly cron job
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

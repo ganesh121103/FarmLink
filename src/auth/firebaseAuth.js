@@ -67,9 +67,9 @@ export const loginWithGoogle = async () => {
     console.log("✅ Google sign-in:", result.user.email);
     return { user: result.user, error: null };
   } catch (error) {
-    // If popup is blocked, fall back to redirect
-    if (error.code === "auth/popup-blocked") {
-      console.warn("⚠️ Popup blocked — falling back to redirect sign-in...");
+    // If popup is blocked by browser OR closed instantly by tunneling services like Serveo/Cloudflare
+    if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+      console.warn("⚠️ Popup rejected (likely by tunneling service) — falling back to redirect sign-in...");
       try {
         await signInWithRedirect(auth, provider);
         // Page will redirect, so this return won't execute
@@ -79,11 +79,8 @@ export const loginWithGoogle = async () => {
         return { user: null, error: getFirebaseErrorMessage(redirectError.code) };
       }
     }
+    
     console.error("❌ Google sign-in error:", error.message);
-    // User closed the popup
-    if (error.code === "auth/popup-closed-by-user") {
-      return { user: null, error: null };
-    }
     return { user: null, error: getFirebaseErrorMessage(error.code) };
   }
 };

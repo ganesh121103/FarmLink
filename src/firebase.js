@@ -26,12 +26,19 @@ if (typeof window !== "undefined" && "serviceWorker" in navigator) {
 }
 
 // Push Notification Helper
+// Requests browser notification permission and retrieves the FCM token
 export const requestForToken = async () => {
   try {
     if (!messaging) return null;
+
+    // Explicitly request browser notification permission before calling getToken
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      console.warn("⚠️ Notification permission denied by user.");
+      return null;
+    }
     
     const currentToken = await getToken(messaging, { 
-      // Replace with your VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web
       vapidKey: "BKZLI5cq-sU9ZCw8_jB92PJs6HBrKMXjlxYxnc14UnxSMqNOucLRNPGhpE3-Ukxj0sLaZ6xXj5AENOfdab52m0M" 
     });
     
@@ -39,22 +46,29 @@ export const requestForToken = async () => {
       console.log("✅ FCM Token established:", currentToken.substring(0,10) + "...");
       return currentToken;
     } else {
-      console.log("No registration token available. Request permission to generate one.");
+      console.log("⚠️ No FCM token available. Ensure the service worker is registered.");
       return null;
     }
   } catch (err) {
-    console.error("An error occurred while retrieving token. ", err);
+    console.error("❌ FCM token error:", err);
     return null;
   }
 };
 
-export const onMessageListener = () =>
-  new Promise((resolve) => {
-    if (!messaging) return;
-    onMessage(messaging, (payload) => {
-      resolve(payload);
-    });
+/**
+ * Registers a persistent foreground message listener.
+ * Unlike a one-shot Promise, this callback fires for every message received
+ * while the app is in the foreground.
+ * @param {Function} callback - Called with payload on each new message
+ * @returns {Function} unsubscribe - Call to stop listening
+ */
+export const onMessageListener = (callback) => {
+  if (!messaging || typeof callback !== "function") return () => {};
+  // onMessage returns an unsubscribe function
+  return onMessage(messaging, (payload) => {
+    callback(payload);
   });
+};
 
 export { auth, messaging };
 export default app;

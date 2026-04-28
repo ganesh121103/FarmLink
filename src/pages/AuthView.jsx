@@ -20,6 +20,36 @@ const AuthView = ({ initialMode = 'login' }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+    // ─── Process Google Redirect Sign-In ─────────────────────────────────────
+    React.useEffect(() => {
+        const checkRedirect = async () => {
+            const { checkGoogleRedirectResult } = await import('../auth/firebaseAuth');
+            const { user: firebaseUser, error } = await checkGoogleRedirectResult();
+            
+            if (firebaseUser) {
+                setIsGoogleLoading(true);
+                try {
+                    // Retrieve the role we saved in sessionStorage before they were redirected
+                    const savedRole = sessionStorage.getItem('farmlink_pending_role') || 'customer';
+                    sessionStorage.removeItem('farmlink_pending_role');
+
+                    const userData = await syncFirebaseUserWithBackend(firebaseUser, { role: savedRole });
+                    setUser(userData);
+                    localStorage.setItem('farmlink_user', JSON.stringify(userData));
+                    addToast(`Welcome, ${userData.name}! 🎉`);
+                    navigate('dashboard');
+                } catch (err) {
+                    setErrors({ form: err.message || 'Google redirect mapping failed' });
+                } finally {
+                    setIsGoogleLoading(false);
+                }
+            } else if (error) {
+                setErrors({ form: error });
+            }
+        };
+        checkRedirect();
+    }, [navigate, setUser, addToast]);
+
     // ─── Forgot Password State ─────────────────────────────────────────────
     const [showForgotModal, setShowForgotModal]   = useState(false);
     // step: 'email' | 'verify' | 'reset' | 'success'
@@ -312,13 +342,20 @@ const AuthView = ({ initialMode = 'login' }) => {
         setShowRoleModal(false);
         setIsGoogleLoading(true);
         setErrors({});
+        
+        // Save role in session storage just in case the browser needs to perform a full redirect (fallback)
+        sessionStorage.setItem('farmlink_pending_role', selectedRole);
+
         try {
             const { user: firebaseUser, error } = await loginWithGoogle();
             if (error) {
                 setErrors({ form: error });
+                sessionStorage.removeItem('farmlink_pending_role');
                 return;
             }
             if (!firebaseUser) return; // User closed popup
+
+            sessionStorage.removeItem('farmlink_pending_role');
 
             // Google sign-in uses the explicitly selected role
             const userData = await syncFirebaseUserWithBackend(firebaseUser, { role: selectedRole });

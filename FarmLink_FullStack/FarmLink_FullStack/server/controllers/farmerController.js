@@ -23,14 +23,14 @@ exports.uploadDocuments = async (req, res) => {
     if (!farmer) {
       return res.status(404).json({ message: "Farmer not found" });
     }
-    
+
     farmer.documents = {
       idProof: idProof || farmer.documents?.idProof,
       landRecord: landRecord || farmer.documents?.landRecord
     };
     farmer.verificationStatus = "Pending";
     await farmer.save();
-    
+
     return res.json({ message: "Documents uploaded successfully", farmer });
   } catch (err) {
     res.status(500).json({ message: err.message });

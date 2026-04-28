@@ -1,4 +1,22 @@
 const nodemailer = require("nodemailer");
+const fs = require('fs');
+const path = require('path');
+
+const logEmail = (msg) => {
+    try {
+        const logMsg = `[${new Date().toISOString()}] ${msg}\n`;
+        fs.appendFileSync(path.join(__dirname, '../email.log'), logMsg);
+        console.log(msg);
+    } catch(e) {}
+};
+
+const logEmailError = (msg, err) => {
+    try {
+        const logMsg = `[${new Date().toISOString()}] ERROR: ${msg} | ${err?.message} | Stack: ${err?.stack}\n`;
+        fs.appendFileSync(path.join(__dirname, '../email.log'), logMsg);
+        console.error(msg, err);
+    } catch(e) {}
+};
 
 let transporter;
 
@@ -6,12 +24,12 @@ const initTransporter = () => {
     if (transporter) return;
 
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASS) {
-        console.warn("⚠️ Gmail SMTP disabled: GMAIL_USER or GMAIL_APP_PASS missing in .env.");
-        console.warn("Emails will be printed to console only.");
+        logEmail("⚠️ Gmail SMTP disabled: GMAIL_USER or GMAIL_APP_PASS missing in .env.");
         return;
     }
 
-    transporter = nodemailer.createTransport({
+    try {
+        transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: process.env.GMAIL_USER,
@@ -24,7 +42,11 @@ const initTransporter = () => {
         socketTimeout: 15000,    // 15s for socket inactivity
     });
 
-    console.log("✅ Gmail SMTP transporter initialized for:", process.env.GMAIL_USER);
+    } catch(err) {
+        logEmailError("Failed to create transport", err);
+    }
+
+    logEmail(`✅ Gmail SMTP transporter initialized for: ${process.env.GMAIL_USER}`);
 };
 
 /**
@@ -90,19 +112,11 @@ const sendEmail = async (to, subject, bodyHtml) => {
         const finalHtml = isFullHtml ? bodyHtml : buildHtmlEmail(subject, `<p>${bodyHtml}</p>`);
 
         if (!transporter) {
-            // Fallback: print to console if no credentials
-            console.log("\n=========================================================");
-            console.log("📧 [MOCK EMAIL] (No Gmail credentials configured in .env)");
-            console.log("=========================================================");
-            console.log(`To:      ${to}`);
-            console.log(`From:    ${fromEmail}`);
-            console.log(`Subject: ${subject}`);
-            console.log(`Body:    ${String(bodyHtml).replace(/<[^>]+>/g, "").substring(0, 300)}`);
-            console.log("=========================================================\n");
+            logEmail(`📧 [MOCK EMAIL] No transporter. To: ${to} | Subject: ${subject}`);
             return true;
         }
 
-        console.log(`📤 Sending email → ${to} | Subject: "${subject}"`);
+        logEmail(`📤 Sending email → ${to} | Subject: "${subject}"`);
         const info = await transporter.sendMail({
             from: fromEmail,
             to,
@@ -110,10 +124,18 @@ const sendEmail = async (to, subject, bodyHtml) => {
             html: finalHtml,
         });
 
-        console.log("✅ Email sent successfully:", info.messageId);
+        logEmail(`✅ Email sent successfully: ${info.messageId}`);
         return true;
     } catch (err) {
-        console.error("❌ Email dispatch failed:", err.message);
+        const code = err.code || '';
+        logEmailError(`❌ Email dispatch failed [${code}] for ${to}`, err);
+
+        if (['EAUTH', 'ECONNECTION', 'ECONNRESET', 'ETIMEDOUT'].includes(code)) {
+            logEmail("⚠️ Resetting SMTP transporter due to connection error.");
+            if (transporter) { transporter.close(); }
+            transporter = null;
+        }
+
         return false;
     }
 };

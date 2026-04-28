@@ -58,6 +58,7 @@ const NotificationsPage = ({ BackBtn }) => {
     const {
         notifications, unreadCount, fetchNotifications,
         markNotificationRead, markAllNotificationsRead, clearAllNotifications,
+        deleteNotification,
         navigate
     } = useAppContext();
 
@@ -234,12 +235,15 @@ const NotificationsPage = ({ BackBtn }) => {
                                     const cfg  = typeConfig[notif.type] || typeConfig.System;
                                     const Icon = cfg.icon;
                                     return (
-                                        <button
+                                        <div
                                             key={notif._id}
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => handleClick(notif)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(notif); }}
                                             style={{ animationDelay: `${idx * 40}ms` }}
                                             className={`
-                                                w-full text-left flex items-start gap-4 p-4 rounded-2xl border transition-all
+                                                w-full text-left flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer
                                                 animate-fade-in-up
                                                 ${!notif.isRead
                                                     ? 'bg-white dark:bg-gray-900 border-green-100 dark:border-green-900/30 shadow-sm'
@@ -283,7 +287,16 @@ const NotificationsPage = ({ BackBtn }) => {
                                                     )}
                                                 </div>
                                             </div>
-                                        </button>
+
+                                            {/* Per-item delete */}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); deleteNotification(notif._id); }}
+                                                className="flex-shrink-0 p-1.5 rounded-lg text-gray-300 dark:text-gray-700 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                title="Delete notification"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     );
                                 })}
                             </div>

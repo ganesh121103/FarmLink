@@ -3,10 +3,20 @@ const router = express.Router();
 const { verifyToken, checkRole } = require("../middleware/authMiddleware");
 const Order = require("../models/Order");
 const Notification = require("../models/Notification");
-const User = require("../models/Customer");
+const Customer = require("../models/Customer");
+const Farmer = require("../models/Farmer");
+const Admin = require("../models/Admin");
 const { sendEmail, buildHtmlEmail } = require("../utils/emailService");
 const { sendPushNotification } = require("../utils/pushNotificationService");
 const { logOrderToBlockchain } = require("../utils/blockchainLogger");
+
+// Helper to find a user across collections
+const findUserInCollections = async (userId) => {
+  let user = await Customer.findById(userId).select("email name fcmToken role");
+  if (!user) user = await Farmer.findById(userId).select("email name fcmToken role");
+  if (!user) user = await Admin.findById(userId).select("email name fcmToken role");
+  return user;
+};
 
 /* GET orders – authenticated users */
 router.get("/", verifyToken, async (req, res) => {
@@ -64,8 +74,8 @@ router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
     //  - items.farmerName string match    (most reliable fallback)
     const farmerMatchConditions = [];
     if (farmerObjId) farmerMatchConditions.push({ "items.farmer": farmerObjId });
-    if (farmerId)    farmerMatchConditions.push({ "items.farmer": farmerId });
-    if (farmerName)  farmerMatchConditions.push({ "items.farmerName": farmerName });
+    if (farmerId) farmerMatchConditions.push({ "items.farmer": farmerId });
+    if (farmerName) farmerMatchConditions.push({ "items.farmerName": farmerName });
 
     if (farmerMatchConditions.length === 0) {
       return res.status(400).json({ message: "farmerId or farmerName required" });
@@ -88,10 +98,10 @@ router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
       {
         $group: {
           _id: {
-            year:  { $year:  "$createdAt" },
+            year: { $year: "$createdAt" },
             month: { $month: "$createdAt" },
           },
-          revenue:  { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+          revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
           orderIds: { $addToSet: "$_id" },
         },
       },
@@ -115,7 +125,7 @@ router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
       return {
         month: m.label,
         revenue: lookup[key]?.revenue || 0,
-        orders:  lookup[key]?.orders  || 0,
+        orders: lookup[key]?.orders || 0,
       };
     });
 
@@ -140,12 +150,99 @@ router.post("/", verifyToken, async (req, res) => {
     // --- SIMPLE BLOCKCHAIN ADDITION ---
     const txHash = await logOrderToBlockchain(order._id.toString(), order.total);
     if (txHash) {
-        order.blockchainTxHash = txHash;
-        await order.save();
+      order.blockchainTxHash = txHash;
+      await order.save();
     }
     // ----------------------------------
 
     res.status(201).json(order);
+
+    // 🔔 TRIGGER: Notify Customer (Order Placed) and Farmers (New Order Received)
+    setImmediate(async () => {
+      try {
+        const { sendEmail } = require("../utils/emailService");
+        const { sendPushNotification } = require("../utils/pushNotificationService");
+        const Notification = require("../models/Notification");
+
+        // 1. Notify Customer
+        const customer = await findUserInCollections(req.user.id);
+        const orderIdStr = order._id.toString().slice(-6).toUpperCase();
+        
+        if (customer) {
+          // DB Notification
+          await Notification.create({
+            userId: customer._id,
+            title: `Order Placed Successfully! ✅`,
+            message: `Your order #${orderIdStr} has been placed. We're processing it now!`,
+            image: order.items?.[0]?.image || "",
+            type: "Order"
+          });
+
+          // Push Notification
+          if (customer.fcmToken) {
+            await sendPushNotification(
+              customer.fcmToken,
+              "Order Placed! 🛒",
+              `Order #${orderIdStr} confirmed for ₹${order.total}.`
+            );
+          }
+
+          // Email
+          if (customer.email) {
+            await sendEmail(
+              customer.email,
+              `Order Confirmation #${orderIdStr}`,
+              `<h1>Thank you for your order!</h1>
+               <p>Hi ${customer.name || 'Customer'},</p>
+               <p>Your order <strong>#${orderIdStr}</strong> has been successfully placed. We are processing it and will notify you when it ships.</p>
+               <h3>Order Details:</h3>
+               <ul>${order.items.map(item => `<li>${item.quantity}x ${item.name} (₹${item.price})</li>`).join('')}</ul>
+               <p><strong>Total: ₹${order.total}</strong></p>`
+            );
+          }
+        }
+
+        // 2. Notify Farmers (Extract unique farmer IDs)
+        const farmerIds = [...new Set(order.items.map(i => i.farmer).filter(Boolean))];
+        for (const fId of farmerIds) {
+          const farmer = await findUserInCollections(fId);
+          if (farmer) {
+             // DB Notification
+             await Notification.create({
+               userId: farmer._id,
+               title: `New Order Received! 🛍️`,
+               message: `You received a new order from ${order.userName || 'a customer'} (Order #${orderIdStr}). Check your dashboard!`,
+               image: order.items.find(i => i.farmer === fId)?.image || "",
+               type: "Order"
+             });
+
+             // Push Notification
+             if (farmer.fcmToken) {
+               await sendPushNotification(
+                 farmer.fcmToken,
+                 "New Order! 💸",
+                 `Order #${orderIdStr} received.`
+               );
+             }
+
+             // Email
+             if (farmer.email) {
+               await sendEmail(
+                 farmer.email,
+                 `New Order Received! #${orderIdStr}`,
+                 `<h1>You've Got a New Order!</h1>
+                  <p>Hi ${farmer.name || 'Farmer'},</p>
+                  <p>A customer has just placed an order that includes items from your farm.</p>
+                  <p>Log in to your dashboard to view the details and prepare the shipment.</p>`
+               );
+             }
+          }
+        }
+      } catch (err) {
+        console.error("❌ Failed to process order notification/email triggers:", err.message);
+      }
+    });
+
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -182,14 +279,14 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
         const fullOrder = await Order.findById(order._id).lean();
         console.log(`[Email] Order items count: ${fullOrder?.items?.length ?? 0}`, JSON.stringify(fullOrder?.items?.map(i => ({ name: i.name, qty: i.quantity, price: i.price }))));
 
-        // Find customer details for external alerts
-        const customer = await User.findById(order.userId).select("email name fcmToken");
+        // Find buyer details across all roles for external alerts
+        const customer = await findUserInCollections(order.userId);
         if (customer) {
-            const orderId = order._id.toString().slice(-6).toUpperCase();
-            const statusColor = status === 'Shipped' ? '#2196F3' : '#4CAF50';
+          const orderId = order._id.toString().slice(-6).toUpperCase();
+          const statusColor = status === 'Shipped' ? '#2196F3' : '#4CAF50';
 
-            // Build product rows for the email (Using the actual images)
-            const itemRows = (fullOrder.items || []).map(item => `
+          // Build product rows for the email (Using the actual images)
+          const itemRows = (fullOrder.items || []).map(item => `
               <tr>
                 <td style="padding:10px 8px;border-bottom:1px solid #e8f5e9;vertical-align:middle;">
                   ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;display:block;" />` : `<div style="width:44px;height:44px;border-radius:8px;background:#52b788;color:#fff;font-size:18px;font-weight:bold;display:flex;align-items:center;justify-content:center;text-align:center;line-height:44px;">${(item.name || 'P').charAt(0).toUpperCase()}</div>`}
@@ -207,7 +304,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
               </tr>
             `).join('');
 
-            const emailHtml = buildHtmlEmail(title, `
+          const emailHtml = buildHtmlEmail(title, `
               <h2>${emoji} ${title}</h2>
               <p>Hi <strong>${customer.name || 'there'}</strong>,</p>
               <p>${message}</p>
@@ -238,14 +335,14 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
               </table>
 
               <p style="margin-top:24px;">${status === 'Shipped'
-                ? '🚛 Your order is on its way! Please keep an eye out for the delivery.'
-                : '🎉 Thank you for shopping with FarmLink. We hope you enjoy your fresh produce!'
-              }</p>
+              ? '🚛 Your order is on its way! Please keep an eye out for the delivery.'
+              : '🎉 Thank you for shopping with FarmLink. We hope you enjoy your fresh produce!'
+            }</p>
               <p style="color:#888;font-size:13px;">This is an automated notification. Please do not reply to this email.</p>
             `);
 
-            await sendEmail(customer.email, title, emailHtml);
-            await sendPushNotification(customer.fcmToken, title, message, { type: "Order", link: "" });
+          await sendEmail(customer.email, title, emailHtml);
+          await sendPushNotification(customer.fcmToken, title, message, { type: "Order", link: "" });
         }
       } catch (e) {
         console.error("[Notification Trigger] Order status error:", e.message);
