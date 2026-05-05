@@ -2,6 +2,11 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
+const hpp = require("hpp");
 const { Server } = require("socket.io");
 const Message = require("./models/Message");
 require("dotenv").config();
@@ -33,6 +38,22 @@ const startExpiryCleanupJob = () => {
 };
 
 const app = express();
+
+app.set('trust proxy', 1);
+
+// Set security HTTP headers (configure for API usage)
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
+
+// Global Rate Limiting: Limit requests from same API
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 requests per windowMs (Higher globally, stricter on auth)
+  message: "Too many requests from this IP, please try again after 15 minutes"
+});
+app.use("/api", limiter);
+
 const server = http.createServer(app);
 
 // Socket.IO setup
@@ -40,9 +61,23 @@ const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
+// Enable CORS
 app.use(cors());
+
+// Body parser, reading data from body into req.body
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Data sanitization against NoSQL query injection
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  next();
+});
+
+// Prevent parameter pollution
+app.use(hpp());
 
 // Routes
 app.use("/api/users", require("./routes/userRoutes"));

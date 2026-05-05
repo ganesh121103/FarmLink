@@ -33,7 +33,7 @@ const TransparencyModal = ({ isOpen, onClose, product }) => {
     const safeEncodedData = btoa(encodeURIComponent(JSON.stringify(payload)));
     
     // Use dynamic local IP or current hostname instead of expired cloudflare tunnel
-    const currentHost = window.location.hostname === 'localhost' ? '10.188.168.201:5173' : window.location.host;
+    const currentHost = window.location.hostname === 'localhost' ? '192.168.137.1:5173' : window.location.host;
     const protocol = window.location.protocol;
     const qrData = `${protocol}//${currentHost}/?view=transparency-report&data=${safeEncodedData}`;
 
@@ -68,7 +68,7 @@ const TransparencyModal = ({ isOpen, onClose, product }) => {
                     </p>
 
                     <div className="p-3 border-4 border-stone-100 dark:border-slate-800 rounded-2xl bg-white shadow-sm inline-block">
-                        <QRCodeSVG value={qrData} size={180} level="L" includeMargin={false} />
+                        <QRCodeSVG value={qrData} size={240} level="L" includeMargin={false} />
                     </div>
                 </div>
 

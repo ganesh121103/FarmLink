@@ -14,26 +14,35 @@ const {
   resetPassword
 } = require("../controllers/userController");
 
+const rateLimit = require("express-rate-limit");
+
+// Strict rate limiter for auth routes to prevent brute force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs for auth routes
+  message: "Too many login/register attempts from this IP, please try again after 15 minutes"
+});
+
 // GET all users or filter by role – public for now (farmers list on homepage)
 router.get("/", getUsers);
 
 // REGISTER
-router.post("/register", registerUser);
+router.post("/register", authLimiter, registerUser);
 
 // LOGIN
-router.post("/login", loginUser);
+router.post("/login", authLimiter, loginUser);
 
 // FIREBASE / GOOGLE AUTH (find-or-create by firebaseUid)
-router.post("/firebase-auth", firebaseAuth);
+router.post("/firebase-auth", authLimiter, firebaseAuth);
 
 // FORGOT PASSWORD – sends reset token to email
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", authLimiter, forgotPassword);
 
 // VERIFY RESET TOKEN - checks if OTP is valid
-router.post("/verify-otp", verifyResetToken);
+router.post("/verify-otp", authLimiter, verifyResetToken);
 
 // RESET PASSWORD – validates token and sets new password
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", authLimiter, resetPassword);
 
 // UPDATE user (own profile) – must be logged in
 router.put("/:id", verifyToken, updateUser);
