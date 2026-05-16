@@ -287,11 +287,9 @@ const AuthView = ({ initialMode = 'login' }) => {
 
         setIsLoading(true);
         try {
-            let firebaseResult;
-
             if (mode === 'register') {
                 // Step 1: Register with Firebase
-                firebaseResult = await registerWithEmail(formData.email, formData.password, formData.name);
+                const firebaseResult = await registerWithEmail(formData.email, formData.password, formData.name);
                 if (firebaseResult.error) {
                     setErrors({ form: firebaseResult.error });
                     return;
@@ -310,18 +308,34 @@ const AuthView = ({ initialMode = 'login' }) => {
                 addToast(`Welcome, ${userData.name}! 🎉`);
                 navigate('dashboard');
             } else {
-                // Step 1: Login with Firebase
-                firebaseResult = await loginWithEmail(formData.email, formData.password);
-                if (firebaseResult.error) {
-                    setErrors({ form: firebaseResult.error });
-                    return;
+                // LOGIN — Try Firebase first, fall back to direct MongoDB if Firebase fails
+                // (handles seeded/admin accounts not registered in Firebase)
+                const firebaseResult = await loginWithEmail(formData.email, formData.password);
+
+                if (!firebaseResult.error && firebaseResult.user) {
+                    // Firebase login succeeded — sync with backend
+                    const userData = await syncFirebaseUserWithBackend(firebaseResult.user, { role, password: formData.password });
+                    setUser(userData);
+                    localStorage.setItem('farmlink_user', JSON.stringify(userData));
+                    addToast(`Welcome back, ${userData.name}! 👋`);
+                    navigate('dashboard');
+                } else {
+                    // Firebase login failed — try direct MongoDB login (for seeded/admin accounts)
+                    try {
+                        const { data } = await apiCall('/users/login', 'POST', {
+                            email: formData.email.trim().toLowerCase(),
+                            password: formData.password,
+                            role,
+                        });
+                        setUser(data);
+                        localStorage.setItem('farmlink_user', JSON.stringify(data));
+                        addToast(`Welcome back, ${data.name}! 👋`);
+                        navigate('dashboard');
+                    } catch (mongoErr) {
+                        // Both Firebase and MongoDB login failed
+                        setErrors({ form: mongoErr.message || firebaseResult.error || 'Invalid credentials' });
+                    }
                 }
-                // Step 2: Sync with backend
-                const userData = await syncFirebaseUserWithBackend(firebaseResult.user, { role, password: formData.password });
-                setUser(userData);
-                localStorage.setItem('farmlink_user', JSON.stringify(userData));
-                addToast(`Welcome back, ${userData.name}! 👋`);
-                navigate('dashboard');
             }
         } catch (err) {
             setErrors({ form: err.message || 'Authentication failed' });

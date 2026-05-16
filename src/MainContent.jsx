@@ -20,7 +20,7 @@ import CustomerDashboard from './pages/dashboards/CustomerDashboard';
 import TransparencyReportView from './pages/TransparencyReportView';
 import { apiCall } from './api/apiCall';
 import { useAppContext } from './context/AppContext';
-import { mockFarmers, mockInitialProducts as mockProducts } from './constants';
+
 
 const MainContent = () => {
     const { user, view, history, setHistory, setView, navigate, cart, addToast, t } = useAppContext();
@@ -31,6 +31,7 @@ const MainContent = () => {
     const [isLoadingFarmers, setIsLoadingFarmers] = useState(true);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [selectedFarmer, setSelectedFarmer] = useState(null);
+    
     // Deep-link: product ID from ?product= URL param (consumed after products load)
     const [pendingProductId] = useState(() => {
         try {
@@ -43,16 +44,25 @@ const MainContent = () => {
         window.__setSelectedFarmer = setSelectedFarmer;
         return () => { delete window.__setSelectedFarmer; };
     }, [setSelectedFarmer]);
+    
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-    const fetchFarmers = async () => {
+    const fetchFarmers = async (retries = 3) => {
         try {
             const { data } = await apiCall('/farmers');
             setFarmers(data || []);
-        } catch {
-            setFarmers(mockFarmers);
-        } finally {
+            try { localStorage.setItem('farmlink_cached_farmers', JSON.stringify(data || [])); } catch { /* quota exceeded — skip cache */ }
+            setIsLoadingFarmers(false);
+        } catch (err) {
+            if (retries > 0) {
+                console.log(`fetchFarmers failed, retrying... (${retries} retries left)`);
+                setTimeout(() => fetchFarmers(retries - 1), 2000);
+                return;
+            }
+            console.error("fetchFarmers failed permanently:", err);
+            const cached = localStorage.getItem('farmlink_cached_farmers');
+            setFarmers(cached ? JSON.parse(cached) : []);
             setIsLoadingFarmers(false);
         }
     };
@@ -61,8 +71,10 @@ const MainContent = () => {
         try {
             const { data } = await apiCall('/products');
             setProducts(data || []);
+            try { localStorage.setItem('farmlink_cached_products', JSON.stringify(data || [])); } catch { /* quota exceeded — skip cache */ }
         } catch {
-            setProducts(mockProducts);
+            const cached = localStorage.getItem('farmlink_cached_products');
+            setProducts(cached ? JSON.parse(cached) : []);
         } finally {
             setIsLoadingProducts(false);
         }
@@ -73,8 +85,14 @@ const MainContent = () => {
         try {
             const { data } = await apiCall('/orders');
             setOrders(data || []);
+            localStorage.setItem(`farmlink_cached_orders_${user._id}`, JSON.stringify(data || []));
         } catch {
-            setOrders([]);
+            const cached = localStorage.getItem(`farmlink_cached_orders_${user._id}`);
+            if (cached) {
+                setOrders(JSON.parse(cached));
+            } else {
+                setOrders([]);
+            }
         }
     };
 

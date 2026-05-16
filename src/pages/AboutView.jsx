@@ -45,8 +45,12 @@ const AboutView = ({ BackBtn, farmers, setSelectedFarmer }) => {
                                 navigate('farmer-details');
                             }}
                         >
-                            <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-500 mb-3 text-2xl font-black flex-shrink-0">
-                                {farmer.name.charAt(0)}
+                            <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-500 mb-3 text-2xl font-black flex-shrink-0 overflow-hidden">
+                                {farmer.image ? (
+                                    <img src={farmer.image} alt={farmer.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    farmer.name.charAt(0)
+                                )}
                             </div>
                             <h3 className="font-bold text-base mb-1 flex items-center justify-center gap-1.5">
                                 {farmer.name} 

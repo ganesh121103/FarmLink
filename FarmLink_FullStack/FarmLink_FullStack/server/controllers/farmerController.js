@@ -3,6 +3,7 @@ const Farmer = require("../models/Farmer");
 /* ---------------- GET ALL FARMERS ---------------- */
 exports.getFarmers = async (req, res) => {
   try {
+    console.log(`[Backend] getFarmers called. Status query: ${req.query.status}`);
     const filter = { role: 'farmer' };
     if (req.query.status) filter.verificationStatus = req.query.status;
 

@@ -8,9 +8,9 @@ const xss = require("xss-clean");
 const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
 const { Server } = require("socket.io");
-const Message = require("./models/Message");
 require("dotenv").config();
 const { startWishlistAlertJob } = require("./utils/wishlistAlerts");
+const Message = require("./models/Message");
 
 /* ════════════════════════════════════════════════════════════════
    Auto-delete expired products (runs every hour)
@@ -40,6 +40,11 @@ const startExpiryCleanupJob = () => {
 const app = express();
 
 app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  require('fs').appendFileSync('req_logs.txt', `[REQ] ${req.method} ${req.url}\n`);
+  next();
+});
 
 // Set security HTTP headers (configure for API usage)
 app.use(helmet({
@@ -80,14 +85,16 @@ app.use((req, res, next) => {
 app.use(hpp());
 
 // Routes
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/products", require("./routes/productRoutes"));
-app.use("/api/orders", require("./routes/orderRoutes"));
-app.use("/api/farmers", require("./routes/farmerRoutes"));
-app.use("/api/expenses", require("./routes/expenseRoutes"));
-app.use("/api/chat", require("./routes/chatRoutes"));
+app.use("/api/users",         require("./routes/userRoutes"));
+app.use("/api/products",      require("./routes/productRoutes"));
+app.use("/api/orders",        require("./routes/orderRoutes"));
+app.use("/api/farmers",       require("./routes/farmerRoutes"));
+app.use("/api/expenses",      require("./routes/expenseRoutes"));
+app.use("/api/chat",          require("./routes/chatRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
-app.use("/api/payment", require("./routes/paymentRoutes"));
+app.use("/api/payment",       require("./routes/paymentRoutes"));
+
+app.get("/api/ping", (req, res) => res.json({ message: "pong", readyState: mongoose.connection.readyState }));
 
 // --- Socket.IO Real-Time Chat ---
 const onlineUsers = new Map(); // userId -> socketId
@@ -164,21 +171,18 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
+const MONGO_URI = process.env.MONGO_ATLAS_URI || process.env.MONGO_URI;
+require('fs').writeFileSync('current_mongo_uri.txt', MONGO_URI);
 
-// ✅ With timeout options to prevent hanging on Atlas cold start
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 10000,  // Give up connecting after 10s
-  connectTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-})
+mongoose.connect(MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected");
-    startExpiryCleanupJob(); // start the expired-product auto-delete job
-    startWishlistAlertJob(); // start the wishlist alerts hourly cron job
-
-    server.listen(PORT, () => {
+    startExpiryCleanupJob();
+    startWishlistAlertJob();
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📡 Database connection refreshed.`);
     });
   })
   .catch((err) => {

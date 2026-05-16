@@ -11,22 +11,28 @@ const productSchema = new mongoose.Schema({
   // Freshness & Auto-Expiry
   freshnessDays: { type: Number, default: 4, min: 1, max: 30 }, // How many days product stays listed
   expiresAt: { type: Date, default: null }, // Auto-set on create
-  
-  
-  // Transparency
+
+
+  // Transparency & Ledger
   farmingType: { type: String, enum: ['Organic', 'Inorganic', 'Seasonal', ''], default: '' },
   transparencyInfo: { type: String, default: '' }, // For Organic Manufacturing / Pesticides list
-
+  txHash: { type: String, default: '' }, // Immutable ledger hash generated on creation
   
+  // Agricultural Timeline
+  fertilizerInfo: { type: String, default: '' },
+  growthUpdates: { type: String, default: '' },
+  harvestDate: { type: Date, default: null },
+
+
   // Farmer Info
   farmer: { type: mongoose.Schema.Types.ObjectId, ref: 'Farmer', required: true },
   farmerName: { type: String, required: true },
   location: { type: String, required: true },
-  
+
   // Media
   image: { type: String, required: true }, // Primary image
   images: [String], // Additional images/videos
-  
+
   // Stats
   rating: { type: Number, default: 0 },
   reviewsCount: { type: Number, default: 0 },
@@ -46,7 +52,7 @@ const productSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Prevent duplicate reviews from the same user at the schema level
-productSchema.pre('save', function() {
+productSchema.pre('save', function () {
   if (this.isModified('reviews')) {
     const userIds = this.reviews.map(r => r.user.toString());
     const uniqueUserIds = new Set(userIds);

@@ -13,6 +13,7 @@ import DashboardGreeting from '../../components/ui/DashboardGreeting';
 import UserAvatar from '../../components/ui/UserAvatar';
 import RevenueChart from '../../components/ui/RevenueChart';
 import { apiCall } from '../../api/apiCall';
+import { askGemini } from '../../api/geminiAI';
 import { useAppContext } from '../../context/AppContext';
 
 const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
@@ -137,23 +138,60 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         } finally {
             setIsLoading(false);
             setEditingId(null);
-            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' });
+            setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '', fertilizerInfo: '', growthUpdates: '', harvestDate: '' });
         }
+    };
+
+    // Local price database (All-India average wholesale ₹/kg, 2024-25)
+    const LOCAL_PRICES = {
+        tomato: 25, tomatoes: 25, onion: 30, onions: 30, potato: 20, potatoes: 20,
+        brinjal: 30, eggplant: 30, cabbage: 18, cauliflower: 28, carrot: 32, carrots: 32,
+        spinach: 22, palak: 22, capsicum: 50, 'bell pepper': 50, cucumber: 20, ladyfinger: 28,
+        okra: 28, bhindi: 28, peas: 55, 'green peas': 55, beans: 45, 'french beans': 45,
+        radish: 18, beetroot: 28, corn: 22, 'sweet corn': 28, mushroom: 90, mushrooms: 90,
+        ginger: 130, garlic: 110, chili: 55, chilli: 55, 'green chili': 55, coriander: 45,
+        mango: 65, mangoes: 65, 'alphonso mango': 400, banana: 28, bananas: 28,
+        apple: 140, apples: 140, orange: 50, oranges: 50, grapes: 85, pomegranate: 75,
+        papaya: 28, watermelon: 15, guava: 40, lemon: 45, lemons: 45, coconut: 30,
+        pineapple: 35, strawberry: 160, strawberries: 160, chiku: 45, sapota: 45,
+        'custard apple': 90, sitafal: 90, fig: 120, figs: 120, jackfruit: 25,
+        wheat: 30, rice: 40, jowar: 35, bajra: 28, ragi: 38, dal: 95, 'toor dal': 120,
+        moong: 100, urad: 105, chana: 60, soybean: 48, groundnut: 60, peanut: 60,
+        milk: 52, paneer: 300, curd: 50, ghee: 550, butter: 480, cheese: 380,
+        sugarcane: 4, jaggery: 55, turmeric: 110, haldi: 110,
+    };
+
+    const getLocalPrice = (name) => {
+        const q = name.toLowerCase().trim();
+        if (LOCAL_PRICES[q]) return LOCAL_PRICES[q];
+        for (const [key, price] of Object.entries(LOCAL_PRICES)) {
+            if (q.includes(key) || key.includes(q)) return price;
+        }
+        return null;
     };
 
     const handleAISuggestPrice = async () => {
         if (!newProduct.name) { addToast("Enter a product name first."); return; }
         setIsSuggestingPrice(true);
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Suggest a SINGLE fair wholesale price in Indian Rupees per kilogram for ${newProduct.name} in Maharashtra, India. Return ONLY the number. Example: 45` }] }] })
-            });
-            const data = await res.json();
-            const suggested = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().replace(/[^0-9]/g, '');
-            if (suggested) { setNewProduct(prev => ({ ...prev, price: suggested })); addToast(`AI suggested ₹${suggested}/kg for ${newProduct.name}`); }
-        } catch { addToast("Could not connect to AI. Try again."); }
+            const text = await askGemini(`You are a pricing expert for Indian agricultural markets. What is the current average wholesale price in Indian Rupees per kilogram for "${newProduct.name}" across all of India? Consider the all-India mandi (wholesale market) average price. Return ONLY the number, nothing else. Example: 45`);
+            const suggested = text.replace(/[^0-9]/g, '');
+            if (suggested) {
+                setNewProduct(prev => ({ ...prev, price: suggested }));
+                addToast(`🤖 AI suggested ₹${suggested}/kg for ${newProduct.name} (all-India avg)`);
+                setIsSuggestingPrice(false);
+                return;
+            }
+        } catch { /* AI unavailable, fall through to local */ }
+
+        // Fallback: local price database
+        const localPrice = getLocalPrice(newProduct.name);
+        if (localPrice) {
+            setNewProduct(prev => ({ ...prev, price: String(localPrice) }));
+            addToast(`📊 Suggested ₹${localPrice}/kg for ${newProduct.name} (all-India avg)`);
+        } else {
+            addToast("Could not find a price for this product. Enter manually.");
+        }
         setIsSuggestingPrice(false);
     };
 
@@ -197,7 +235,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         }
     };
 
-    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '', freshnessDays: p.freshnessDays || 4, transparencyInfo: p.transparencyInfo || '', farmingType: p.farmingType || '' }); setEditingId(p._id); setIsAddProductOpen(true); };
+    const openEdit = (p) => { setNewProduct({ name: p.name, price: p.price, category: p.category, location: p.location, stock: p.stock, images: p.images || (p.image ? [p.image] : []), image: p.image, description: p.description || '', freshnessDays: p.freshnessDays || 4, transparencyInfo: p.transparencyInfo || '', farmingType: p.farmingType || '', fertilizerInfo: p.fertilizerInfo || '', growthUpdates: p.growthUpdates || '', harvestDate: p.harvestDate ? new Date(p.harvestDate).toISOString().split('T')[0] : '' }); setEditingId(p._id); setIsAddProductOpen(true); };
     const openDelete = (id) => { setProductToDelete(id); setDeleteModalOpen(true); };
     const tabClass = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
@@ -592,6 +630,26 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-bold text-black dark:text-slate-300 flex items-center gap-2"><Sprout size={14} className="text-green-500" /> Transparency / Farming Details</label>
                                 <textarea className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-3 focus:ring-2 focus:ring-green-600 outline-none bg-stone-50 dark:bg-slate-900 border-l-4 border-l-green-500 text-black dark:text-white" rows="2" placeholder="e.g. Grown using organic compost. No chemical pesticides used. Certified by..." value={newProduct.transparencyInfo} onChange={(e) => setNewProduct({ ...newProduct, transparencyInfo: e.target.value })} />
+                            </div>
+                            
+                            <div className="p-4 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50/50 dark:bg-slate-800/50 space-y-4">
+                                <h4 className="font-bold text-black dark:text-white text-sm flex items-center gap-2">🚜 Agricultural Timeline (Optional)</h4>
+                                <p className="text-xs text-stone-500 dark:text-slate-400">This data will be displayed to customers scanning the Transparency QR code.</p>
+                                
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-stone-600 dark:text-slate-400">Expected/Actual Harvest Date</label>
+                                        <input type="date" className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-2 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-900 text-black dark:text-white" value={newProduct.harvestDate || ''} onChange={(e) => setNewProduct({ ...newProduct, harvestDate: e.target.value })} />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-stone-600 dark:text-slate-400">Fertilizer & Pesticide Info</label>
+                                        <input type="text" className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-2 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-900 text-black dark:text-white text-sm" placeholder="e.g. Used organic neem oil spray" value={newProduct.fertilizerInfo || ''} onChange={(e) => setNewProduct({ ...newProduct, fertilizerInfo: e.target.value })} />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-stone-600 dark:text-slate-400">Growth Updates</label>
+                                        <input type="text" className="w-full border border-stone-300 dark:border-slate-600 rounded-lg p-2 focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-900 text-black dark:text-white text-sm" placeholder="e.g. Grown for 60 days under shade net" value={newProduct.growthUpdates || ''} onChange={(e) => setNewProduct({ ...newProduct, growthUpdates: e.target.value })} />
+                                    </div>
+                                </div>
                             </div>
                             <Button type="submit" className="w-full py-3.5 mt-2" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" size={20} /> : editingId ? t('updateProduct') : t('addProduct')}</Button>
                         </form>

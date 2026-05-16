@@ -360,7 +360,7 @@ const AdminDashboard = ({ products, setProducts, farmers, orders, setOrders }) =
                                 const isExpired = daysLeft !== null && daysLeft <= 0;
                                 return (
                                 <tr key={product._id} className={`group transition-colors cursor-pointer ${ isExpired ? 'bg-red-50/50 dark:bg-red-900/10' : isExpiringSoon ? 'bg-orange-50/50 dark:bg-orange-900/10' : 'hover:bg-stone-50 dark:hover:bg-slate-800/50'}`} onClick={() => setPreviewProduct(product)}>
-                                    <td className="py-4 pr-4 flex items-center gap-3"><img src={product.images?.[0] || product.image || 'https://via.placeholder.com/40'} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /><div className="font-bold text-black dark:text-white text-sm">{product.name}</div></td>
+                                    <td className="py-4 pr-4 flex items-center gap-3"><img src={product.image || 'https://via.placeholder.com/40'} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /><div className="font-bold text-black dark:text-white text-sm">{product.name}</div></td>
                                     <td className="py-4 pr-4 text-sm text-stone-600 dark:text-slate-400">{product.farmerName}</td>
                                     <td className="py-4 pr-4"><Badge>{product.category}</Badge></td>
                                     <td className="py-4 pr-4 font-bold text-sm">₹{product.price}/kg</td>

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Camera, Bot, AlertTriangle, Sparkles } from 'lucide-react';
 import Badge from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { analyzeImage } from '../../api/geminiAI';
 import { useAppContext } from '../../context/AppContext';
 
 const CropScannerModal = ({ isOpen, onClose }) => {
@@ -42,39 +43,31 @@ const CropScannerModal = ({ isOpen, onClose }) => {
 
     const handleScan = async (base64Data, mimeType) => {
         setScanning(true); setResult(null); setScanError(null);
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
         const base64Clean = base64Data.split(',')[1];
         const prompt = `Analyze this image carefully. Task 1: Determine if the image contains a plant, leaf, crop, fruit, or vegetable. If it does NOT, return EXACTLY: {"error": "NOT_A_PLANT"}. Task 2: If it DOES contain a plant, analyze its health and return EXACTLY: {"disease": "Name or 'Healthy'", "confidence": "e.g. '92%'", "treatment": "Short actionable advice"}`;
 
-        let success = false, attempt = 0, apiResult = null, lastError = '';
-        const delays = [1000, 2000];
-        while (!success && attempt < 2) {
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Clean } }] }] })
-                });
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    lastError = errData?.error?.message || `HTTP ${res.status}`;
-                    throw new Error(lastError);
-                }
-                const data = await res.json();
-                let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Empty response from AI");
-                text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-                apiResult = JSON.parse(text); success = true;
-            } catch (err) { lastError = err.message; attempt++; if (attempt < 2) await new Promise(r => setTimeout(r, delays[attempt - 1])); }
-        }
-        setScanning(false);
-        if (success && apiResult) {
+        try {
+            let text = await analyzeImage(prompt, base64Clean, mimeType);
+            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const apiResult = JSON.parse(text);
+
             if (apiResult.error === "NOT_A_PLANT" || apiResult.error) {
                 setScanError("No plant or crop detected. Please upload a clear photo of a leaf, plant, or vegetable.");
             } else {
                 setResult({ disease: apiResult.disease || "Unknown Status", confidence: apiResult.confidence || "N/A", treatment: apiResult.treatment || "Consult an agricultural expert." });
                 addToast("AI Analysis Complete!");
             }
-        } else { setScanError(`AI analysis failed: ${lastError || 'Unable to reach servers. Check your API key.'}`) }
+        } catch (err) {
+            if (err.code === 'QUOTA_EXCEEDED') {
+                setScanError("Your Gemini API free quota has been exhausted. Please generate a new API key at aistudio.google.com/apikey or enable billing.");
+            } else if (err.message === 'NO_API_KEY') {
+                setScanError("Gemini API key not configured. Add VITE_GEMINI_API_KEY to your .env file.");
+            } else {
+                setScanError("AI analysis failed. Please try again later.");
+            }
+        } finally {
+            setScanning(false);
+        }
     };
 
     const handleClose = () => { setScanning(false); setResult(null); setSelectedImage(null); setScanError(null); onClose(); };

@@ -10,7 +10,12 @@ import { useAppContext } from '../context/AppContext';
 const FarmersListView = ({ BackBtn, farmers, products = [], setSelectedFarmer, isLoading }) => {
     const { t, navigate, addToast, openChat } = useAppContext();
     const [search, setSearch] = useState('');
-    const filtered = farmers.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.location?.toLowerCase().includes(search.toLowerCase()));
+    const filtered = farmers.filter(f => {
+        const searchLower = search.toLowerCase();
+        const nameMatch = (f.name || '').toLowerCase().includes(searchLower);
+        const locMatch = (f.location || '').toLowerCase().includes(searchLower);
+        return nameMatch || locMatch;
+    });
 
     const handleWhatsAppChat = (farmerName, phone) => {
         if (!phone) {

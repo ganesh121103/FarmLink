@@ -28,8 +28,21 @@ const computeExpiresAt = (freshnessDays) => {
    ════════════════════════════════════════════════════════════════ */
 router.get("/", async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find().select("-images -reviews.images");
     res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
+   GET product by ID – public
+   ════════════════════════════════════════════════════════════════ */
+router.get("/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -42,11 +55,30 @@ router.get("/", async (req, res) => {
      🌱 NewArrival  → customers who bought in same category
      🧑‍🌾 NewArrival  → farmers cross-referenced by email
    ════════════════════════════════════════════════════════════════ */
+const crypto = require('crypto');
+const mongoose = require('mongoose');
+
 router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => {
   try {
     // Auto-compute expiresAt if not provided
     const freshnessDays = Number(req.body.freshnessDays) || 4;
     const expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : computeExpiresAt(freshnessDays);
+
+    // Immutable Ledger Hash Generation
+    const _id = new mongoose.Types.ObjectId();
+    req.body._id = _id;
+    
+    const dataString = JSON.stringify({
+        id: _id.toString(),
+        name: req.body.name,
+        farmer: req.body.farmerName,
+        price: req.body.price,
+        type: req.body.farmingType || 'Standard Farming',
+        timestamp: new Date().toISOString()
+    });
+    
+    const txHash = '0x' + crypto.createHash('sha256').update(dataString).digest('hex');
+    req.body.txHash = txHash;
 
     const product = await Product.create({ ...req.body, freshnessDays, expiresAt });
     res.json(product);

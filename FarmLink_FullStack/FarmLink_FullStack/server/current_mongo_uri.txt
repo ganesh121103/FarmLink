@@ -1,0 +1,1 @@
+mongodb+srv://pratik123:pratik123@cluster0.zbiymel.mongodb.net/farmlink?appName=Cluster0

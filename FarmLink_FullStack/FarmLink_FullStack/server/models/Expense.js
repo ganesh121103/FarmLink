@@ -1,25 +1,25 @@
 const mongoose = require("mongoose");
 
 const expenseSchema = new mongoose.Schema({
-  farmer: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Farmer", 
-    required: true 
+  farmer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Farmer",
+    required: true
   },
-  cropName: { 
-    type: String, 
-    required: true 
+  cropName: {
+    type: String,
+    required: true
   },
-  amount: { 
-    type: Number, 
-    required: true 
+  amount: {
+    type: Number,
+    required: true
   },
-  description: { 
-    type: String 
+  description: {
+    type: String
   },
-  date: { 
-    type: Date, 
-    default: Date.now 
+  date: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 

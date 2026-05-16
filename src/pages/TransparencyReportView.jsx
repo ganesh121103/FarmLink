@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Leaf, Award, User, MapPin, ShieldCheck, Beaker, Sprout, ChevronLeft, Droplet } from 'lucide-react';
+import { Leaf, Award, User, MapPin, ShieldCheck, Beaker, Sprout, ChevronLeft, Droplet, Truck, Package, Link2, Copy, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiCall } from '../api/apiCall';
 
@@ -7,6 +7,36 @@ const TransparencyReportView = ({ BackBtn, products }) => {
     const { navigate } = useAppContext();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [realHash, setRealHash] = useState('0x...');
+
+    useEffect(() => {
+        if (!product) return;
+        
+        if (product.txHash) {
+            setRealHash(product.txHash);
+            return;
+        }
+        
+        const generateRealHash = async () => {
+            const dataString = JSON.stringify({
+                id: product._id,
+                name: product.name,
+                farmer: product.farmerName,
+                price: product.price,
+                type: product.farmingType,
+                timestamp: product.createdAt
+            });
+            
+            const msgBuffer = new TextEncoder().encode(dataString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            setRealHash('0x' + hashHex);
+        };
+        
+        generateRealHash();
+    }, [product]);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -163,10 +193,98 @@ const TransparencyReportView = ({ BackBtn, products }) => {
                     )}
                 </div>
 
+                {/* Agricultural Timeline */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-stone-100 dark:border-slate-800 shadow-xl mb-6">
+                    <h2 className="text-2xl font-black text-black dark:text-white flex items-center gap-3 mb-6">
+                        <Truck size={28} className="text-stone-500" />
+                        Crop Journey
+                    </h2>
+                    
+                    <div className="relative pl-6 border-l-4 border-stone-200 dark:border-slate-700 space-y-8">
+                        {/* Sowing */}
+                        <div className="relative">
+                            <div className="absolute -left-[42px] bg-green-100 dark:bg-green-900/50 p-2 rounded-full border-4 border-white dark:border-slate-900">
+                                <Sprout size={20} className="text-green-600 dark:text-green-400" />
+                            </div>
+                            <h6 className="text-lg font-bold text-black dark:text-white">Seed Sown / Product Listed</h6>
+                            <p className="text-sm text-stone-500">{new Date(product.createdAt || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                        
+                        {/* Fertilizer */}
+                        <div className="relative">
+                            <div className="absolute -left-[42px] bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full border-4 border-white dark:border-slate-900">
+                                <Droplet size={20} className="text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h6 className="text-lg font-bold text-black dark:text-white">Fertilizer & Care</h6>
+                            <p className="text-sm text-stone-500">{product.fertilizerInfo || product.transparencyInfo || 'Standard agricultural care applied.'}</p>
+                        </div>
+
+                        {/* Growth Updates */}
+                        <div className="relative">
+                            <div className="absolute -left-[42px] bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-full border-4 border-white dark:border-slate-900">
+                                <Leaf size={20} className="text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <h6 className="text-lg font-bold text-black dark:text-white">Growth Updates</h6>
+                            <p className="text-sm text-stone-500">{product.growthUpdates || 'Grown under optimal farm conditions.'}</p>
+                        </div>
+
+                        {/* Harvest */}
+                        <div className="relative">
+                            <div className="absolute -left-[42px] bg-amber-100 dark:bg-amber-900/50 p-2 rounded-full border-4 border-white dark:border-slate-900">
+                                <Truck size={20} className="text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <h6 className="text-lg font-bold text-black dark:text-white">Harvested</h6>
+                            <p className="text-sm text-stone-500">{product.harvestDate ? new Date(product.harvestDate).toLocaleDateString() : 'Freshly harvested before listing.'}</p>
+                        </div>
+
+                        {/* Expiry / Delivery */}
+                        <div className="relative">
+                            <div className="absolute -left-[42px] bg-purple-100 dark:bg-purple-900/50 p-2 rounded-full border-4 border-white dark:border-slate-900">
+                                <Package size={20} className="text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <h6 className="text-lg font-bold text-black dark:text-white">Shelf Life / Expiry</h6>
+                            <p className="text-sm text-stone-500">Best before: {product.expiresAt ? new Date(product.expiresAt).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Blockchain Integration Visuals */}
+                <div className="bg-blue-50 dark:bg-blue-900/10 p-8 rounded-3xl border border-blue-200 dark:border-blue-900/50 relative overflow-hidden group shadow-lg mb-6">
+                    <div className="absolute -top-10 -right-10 p-4 opacity-5 pointer-events-none">
+                        <Link2 size={160} className="text-blue-500" />
+                    </div>
+                    <h5 className="font-black text-sm uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-6 flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                        Distributed Ledger Record
+                    </h5>
+                    
+                    <div className="space-y-4 relative z-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6 rounded-2xl border border-white/20 dark:border-slate-700/50">
+                        <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
+                            <span className="text-stone-500 dark:text-slate-400 font-bold uppercase text-xs tracking-wider">Transaction Hash</span>
+                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-stone-200 dark:border-slate-700 w-full md:w-auto overflow-hidden">
+                                <span className="font-mono text-xs md:text-sm text-stone-700 dark:text-slate-300 truncate max-w-[200px] md:max-w-xs">{realHash}</span>
+                                <button onClick={() => { navigator.clipboard.writeText(realHash); alert('Copied!'); }} className="text-stone-400 hover:text-blue-500 transition-colors ml-auto flex-shrink-0">
+                                    <Copy size={16} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-stone-200 dark:border-slate-700 pt-4">
+                            <span className="text-stone-500 dark:text-slate-400 font-bold uppercase text-xs tracking-wider">Timestamp</span>
+                            <span className="font-mono text-sm text-stone-700 dark:text-slate-300">{new Date(product.createdAt || Date.now()).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-stone-200 dark:border-slate-700 pt-4">
+                            <span className="text-stone-500 dark:text-slate-400 font-bold uppercase text-xs tracking-wider">Status</span>
+                            <span className="font-black text-green-600 dark:text-green-400 flex items-center gap-1.5">
+                                <ShieldCheck size={16} /> Immutable Ledger
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Report Section */}
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-stone-100 dark:border-slate-800 shadow-xl">
                     <h2 className="text-2xl font-black text-black dark:text-white flex items-center gap-3 mb-6">
-                        <ShieldCheck size={28} className="text-green-600" />
+                        <Sprout size={28} className="text-green-600" />
                         Detailed Manufacturing & Pesticide Information
                     </h2>
                     

@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     userName: { type: String, required: true },
     address: { type: String, required: true },
-    
+
     date: { type: String }, // To explicitly store the formatted date from frontend
     items: [
       {
@@ -18,17 +18,17 @@ const orderSchema = new mongoose.Schema(
         image: { type: String }
       }
     ],
-    
+
     total: { type: Number, required: true },
     paymentMethod: { type: String, default: "upi" },
-    status: { 
-        type: String, 
-        enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-        default: "Placed" 
+    status: {
+      type: String,
+      enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+      default: "Placed"
     },
     blockchainTxHash: { type: String },
     // ── Razorpay Payment Fields ──────────────────────────────────────────
-    razorpayOrderId:  { type: String, index: true },   // rzp order id from create-order
+    razorpayOrderId: { type: String, index: true },   // rzp order id from create-order
     razorpayPaymentId: { type: String },               // rzp payment id after capture
     razorpaySignature: { type: String },               // verified HMAC signature
     paymentStatus: {

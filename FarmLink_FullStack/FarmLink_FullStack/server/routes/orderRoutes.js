@@ -136,6 +136,48 @@ router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
   }
 });
 
+/* GET /api/orders/frequently-bought-together/:productId
+   Returns up to 4 product IDs that are frequently bought with the given productId.
+   This is an unauthenticated endpoint. */
+router.get("/frequently-bought-together/:productId", async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const { productId } = req.params;
+    let productObjId;
+    try {
+      productObjId = new mongoose.Types.ObjectId(productId);
+    } catch (_) {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+
+    const raw = await Order.aggregate([
+      // Match orders containing the target product
+      { $match: { "items.productId": productObjId, status: { $ne: "Cancelled" } } },
+      // Unwind items
+      { $unwind: "$items" },
+      // Exclude the target product itself
+      { $match: { "items.productId": { $ne: productObjId } } },
+      // Group by productId to count frequency
+      {
+        $group: {
+          _id: "$items.productId",
+          count: { $sum: 1 }
+        }
+      },
+      // Sort by highest frequency
+      { $sort: { count: -1 } },
+      // Limit to top 4
+      { $limit: 4 }
+    ]);
+
+    const relatedIds = raw.map(r => r._id);
+    res.json(relatedIds);
+  } catch (err) {
+    console.error("[Frequently Bought Together] Error:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 /* POST order – authenticated users */
 router.post("/", verifyToken, async (req, res) => {
   try {

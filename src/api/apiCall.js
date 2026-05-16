@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '../constants';
 
-const TIMEOUT_MS = 15000; // 15 second timeout
+const TIMEOUT_MS = 300000; // 5 minute timeout
 
 const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = false) => {
     try {
@@ -65,7 +65,7 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
 
         if (!response.ok) {
             console.error("Backend returned error status:", response.status, "Payload:", data);
-            throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
+            throw new Error(data?.message || data?.error || `HTTP error! status: ${response.status}`);
         }
 
         return { data };

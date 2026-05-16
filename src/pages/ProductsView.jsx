@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Filter, MapPin, Star, User, Mic, LocateFixed, Loader2, ChevronLeft, ChevronRight, Heart, MessageSquare, Sparkles, Leaf, Trash2, BadgeCheck, Store, QrCode, ImageIcon, X, Share2, Check } from 'lucide-react';
 import { apiCall } from '../api/apiCall';
+import { askGemini } from '../api/geminiAI';
 import { Button, AddToCartButton } from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
@@ -97,7 +98,7 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
             const popupContent = document.createElement('div');
             popupContent.className = "text-center w-40 cursor-pointer m-0 p-1";
             popupContent.innerHTML = `
-                <img src="${p.images?.[0] || p.image}" style="width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="${p.name}" />
+                <img src="${p.image}" style="width:100%; height:110px; object-fit:cover; border-radius:10px; margin-bottom:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="${p.name}" />
                 <p style="font-weight:bold; font-size:15px; color:#292524; line-height:1.2; margin-bottom:4px;">${p.name}</p>
                 <p style="color:#16a34a; font-weight:900; margin-bottom:12px; font-size:16px;">₹${p.price}/kg</p>
                 <button style="background-color:#16a34a; color:white; font-size:13px; width:100%; padding:8px 0; border-radius:8px; font-weight:bold; border:none; cursor:pointer;">View Item</button>
@@ -124,7 +125,7 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
     );
 };
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE";
+
 
 const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, farmers, products, setProducts, isLoading }) => {
     const { user, t, navigate, toggleWishlist, wishlist, openChat, addToast } = useAppContext();
@@ -286,35 +287,62 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
         if (!product || products.length < 2) return;
         setAiRecsLoading(true);
         setAiRecs([]);
+        
+        let recommended = [];
         try {
-            const others = products.filter(p => p._id !== product._id).slice(0, 20);
-            const productList = others.map(p => `ID:${p._id} Name:${p.name} Category:${p.category} Price:₹${p.price}/kg`).join('\n');
-            const prompt = `A customer is viewing "${product.name}" (${product.category}, ₹${product.price}/kg).
-From this product list, pick exactly 4 IDs that would be best recommendations. Return ONLY a JSON array of 4 IDs, example: ["id1","id2","id3","id4"]
+            // 1. Try fetching actual "Frequently Bought Together" data from order history
+            const { data } = await apiCall(`/orders/frequently-bought-together/${product._id}`);
+            if (Array.isArray(data) && data.length > 0) {
+                recommended = data.map(id => products.find(p => p._id === id)).filter(Boolean);
+            }
+        } catch (err) {
+            console.warn("Failed to fetch order history recs:", err);
+        }
+
+        // 2. If we need more products to reach 4 recommendations, use Gemini AI
+        if (recommended.length < 4) {
+            try {
+                const existingIds = [product._id, ...recommended.map(p => p._id)];
+                const others = products.filter(p => !existingIds.includes(p._id)).slice(0, 20);
+                
+                if (others.length > 0) {
+                    const needed = 4 - recommended.length;
+                    const productList = others.map(p => `ID:${p._id} Name:${p.name} Category:${p.category} Price:₹${p.price}/kg`).join('\n');
+                    const prompt = `A customer is buying "${product.name}" (${product.category}, ₹${product.price}/kg).
+Think about what other products are *frequently bought together* with this in an Indian market (e.g. Tomatoes with Onions, Tea with Sugar).
+From the list below, pick the best ${needed} IDs that would make logical culinary or shopping pairings.
+Return ONLY a JSON array of exactly ${needed} IDs. Example: ["id1"]
 
 Products:
 ${productList}`;
 
-            if (!GEMINI_API_KEY || GEMINI_API_KEY === "AIzaSyD3oKVXraHDSGB-57B2HbnHRDgsJzhNDSE") {
-                throw new Error("Dummy API key detected, skipping AI fetch to prevent console errors.");
+                    const text = await askGemini(prompt);
+                    const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const ids = JSON.parse(cleaned);
+                    const aiRecommended = ids.map(id => others.find(p => p._id === id)).filter(Boolean).slice(0, needed);
+                    recommended = [...recommended, ...aiRecommended];
+                }
+            } catch (err) {
+                console.warn("AI Fallback failed:", err);
             }
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            if (!res.ok) throw new Error("Gemini API key is invalid or model not found");
-            const data = await res.json();
-            let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]';
-            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const ids = JSON.parse(text);
-            const recommended = ids.map(id => others.find(p => p._id === id)).filter(Boolean).slice(0, 4);
-            setAiRecs(recommended.length >= 2 ? recommended : others.slice(0, 4));
-        } catch {
-            // fallback: show same-category products
-            setAiRecs(products.filter(p => p._id !== product._id && p.category === product.category).slice(0, 4));
-        } finally {
-            setAiRecsLoading(false);
         }
+
+        // 3. Final fallback: just fill with same category
+        if (recommended.length < 4) {
+            const existingIds = [product._id, ...recommended.map(p => p._id)];
+            const fallbacks = products.filter(p => !existingIds.includes(p._id) && p.category === product.category);
+            recommended = [...recommended, ...fallbacks].slice(0, 4);
+        }
+        
+        // 4. Last resort: random
+        if (recommended.length < 4) {
+            const existingIds = [product._id, ...recommended.map(p => p._id)];
+            const randoms = products.filter(p => !existingIds.includes(p._id));
+            recommended = [...recommended, ...randoms].slice(0, 4);
+        }
+
+        setAiRecs(recommended);
+        setAiRecsLoading(false);
     }, [products]);
 
     const debouncedSearch = useDebounce(localSearch, 400);
@@ -372,7 +400,27 @@ ${productList}`;
         );
     };
 
-    const handleSelectProduct = (p) => { setSelectedProduct(p); setCurrentMediaIndex(0); setNewReviewComment(''); setNewReviewRating(5); setNewReviewImages([]); window.scrollTo(0, 0); fetchAIRecs(p); };
+    const handleSelectProduct = async (p) => {
+        // Open immediately with whatever data we have (snappy UX)
+        setSelectedProduct(p);
+        setCurrentMediaIndex(0);
+        setNewReviewComment('');
+        setNewReviewRating(5);
+        setNewReviewImages([]);
+        window.scrollTo(0, 0);
+        fetchAIRecs(p);
+
+        // Silently fetch the full product record (with images) in the background
+        try {
+            const { data } = await apiCall(`/products/${p._id}`);
+            if (data && data._id) {
+                setSelectedProduct(data);
+            }
+        } catch (err) {
+            // Non-fatal — product detail already showing, just without extra images
+            console.warn('[ProductDetail] Could not fetch full product data:', err.message);
+        }
+    };
 
     let filteredProducts = products;
     if (currentFarmer) filteredProducts = filteredProducts.filter(p => p.farmer === currentFarmer._id || p.farmerName === currentFarmer.name);
@@ -737,7 +785,7 @@ ${productList}`;
                             {aiRecs.map(p => (
                                 <Card key={p._id} onClick={() => handleSelectProduct(p)} className="overflow-hidden group border-transparent hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer">
                                     <div className="h-36 overflow-hidden">
-                                        <img src={p.images?.[0] || p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     </div>
                                     <div className="p-3">
                                         <h4 className="font-bold text-sm mb-1 line-clamp-1">{p.name}</h4>
