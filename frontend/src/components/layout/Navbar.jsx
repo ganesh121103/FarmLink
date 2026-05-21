@@ -1,0 +1,284 @@
+import React, { useState } from 'react';
+import { Leaf, ShoppingBasket, User, LogOut, Sun, Moon, Globe, Menu, X, ChevronDown, Heart, AlertTriangle } from 'lucide-react';
+import Badge from '../ui/Badge';
+import NotificationBell from '../ui/NotificationBell';
+import WishlistDrawer from '../ui/WishlistDrawer';
+import UserAvatar from '../ui/UserAvatar';
+import LogoutConfirmationModal from '../modals/LogoutConfirmationModal';
+import { useAppContext } from '../../context/AppContext';
+
+const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
+    const { user, cart, wishlist, t, isDarkMode, toggleDarkMode, language, setLanguage, navigate, handleLogout, view } = useAppContext();
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const wishlistCount = wishlist?.length || 0;
+    const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const openLogoutModal = () => setShowLogoutModal(true);
+    const closeLogoutModal = () => setShowLogoutModal(false);
+    const confirmLogout = () => { handleLogout(); closeLogoutModal(); };
+
+    // When a notification links to a product, navigate there
+    const handleNotificationProductClick = (productId) => {
+        if (setSelectedFarmer) setSelectedFarmer(null);
+        navigate('products');
+    };
+
+    const navLinks = [
+        { key: 'home', label: t('home') },
+        { key: 'farmers', label: t('farmers') },
+        { key: 'products', label: t('marketplace') },
+        { key: 'about', label: t('about') },
+    ];
+
+    const handleNavClick = (key) => {
+        if (key === 'products') setSelectedFarmer(null);
+        navigate(key);
+        setIsMenuOpen(false);
+    };
+
+    return (
+        <>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-colors duration-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex h-16 items-center justify-between gap-4">
+                    {/* Logo */}
+                    <button
+                        onClick={() => navigate('home')}
+                        className="flex items-center gap-2 font-black text-xl text-green-600 dark:text-green-400 flex-shrink-0 hover:opacity-80 transition-opacity"
+                    >
+                        <Leaf size={24} className="fill-current" />
+                        <span>FarmLink</span>
+                    </button>
+
+                    {/* Desktop Nav Links */}
+                    <div className="hidden md:flex items-center gap-1">
+                        {navLinks.map(link => (
+                            <button
+                                key={link.key}
+                                onClick={() => handleNavClick(link.key)}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${view === link.key
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    }`}
+                            >
+                                {link.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Right Side Controls */}
+                    <div className="flex items-center gap-2">
+                        {/* Language Selector */}
+                        <div className="relative hidden sm:block group pb-2">
+                            <div className="flex items-center gap-1 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" title="Change Language">
+                                <Globe size={18} className="text-gray-600 dark:text-gray-300" />
+                                <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">{language}</span>
+                                <ChevronDown size={14} className="text-gray-400 transition-transform group-hover:-rotate-180" />
+                            </div>
+                            <div className="absolute right-0 top-[80%] pt-2 w-36 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col overflow-hidden z-50">
+                                {[
+                                    { code: 'en', label: 'English (EN)' },
+                                    { code: 'hi', label: 'हिंदी (HI)' },
+                                    { code: 'mr', label: 'मराठी (MR)' }
+                                ].map(lang => (
+                                    <button 
+                                        key={lang.code}
+                                        onClick={() => setLanguage(lang.code)}
+                                        className={`px-4 py-3 text-sm text-left font-bold transition-colors ${language === lang.code ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'}`}
+                                    >
+                                        {lang.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Dark Mode Toggle */}
+                        <button
+                            onClick={toggleDarkMode}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        >
+                            {isDarkMode
+                                ? <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                : <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                            }
+                        </button>
+
+                        {/* Notification Bell — logged-in users only */}
+                        {user && (
+                            <NotificationBell onProductClick={handleNotificationProductClick} />
+                        )}
+
+                        {/* Wishlist Heart — customers & farmers only */}
+                        {user && user.role !== 'admin' && (
+                            <button
+                                onClick={() => setIsWishlistOpen(true)}
+                                className="relative p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+                                aria-label={`Wishlist: ${wishlistCount} items`}
+                                title="My Wishlist"
+                            >
+                                <Heart
+                                    size={22}
+                                    className={`transition-colors ${wishlistCount > 0 ? 'text-red-500 fill-red-500' : 'text-gray-600 dark:text-gray-300 group-hover:text-red-400'}`}
+                                />
+                                {wishlistCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
+                                        {wishlistCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+
+                        {/* Cart Button */}
+                        {(!user || user?.role !== 'admin') && (
+                            <button
+                                onClick={() => navigate('activity')}
+                                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                aria-label={`Cart: ${cartCount} items`}
+                            >
+                                <ShoppingBasket size={22} className="text-gray-600 dark:text-gray-300" />
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-green-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+
+                        {/* User Menu / Auth Buttons */}
+                        {user ? (
+                            <div className="hidden md:flex items-center gap-2">
+                                <button
+                                    onClick={() => navigate('dashboard')}
+                                    className="px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-lg"
+                                >
+                                    {t('dashboard')}
+                                </button>
+                                <button
+                                    onClick={() => navigate('profile')}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <UserAvatar name={user.name} image={user.image} size="w-8 h-8" textSize="text-sm" />
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
+                                    {user.role === 'admin' && <Badge color="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">Admin</Badge>}
+                                </button>
+                                <button
+                                    onClick={openLogoutModal}
+                                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                    aria-label="Logout"
+                                    title="Logout"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="hidden md:flex items-center gap-2">
+                                <button
+                                    onClick={() => navigate('login')}
+                                    className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    {t('login')}
+                                </button>
+                                <button
+                                    onClick={() => navigate('register')}
+                                    className="px-4 py-2 text-sm font-bold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors shadow-md"
+                                >
+                                    {t('register')}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Mobile Menu Toggle */}
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            aria-label="Toggle Menu"
+                        >
+                            {isMenuOpen ? <X size={22} className="text-gray-600 dark:text-gray-300" /> : <Menu size={22} className="text-gray-600 dark:text-gray-300" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Menu */}
+            {isMenuOpen && (
+                <div className="md:hidden bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-4 py-4 space-y-1 animate-fade-in-down">
+                    {navLinks.map(link => (
+                        <button
+                            key={link.key}
+                            onClick={() => handleNavClick(link.key)}
+                            className={`w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition-colors ${view === link.key
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                        >
+                            {link.label}
+                        </button>
+                    ))}
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-800 space-y-1">
+                        {user ? (
+                            <>
+                                <button onClick={() => { navigate('dashboard'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
+                                    {t('dashboard')}
+                                </button>
+                                {user.role !== 'admin' && (
+                                    <button
+                                        onClick={() => { setIsWishlistOpen(true); setIsMenuOpen(false); }}
+                                        className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400"
+                                    >
+                                        <Heart size={18} className={wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''} />
+                                        Wishlist
+                                        {wishlistCount > 0 && (
+                                            <span className="ml-auto bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-black px-2 py-0.5 rounded-full">
+                                                {wishlistCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                <button onClick={() => { navigate('profile'); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
+                                    <User size={18} /> {t('myProfile')}
+                                </button>
+                                <button onClick={() => { openLogoutModal(); setIsMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                                    <LogOut size={18} /> {t('logout')}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={() => { navigate('login'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white">
+                                    {t('login')}
+                                </button>
+                                <button onClick={() => { navigate('register'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-bold bg-green-600 text-white hover:bg-green-500">
+                                    {t('register')}
+                                </button>
+                            </>
+                        )}
+                        <div className="w-full text-left px-4 py-2">
+                            <div className="flex items-center gap-2 mb-2 text-sm font-bold text-gray-500 dark:text-gray-400"><Globe size={16} /> Language</div>
+                            <div className="flex gap-2">
+                                {[ {code: 'en', label: 'EN'}, {code: 'hi', label: 'HI'}, {code: 'mr', label: 'MR'} ].map(lang => (
+                                    <button 
+                                        key={lang.code} 
+                                        onClick={() => setLanguage(lang.code)} 
+                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${language === lang.code ? 'bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                    >
+                                        {lang.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </nav>
+
+        {/* Wishlist Drawer — rendered outside nav so it covers full viewport */}
+        <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+
+        {/* ── Logout Confirmation Modal ─────────────────────────────────── */}
+        <LogoutConfirmationModal isOpen={showLogoutModal} onClose={closeLogoutModal} onConfirm={confirmLogout} />
+        </>
+    );
+};
+
+export default Navbar;

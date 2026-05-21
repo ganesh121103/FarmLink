@@ -1,0 +1,84 @@
+import { API_BASE_URL } from '../constants';
+
+const TIMEOUT_MS = 30000; // 30 second timeout
+
+const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = false) => {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        const options = {
+            method,
+            signal: controller.signal,
+            headers: {
+                ...(isMultipart ? {} : { 'Content-Type': 'application/json' }),
+            },
+        };
+
+        if (body) {
+            options.body = isMultipart ? body : JSON.stringify(body);
+        }
+
+        // Don't send token for auth / password-reset endpoints
+        const isPublicEndpoint = endpoint.includes('/login') ||
+            endpoint.includes('/register') ||
+            endpoint.includes('/forgot-password') ||
+            endpoint.includes('/reset-password');
+
+        if (!isPublicEndpoint) {
+            const userStr = localStorage.getItem('farmlink_user');
+            if (userStr && userStr !== "undefined") {
+                try {
+                    const userObj = JSON.parse(userStr);
+                    if (userObj?.token) {
+                        options.headers['Authorization'] = `Bearer ${userObj.token}`;
+                    }
+                } catch { /* ignore invalid json */ }
+            }
+        }
+
+        let response;
+        try {
+            console.log(`[apiCall] Fetching: ${API_BASE_URL}${endpoint}`);
+            response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === 'AbortError') {
+                throw new Error('Request timed out. Please try again.');
+            }
+            throw new Error('Cannot connect to server. Please ensure the backend is running.');
+        }
+
+        clearTimeout(timeoutId);
+
+        if (response.status === 401 && !isPublicEndpoint) {
+            // Only fire auth-expired if user actually has a token — avoids false logouts from
+            // background polls (e.g. notifications) that fire after the session is already cleared
+            const hasToken = (() => {
+                try { return !!JSON.parse(localStorage.getItem('farmlink_user'))?.token; } catch { return false; }
+            })();
+            if (hasToken) document.dispatchEvent(new CustomEvent('auth-expired'));
+            throw new Error('Session expired. Please log in again.');
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error('Invalid server response');
+        }
+
+        if (!response.ok) {
+            console.error("Backend returned error status:", response.status, "Payload:", data);
+            throw new Error(data?.message || data?.error || `HTTP error! status: ${response.status}`);
+        }
+
+        return { data };
+
+    } catch (error) {
+        console.error(`API Error (${method} ${endpoint}):`, error.message);
+        throw error;
+    }
+};
+
+export { apiCall };
