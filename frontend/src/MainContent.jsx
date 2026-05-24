@@ -3,6 +3,7 @@ import { BackButton } from './components/ui/BackButton';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ChatWidget from './components/chat/ChatWidget';
+import AIChatBot from './components/chat/AIChatBot';
 import PaymentGatewayModal from './components/modals/PaymentGatewayModal';
 import HomeView from './pages/HomeView';
 import AboutView from './pages/AboutView';
@@ -171,6 +172,7 @@ const MainContent = () => {
                 cartTotal={cart.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0)}
             />
             <ChatWidget />
+            {view === 'home' && <AIChatBot />}
 
             <main className="flex-grow">
                 {view === 'home' && <HomeView />}
