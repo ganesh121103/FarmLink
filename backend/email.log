@@ -39,3 +39,6 @@
 [2026-05-20T20:01:10.180Z] ✅ Email sent successfully: <5e8b4831-d14f-43a1-bb09-8c7dbefcf357@gmail.com>
 [2026-05-20T20:06:01.248Z] 📤 Sending email → ganeshp@gmail.com | Subject: "New Login Alert - FarmLink 🔐"
 [2026-05-20T20:06:05.216Z] ✅ Email sent successfully: <67bc2445-be78-0412-9175-9b7af22f3b39@gmail.com>
+[2026-05-25T19:21:42.916Z] ✅ Gmail SMTP transporter initialized for: pratikpawar0603@gmail.com
+[2026-05-25T19:21:42.927Z] 📤 Sending email → pratikpawar0603@gmail.com | Subject: "New Login Alert - FarmLink 🔐"
+[2026-05-25T19:21:46.815Z] ✅ Email sent successfully: <03c45f9d-bf38-2a3c-3eea-ed9e2cce6779@gmail.com>

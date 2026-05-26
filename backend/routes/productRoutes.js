@@ -92,7 +92,15 @@ router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => 
         const catProducts = await Product.find({ category: product.category }).select("_id");
         const productIds  = catProducts.map((p) => p._id);
         const orders      = await Order.find({ "items.productId": { $in: productIds } }).select("userId");
-        const customerIds = [...new Set(orders.map((o) => o.userId?.toString()).filter(Boolean))];
+        let customerIds = orders.map((o) => o.userId?.toString()).filter(Boolean);
+
+        // 1b. Get the followers of the farmer who added this product
+        const farmerObj = await Farmer.findById(product.farmer).select("followers");
+        if (farmerObj && farmerObj.followers) {
+            customerIds = [...customerIds, ...farmerObj.followers.map(id => id.toString())];
+        }
+
+        customerIds = [...new Set(customerIds)];
         if (customerIds.length === 0) return;
 
         // 2. Fetch customers
@@ -209,8 +217,20 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
         const newPrice = Number(req.body.price  ?? oldProduct.price);
         const oldPrice = Number(oldProduct.price || 0);
 
-        // Fetch wishlisters once (shared by all three triggers)
-        const wishlisters = await User.find({ wishlist: req.params.id })
+        // Fetch wishlisters
+        const wishlistersIds = await User.find({ wishlist: req.params.id }).distinct("_id");
+        let targetUserIds = [...wishlistersIds.map(id => id.toString())];
+
+        // Fetch followers
+        const { Farmer } = getModels();
+        const farmerObj = await Farmer.findById(product.farmer).select("followers");
+        if (farmerObj && farmerObj.followers) {
+            targetUserIds = [...targetUserIds, ...farmerObj.followers.map(id => id.toString())];
+        }
+        
+        targetUserIds = [...new Set(targetUserIds)];
+
+        const targetUsers = await User.find({ _id: { $in: targetUserIds } })
                                       .select("_id name email fcmToken");
 
         /* ── 🎉 Back in Stock ────────────────────────────────── */
@@ -218,7 +238,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
           const title   = `Back in Stock! 🎉`;
           const message = `"${product.name}" is back in stock. Grab it before it's gone!`;
 
-          const notifs = wishlisters.map((c) => ({
+          const notifs = targetUsers.map((c) => ({
             userId: c._id, title, message,
             image:  product.image || "",
             link:   product._id.toString(),
@@ -226,7 +246,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
           }));
           if (notifs.length > 0) await Notification.insertMany(notifs);
 
-          for (const c of wishlisters) {
+          for (const c of targetUsers) {
             const subject   = `🎉 Back in Stock — ${product.name} | FarmLink`;
             const emailHtml = buildHtmlEmail(subject, `
               <h2>🎉 Great News!</h2>
@@ -253,9 +273,9 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
         /* ── 📦 Out of Stock ─────────────────────────────────── */
         if (req.body.stock !== undefined && newStock === 0 && oldStock > 0) {
           const title   = `Out of Stock 😔`;
-          const message = `"${product.name}" you wishlisted just went out of stock. We'll notify you when it returns!`;
+          const message = `"${product.name}" just went out of stock.`;
 
-          const notifs = wishlisters.map((c) => ({
+          const notifs = targetUsers.map((c) => ({
             userId: c._id, title, message,
             image:  product.image || "",
             link:   product._id.toString(),
@@ -263,7 +283,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
           }));
           if (notifs.length > 0) await Notification.insertMany(notifs);
 
-          for (const c of wishlisters) {
+          for (const c of targetUsers) {
             const subject   = `😔 Out of Stock — ${product.name} | FarmLink`;
             const emailHtml = buildHtmlEmail(subject, `
               <h2>😔 Item Out of Stock</h2>
@@ -293,7 +313,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
           const title    = `Price Drop! 💸 ${discount}% Off`;
           const message  = `"${product.name}" price dropped from ₹${oldPrice} to ₹${newPrice}. Don't miss this deal!`;
 
-          const notifs = wishlisters.map((c) => ({
+          const notifs = targetUsers.map((c) => ({
             userId: c._id, title, message,
             image:  product.image || "",
             link:   product._id.toString(),
@@ -301,7 +321,7 @@ router.put("/:id", verifyToken, checkRole("farmer", "admin"), async (req, res) =
           }));
           if (notifs.length > 0) await Notification.insertMany(notifs);
 
-          for (const c of wishlisters) {
+          for (const c of targetUsers) {
             const subject   = `💸 Price Drop: Save ${discount}% on ${product.name} | FarmLink`;
             const emailHtml = buildHtmlEmail(subject, `
               <h2>💸 Price Drop Alert!</h2>

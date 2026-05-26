@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Heart, ShoppingBasket, TrendingUp, Star, ArrowLeft, IndianRupee, CheckCircle2, Trash2, MessageSquare, Loader2, QrCode } from 'lucide-react';
+import { Package, Heart, ShoppingBasket, TrendingUp, Star, ArrowLeft, IndianRupee, CheckCircle2, Trash2, MessageSquare, Loader2, QrCode, Video, Play, Users, MapPin, BadgeCheck, Sprout } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button, AddToCartButton } from '../../components/ui/Button';
@@ -15,12 +15,12 @@ import { useAppContext } from '../../context/AppContext';
 import { apiCall } from '../../api/apiCall';
 
 const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) => {
-    const { user, t, wishlist, removeFromWishlist, cart, navigate, openChat, addToast } = useAppContext();
+    const { user, t, wishlist, removeFromWishlist, cart, navigate, openChat, addToast, toggleFollow } = useAppContext();
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedReviewProduct, setSelectedReviewProduct] = useState(null);
     const [receiptOrder, setReceiptOrder] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
-    const [activeDrilldown, setActiveDrilldown] = useState(null); // 'orders' | 'spent' | 'wishlist' | 'delivered' | 'messages'
+    const [activeDrilldown, setActiveDrilldown] = useState(null); // 'orders' | 'spent' | 'wishlist' | 'delivered' | 'messages' | 'following'
     const [transparencyProduct, setTransparencyProduct] = useState(null);
     
     // --- Messaging State ---
@@ -34,6 +34,35 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 .then(({ data }) => setConversations(data || []))
                 .catch(console.error)
                 .finally(() => setLoadingConversations(false));
+        }
+    }, [activeDrilldown, user?._id]);
+
+    const [savedStories, setSavedStories] = useState([]);
+    const [loadingSavedStories, setLoadingSavedStories] = useState(false);
+
+    React.useEffect(() => {
+        if (activeDrilldown === 'savedReels' && user?._id) {
+            setLoadingSavedStories(true);
+            apiCall(`/stories/saved`)
+                .then(({ data }) => setSavedStories(data || []))
+                .catch(console.error)
+                .finally(() => setLoadingSavedStories(false));
+        }
+    }, [activeDrilldown, user?._id]);
+
+    const [followedFarmers, setFollowedFarmers] = useState([]);
+    const [loadingFollowing, setLoadingFollowing] = useState(false);
+
+    React.useEffect(() => {
+        if (activeDrilldown === 'following' && user?._id) {
+            setLoadingFollowing(true);
+            apiCall(`/users/${user._id}/following`)
+                .then(({ data }) => {
+                    // Update state, filtering out nulls if a farmer was deleted
+                    setFollowedFarmers(data?.following?.filter(Boolean) || []);
+                })
+                .catch(console.error)
+                .finally(() => setLoadingFollowing(false));
         }
     }, [activeDrilldown, user?._id]);
 
@@ -327,6 +356,112 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         </div>
     );
 
+    // --- Drilldown: Saved Reels ---
+    const SavedReelsDrilldown = () => (
+        <div className="animate-fade-in-up">
+            <DrilldownBackBtn />
+            <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
+                <Video size={28} className="text-red-500" /> Saved Reels ({savedStories.length})
+            </h2>
+            {loadingSavedStories ? (
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin text-green-500" size={32} /></div>
+            ) : savedStories.length === 0 ? (
+                <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
+                    <Video size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
+                    <p className="text-stone-500 text-xl font-bold mb-4">No saved reels yet</p>
+                    <Button onClick={() => navigate('stories')} variant="outline">Watch Stories</Button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {savedStories.map((story) => (
+                        <div key={story._id} className="relative w-full aspect-[9/16] flex-shrink-0 rounded-2xl overflow-hidden bg-black group shadow-sm cursor-pointer border border-stone-200 dark:border-slate-700" onClick={() => {
+                            window.__storyFarmerId = story.farmerId;
+                            window.__storyInitialIndex = 0;
+                            navigate('stories');
+                        }}>
+                            <video src={story.videoUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                                <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg">
+                                    <Play size={20} className="text-white fill-white ml-1" />
+                                </div>
+                            </div>
+                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                <p className="text-white text-xs font-bold truncate">{story.farmerName}</p>
+                                <p className="text-white/80 text-[10px] line-clamp-1">{story.caption}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    // --- Drilldown: Following Farmers ---
+    const FollowingDrilldown = () => (
+        <div className="animate-fade-in-up">
+            <DrilldownBackBtn />
+            <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
+                <Users size={28} className="text-teal-500" /> Following ({user?.following?.length || 0})
+            </h2>
+            {loadingFollowing ? (
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin text-green-500" size={32} /></div>
+            ) : followedFarmers.length === 0 ? (
+                <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
+                    <Users size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
+                    <p className="text-stone-500 text-xl font-bold mb-4">You aren't following any farmers yet</p>
+                    <Button onClick={() => navigate('farmers')} variant="outline">Browse Farmers</Button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {followedFarmers.map(farmer => (
+                        <Card key={farmer._id} className="overflow-hidden group flex flex-col relative h-full hover:shadow-xl transition-shadow cursor-pointer" onClick={() => {
+                            if (window.__setSelectedFarmer) {
+                                window.__setSelectedFarmer(farmer);
+                                navigate('farmer-storefront');
+                            }
+                        }}>
+                            <div className="p-5 flex flex-col h-full items-center text-center">
+                                <div className="relative mb-3">
+                                    <UserAvatar name={farmer.name} image={farmer.image} size="w-20 h-20" textSize="text-2xl" />
+                                    {farmer.verified && (
+                                        <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white dark:border-slate-800">
+                                            <BadgeCheck size={12} />
+                                        </div>
+                                    )}
+                                </div>
+                                <h3 className="font-bold text-lg text-black dark:text-white mb-1 line-clamp-1">{farmer.name}</h3>
+                                {farmer.location && (
+                                    <p className="text-xs text-stone-500 flex items-center gap-1 justify-center mb-1">
+                                        <MapPin size={12} /> {farmer.location}
+                                    </p>
+                                )}
+                                {farmer.specialization && (
+                                    <p className="text-xs text-stone-500 flex items-center gap-1 justify-center mb-4">
+                                        <Sprout size={12} /> {farmer.specialization}
+                                    </p>
+                                )}
+                                
+                                <div className="mt-auto w-full pt-4 border-t border-stone-100 dark:border-slate-700">
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/30 dark:hover:bg-red-900/20"
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await toggleFollow(farmer._id, farmer.name);
+                                            setFollowedFarmers(prev => prev.filter(f => f._id !== farmer._id));
+                                        }}
+                                    >
+                                        Unfollow
+                                    </Button>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
     // --- If a drilldown is active, show it ---
     if (activeDrilldown) {
         return (
@@ -336,6 +471,8 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 {activeDrilldown === 'wishlist' && <WishlistDrilldown />}
                 {activeDrilldown === 'delivered' && <DeliveredDrilldown />}
                 {activeDrilldown === 'messages' && <MessagesDrilldown />}
+                {activeDrilldown === 'savedReels' && <SavedReelsDrilldown />}
+                {activeDrilldown === 'following' && <FollowingDrilldown />}
                 <ReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} product={selectedReviewProduct} />
                 <ReceiptModal isOpen={!!receiptOrder} onClose={() => setReceiptOrder(null)} order={receiptOrder} />
                 <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
@@ -365,9 +502,17 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                     <div className="text-3xl font-black text-black dark:text-white">{deliveredOrders}</div>
                     <p className="text-xs text-stone-500 font-bold uppercase mt-1">Delivered</p>
                 </Card>
+                <Card className="p-5 text-center border-l-4 border-l-red-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('savedReels')}>
+                    <div className="flex justify-center mb-1 text-red-500"><Video size={32} /></div>
+                    <p className="text-xs text-stone-500 font-bold uppercase mt-1">Saved Reels</p>
+                </Card>
                 <Card className="p-5 text-center border-l-4 border-l-indigo-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all bg-indigo-50/50 dark:bg-indigo-900/10" onClick={() => setActiveDrilldown('messages')}>
                     <div className="flex justify-center mb-1 text-indigo-500"><MessageSquare size={32} /></div>
                     <p className="text-xs text-stone-500 font-bold uppercase mt-1">Messages</p>
+                </Card>
+                <Card className="p-5 text-center border-l-4 border-l-teal-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('following')}>
+                    <div className="text-3xl font-black text-black dark:text-white">{user?.following?.length || 0}</div>
+                    <p className="text-xs text-stone-500 font-bold uppercase mt-1">Following</p>
                 </Card>
             </div>
 

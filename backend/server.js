@@ -51,8 +51,8 @@ const io = new Server(server, {
 app.use(cors());
 
 // Body parser, reading data from body into req.body
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
 // Data sanitization against NoSQL query injection
 app.use((req, res, next) => {
@@ -74,6 +74,7 @@ app.use("/api/expenses",      require("./routes/expenseRoutes"));
 app.use("/api/chat",          require("./routes/chatRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/payment",       require("./routes/paymentRoutes"));
+app.use("/api/stories",       require("./routes/storyRoutes"));
 
 app.get("/api/ping", (req, res) => res.json({ message: "pong", readyState: mongoose.connection.readyState }));
 

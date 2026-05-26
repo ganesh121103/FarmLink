@@ -31,6 +31,12 @@ const farmerSchema = new mongoose.Schema({
   // ✅ PASSWORD RESET
   passwordResetToken: { type: String, default: "" },
   passwordResetExpires: { type: Date, default: null },
+
+  // ✅ SAVED STORIES — array of Story ObjectIds
+  savedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }],
+
+  // ✅ FOLLOWERS — array of Customer ObjectIds
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Customer' }],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Farmer", farmerSchema);

@@ -348,15 +348,23 @@ ${productList}`;
     const debouncedSearch = useDebounce(localSearch, 400);
     const currentFarmer = selectedFarmer || (filterByLocation ? null : null);
 
-    // Deep-link handler: opens product detail when a shared URL is loaded
     useEffect(() => {
         const handler = (e) => {
             if (e.detail) {
                 handleSelectProduct(e.detail);
             }
         };
+        const voiceSearchHandler = (e) => {
+            if (e.detail) {
+                setLocalSearch(e.detail);
+            }
+        };
         window.addEventListener('farmlink:open-product', handler);
-        return () => window.removeEventListener('farmlink:open-product', handler);
+        window.addEventListener('farmlink:voice-search', voiceSearchHandler);
+        return () => {
+            window.removeEventListener('farmlink:open-product', handler);
+            window.removeEventListener('farmlink:voice-search', voiceSearchHandler);
+        };
     }, []);
 
     const handleVoiceSearch = () => {

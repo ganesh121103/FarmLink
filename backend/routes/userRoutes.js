@@ -103,5 +103,67 @@ router.put("/:id/wishlist/toggle", verifyToken, async (req, res) => {
   }
 });
 
+/* ── FOLLOW FARMER ── */
+router.put("/:id/follow/:farmerId", verifyToken, async (req, res) => {
+  try {
+    const customerId = req.params.id;
+    const farmerId = req.params.farmerId;
+    
+    // Validate IDs
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(customerId) || !mongoose.Types.ObjectId.isValid(farmerId)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const Customer = require("../models/Customer");
+    const Farmer = require("../models/Farmer");
+
+    const customer = await Customer.findById(customerId);
+    const farmer = await Farmer.findById(farmerId);
+
+    if (!customer || !farmer) {
+      return res.status(404).json({ message: "Customer or Farmer not found" });
+    }
+
+    const followingIdx = customer.following.findIndex(id => id.toString() === farmerId);
+    let action;
+
+    if (followingIdx > -1) {
+      // Unfollow
+      customer.following.splice(followingIdx, 1);
+      
+      const followerIdx = farmer.followers.findIndex(id => id.toString() === customerId);
+      if (followerIdx > -1) {
+        farmer.followers.splice(followerIdx, 1);
+      }
+      action = "unfollowed";
+    } else {
+      // Follow
+      customer.following.push(farmerId);
+      farmer.followers.push(customerId);
+      action = "followed";
+    }
+
+    await customer.save();
+    await farmer.save();
+
+    res.json({ following: customer.following, action });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET user's following list (populated)
+router.get("/:id/following", verifyToken, async (req, res) => {
+  try {
+    const Customer = require("../models/Customer");
+    const customer = await Customer.findById(req.params.id).populate('following', 'name image location specialization verified followers');
+    if (!customer) return res.status(404).json({ message: "User not found" });
+    res.json({ following: customer.following });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
 

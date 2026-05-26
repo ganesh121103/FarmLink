@@ -350,6 +350,31 @@ export const AppProvider = ({ children }) => {
             } catch (e) { /* silent */ }
         }
     };
+    
+    // ── Follow Farmer ───────────────────────────────────────────────────
+    const toggleFollow = async (farmerId, farmerName) => {
+        if (!user) {
+            addToast("Please login to follow farmers.");
+            navigate('login');
+            return;
+        }
+        if (user.role !== 'customer') {
+            addToast("Only customers can follow farmers.");
+            return;
+        }
+        try {
+            const { data } = await apiCall(`/users/${user._id}/follow/${farmerId}`, 'PUT');
+            setUser(prev => ({ ...prev, following: data.following }));
+            if (data.action === 'followed') {
+                addToast(`You are now following ${farmerName}! 🔔`);
+            } else {
+                addToast(`Unfollowed ${farmerName}`);
+            }
+        } catch (e) {
+            addToast("Failed to update follow status.");
+            console.error("[Follow Error]", e.message);
+        }
+    };
     // ────────────────────────────────────────────────────────────────────
 
     const addToCart = (product) => {
@@ -384,7 +409,7 @@ export const AppProvider = ({ children }) => {
         toasts, addToast,
         view, setView, history, setHistory, navigate,
         handleLogout,
-        toggleWishlist, removeFromWishlist, addToCart, removeFromCart, updateCartQuantity,
+        toggleWishlist, removeFromWishlist, toggleFollow, addToCart, removeFromCart, updateCartQuantity,
         activeChat, setActiveChat, openChat, socket: socketRef,
         // Notifications
         notifications, unreadCount, fetchNotifications,

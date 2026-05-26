@@ -15,14 +15,18 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
 };
 
 // Add to Cart Micro-Interaction Component
-export const AddToCartButton = ({ product, className = "", fullWidth = false }) => {
+export const AddToCartButton = ({ product, className = "", fullWidth = false, onAdded }) => {
     const { addToCart, user, t } = useAppContext();
     const [added, setAdded] = useState(false);
 
     const handleClick = (e) => {
         e.stopPropagation();
         if (user?.role === 'farmer' || user?.role === 'admin') return;
-        addToCart(product);
+        if (onAdded) {
+            onAdded(e, product);
+        } else {
+            addToCart(product);
+        }
         setAdded(true);
         setTimeout(() => setAdded(false), 1500);
     };

@@ -19,6 +19,7 @@ import FarmerDashboard from './pages/dashboards/FarmerDashboard';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import CustomerDashboard from './pages/dashboards/CustomerDashboard';
 import TransparencyReportView from './pages/TransparencyReportView';
+import StoriesView from './pages/StoriesView';
 import { apiCall } from './api/apiCall';
 import { useAppContext } from './context/AppContext';
 
@@ -164,7 +165,7 @@ const MainContent = () => {
 
     return (
         <>
-            <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} setSelectedFarmer={setSelectedFarmer} />
+            <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} setSelectedFarmer={setSelectedFarmer} products={products} />
             <PaymentGatewayModal
                 isCheckoutOpen={isCheckoutOpen}
                 setIsCheckoutOpen={setIsCheckoutOpen}
@@ -226,6 +227,7 @@ const MainContent = () => {
                 {view === 'notifications' && <NotificationsPage BackBtn={BackBtn} />}
                 {view === 'privacy' && <PrivacyView BackBtn={BackBtn} />}
                 {view === 'terms' && <TermsView BackBtn={BackBtn} />}
+                {view === 'stories' && <StoriesView />}
             </main>
 
             <Footer />

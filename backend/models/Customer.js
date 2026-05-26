@@ -36,6 +36,12 @@ const customerSchema = new mongoose.Schema({
   // ✅ WISHLIST — array of Product ObjectIds
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 
+  // ✅ SAVED STORIES — array of Story ObjectIds
+  savedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }],
+
+  // ✅ FOLLOWING — array of Farmer ObjectIds
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farmer' }],
+
 }, { timestamps: true });
 
 // Index for fast login lookups

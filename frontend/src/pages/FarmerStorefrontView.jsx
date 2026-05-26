@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     MapPin, Star, BadgeCheck, MessageSquare, Phone, Mail,
     ShoppingBag, Package, Award, Calendar, Filter, Search,
     ChevronRight, ChevronLeft, Sprout, TrendingUp, Heart, Share2, ArrowLeft,
-    CheckCircle2, Users, Leaf, Clock, ExternalLink, X, QrCode
+    CheckCircle2, Users, Leaf, Clock, ExternalLink, X, QrCode, Video, Play, Trash2, UserPlus, UserCheck
 } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import Card from '../components/ui/Card';
@@ -11,6 +11,7 @@ import { AddToCartButton, Button } from '../components/ui/Button';
 import TransparencyModal from '../components/modals/TransparencyModal';
 import UserAvatar from '../components/ui/UserAvatar';
 import { useAppContext } from '../context/AppContext';
+import { apiCall } from '../api/apiCall';
 
 /* ── Star Rating Display ─────────────────────────────────────── */
 const StarRow = ({ rating, size = 14, showNum = true }) => {
@@ -33,21 +34,22 @@ const StarRow = ({ rating, size = 14, showNum = true }) => {
 };
 
 /* ── Product Card ────────────────────────────────────────────── */
-const ProductCard = ({ product, onProductClick }) => {
+const ProductCard = ({ product, onProductClick, onAddToCartAnim }) => {
     const { addToWishlist, wishlist } = useAppContext();
     const isWishlisted = wishlist?.some(w => w._id === product._id);
 
     return (
         <div
-            className="group bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:border-green-200 dark:hover:border-green-900/50 transition-all duration-300 cursor-pointer flex flex-col"
+            className="group bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/50 dark:border-gray-700/50 hover:shadow-2xl hover:shadow-green-500/10 hover:border-green-300 dark:hover:border-green-700/50 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-500 cursor-pointer flex flex-col relative"
             onClick={() => onProductClick?.(product)}
         >
             {/* Image */}
-            <div className="relative h-44 overflow-hidden bg-gray-100 dark:bg-gray-800">
+            <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-t-3xl">
                 <img
+                    id={`product-img-${product._id}`}
                     src={product.images?.[0] || product.image || 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=300'}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 {/* Stock badge */}
                 <div className="absolute top-2 left-2">
@@ -126,7 +128,7 @@ const ProductCard = ({ product, onProductClick }) => {
                         <p className="text-[10px] text-gray-400">per kg</p>
                     </div>
                     <div onClick={e => e.stopPropagation()}>
-                        <AddToCartButton product={product} />
+                        <AddToCartButton product={product} onAdded={onAddToCartAnim} />
                     </div>
                 </div>
             </div>
@@ -138,7 +140,19 @@ const ProductCard = ({ product, onProductClick }) => {
    FarmerStorefrontView
    ════════════════════════════════════════════════════════════════ */
 const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
-    const { openChat, addToast, navigate, user, wishlist } = useAppContext();
+    const { navigate, addToCart, addToast, user, addToWishlist, removeFromWishlist, wishlist, history, setHistory, setView, openChat, toggleFollow } = useAppContext();
+
+    const goBack = () => {
+        if (history && history.length > 1) {
+            const newHistory = [...history];
+            newHistory.pop();
+            setHistory(newHistory);
+            setView(newHistory[newHistory.length - 1]);
+            window.scrollTo(0, 0);
+        } else {
+            navigate('farmers');
+        }
+    };
 
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [search, setSearch] = useState('');
@@ -147,6 +161,54 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
     const [transparencyProduct, setTransparencyProduct] = useState(null);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+    const [farmerStories, setFarmerStories] = useState([]);
+    const [playingStory, setPlayingStory] = useState(null);
+    const [activeTab, setActiveTab] = useState(() => {
+        return (window.__storefrontFarmerId === farmer?._id && window.__storefrontActiveTab) 
+            ? window.__storefrontActiveTab 
+            : 'products';
+    });
+    
+    // Optimistic follower count state
+    const [followerCount, setFollowerCount] = useState(farmer?.followers?.length || 0);
+
+    useEffect(() => {
+        if (farmer?.followers) {
+            setFollowerCount(farmer.followers.length);
+        }
+    }, [farmer?.followers?.length]);
+
+    const handleFollowClick = async () => {
+        const isCurrentlyFollowing = user?.following?.includes(farmer._id);
+        
+        // Optimistic UI update for the count
+        if (isCurrentlyFollowing) {
+            setFollowerCount(prev => Math.max(0, prev - 1));
+        } else {
+            setFollowerCount(prev => prev + 1);
+        }
+        
+        await toggleFollow(farmer._id, farmer.name);
+    };
+
+    useEffect(() => {
+        if (farmer?._id) {
+            apiCall(`/stories?farmerId=${farmer._id}`)
+                .then(res => setFarmerStories(res.data))
+                .catch(() => console.log('Failed to load farmer stories'));
+        }
+    }, [farmer?._id]);
+
+    const handleDeleteStory = async (storyId) => {
+        if (!window.confirm("Are you sure you want to delete this story?")) return;
+        try {
+            await apiCall(`/stories/${storyId}`, 'DELETE');
+            setFarmerStories(prev => prev.filter(s => s._id !== storyId));
+            addToast("Story deleted");
+        } catch (err) {
+            addToast("Failed to delete story");
+        }
+    };
 
     if (!farmer) {
         return (
@@ -217,11 +279,76 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
     };
 
     /* ── Share ── */
-    const handleShare = () => {
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${farmer.name}'s FarmLink Store`,
+                    text: `Check out fresh produce from ${farmer.name} on FarmLink!`,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                // User cancelled or failed, fallback not strictly needed if they just cancel
+                if (err.name !== 'AbortError') {
+                    fallbackShare();
+                }
+            }
+        } else {
+            fallbackShare();
+        }
+    };
+
+    const fallbackShare = () => {
         navigator.clipboard.writeText(window.location.href).catch(() => {});
         setShareTooltip(true);
         setTimeout(() => setShareTooltip(false), 2000);
         addToast('Store link copied!');
+    };
+
+    /* ── Flying Cart Animation ── */
+    const handleFlyingAddToCart = (e, product) => {
+        // 1. Actually add to cart via context
+        addToCart(product);
+
+        // 2. Animate image clone flying to the top right
+        const img = document.getElementById(`product-img-${product._id}`);
+        if (!img) return;
+
+        const imgRect = img.getBoundingClientRect();
+        
+        const clone = img.cloneNode(true);
+        clone.style.position = 'fixed';
+        clone.style.top = `${imgRect.top}px`;
+        clone.style.left = `${imgRect.left}px`;
+        clone.style.width = `${imgRect.width}px`;
+        clone.style.height = `${imgRect.height}px`;
+        clone.style.borderRadius = '16px';
+        clone.style.zIndex = '9999';
+        clone.style.pointerEvents = 'none';
+        clone.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.3)';
+        clone.style.objectFit = 'cover';
+        
+        document.body.appendChild(clone);
+
+        // Target cart icon (approximate if no specific ID is found)
+        let targetX = window.innerWidth - 80;
+        let targetY = 30;
+
+        // Force reflow
+        clone.getBoundingClientRect();
+
+        // Apply smooth CSS transition
+        clone.style.transition = 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+        clone.style.transform = 'scale(0.1) rotate(15deg)';
+        clone.style.top = `${targetY}px`;
+        clone.style.left = `${targetX}px`;
+        clone.style.opacity = '0';
+
+        setTimeout(() => {
+            if (document.body.contains(clone)) {
+                document.body.removeChild(clone);
+            }
+        }, 800);
     };
 
     /* ── Years on FarmLink ── */
@@ -242,21 +369,30 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
 
             {/* ═══════════════════════ HERO BANNER ═══════════════════════ */}
-            <div className={`relative bg-gradient-to-br ${gradient} pt-24 pb-0 overflow-hidden`}>
+            <div className={`relative pt-24 pb-0 overflow-hidden ${farmer.videoHeader ? 'bg-black' : `bg-gradient-to-br ${gradient}`}`}>
+                {/* Video Background */}
+                {farmer.videoHeader && (
+                    <video 
+                        src={farmer.videoHeader} 
+                        autoPlay loop muted playsInline 
+                        className="absolute inset-0 w-full h-full object-cover opacity-60" 
+                    />
+                )}
+                
                 {/* Decorative blobs */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl pointer-events-none" />
 
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Back button */}
                     {BackBtn && (
                         <div className="mb-6">
                             <button
                                 type="button"
-                                onClick={() => navigate('farmers')}
+                                onClick={goBack}
                                 className="flex items-center gap-2 text-white/80 hover:text-white font-bold text-sm transition-colors"
                             >
-                                <ArrowLeft size={18} /> Back to Farmers
+                                <ArrowLeft size={18} /> Back
                             </button>
                         </div>
                     )}
@@ -316,11 +452,26 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={handleFollowClick}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-colors shadow-lg ${
+                                    user?.following?.includes(farmer._id)
+                                        ? 'bg-green-600 text-white hover:bg-green-700 border border-green-500'
+                                        : 'bg-white text-green-700 hover:bg-green-50 border border-transparent'
+                                }`}
+                            >
+                                {user?.following?.includes(farmer._id) ? (
+                                    <><UserCheck size={16} /> Following</>
+                                ) : (
+                                    <><UserPlus size={16} /> Follow</>
+                                )}
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => openChat(farmer)}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-green-700 font-black text-sm hover:bg-green-50 transition-colors shadow-lg"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-gray-800 font-black text-sm hover:bg-gray-50 transition-colors shadow-lg"
                             >
                                 <MessageSquare size={16} /> Chat
                             </button>
@@ -337,7 +488,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                                 <button
                                     type="button"
                                     onClick={handleShare}
-                                    className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors"
+                                    className="p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-colors shadow-lg"
                                     title="Share store"
                                 >
                                     <Share2 size={18} />
@@ -367,7 +518,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                         { icon: Package, label: 'Products Listed', value: farmerProducts.length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
                         { icon: CheckCircle2, label: 'In Stock', value: inStockCount, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
                         { icon: Star, label: 'Avg Rating', value: avgRating > 0 ? avgRating : '—', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                        { icon: Users, label: 'Total Reviews', value: totalReviews, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                        { icon: Users, label: 'Followers', value: followerCount, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
                     ].map(({ icon: Icon, label, value, color, bg }) => (
                         <div key={label} className={`${bg} rounded-2xl p-4 flex items-center gap-3 border border-white dark:border-gray-800 shadow-sm`}>
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} bg-white dark:bg-gray-900 shadow-sm flex-shrink-0`}>
@@ -421,17 +572,87 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                     </div>
                 )}
 
-                {/* ── Products Section ── */}
-                <div>
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                            <ShoppingBag size={22} className="text-green-600" />
-                            Products
-                            <span className="text-sm font-bold text-gray-400 dark:text-gray-600">({farmerProducts.length})</span>
-                        </h2>
-                    </div>
+                {/* ── Content Toggle Tabs ── */}
+                <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-800 mb-8 scrollbar-hide">
+                    <button
+                        className={`flex items-center gap-2 py-4 px-6 border-b-2 font-black transition-colors whitespace-nowrap ${activeTab === 'products' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                        onClick={() => {
+                            setActiveTab('products');
+                            window.__storefrontActiveTab = 'products';
+                            window.__storefrontFarmerId = farmer?._id;
+                        }}
+                    >
+                        <ShoppingBag size={20} /> Products ({farmerProducts.length})
+                    </button>
+                    <button
+                        className={`flex items-center gap-2 py-4 px-6 border-b-2 font-black transition-colors whitespace-nowrap ${activeTab === 'stories' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                        onClick={() => {
+                            setActiveTab('stories');
+                            window.__storefrontActiveTab = 'stories';
+                            window.__storefrontFarmerId = farmer?._id;
+                        }}
+                    >
+                        <Video size={20} /> Posted Stories ({farmerStories.length})
+                    </button>
+                </div>
 
-                    {/* Search + Sort + Category filters */}
+                {/* ── Farmer Stories Section ── */}
+                {activeTab === 'stories' && (
+                    <div className="mb-8 animate-fade-in-up">
+                        {farmerStories.length === 0 ? (
+                            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                                <Video size={48} className="mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                                <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Stories Yet</h3>
+                                <p className="text-gray-500 text-sm">This farmer hasn't posted any stories.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {farmerStories.map((story, index) => (
+                                    <div key={story._id} className="relative w-full aspect-[9/16] flex-shrink-0 rounded-2xl overflow-hidden bg-black group border border-gray-200 dark:border-gray-800 shadow-sm cursor-pointer" onClick={() => {
+                                        window.__storyFarmerId = farmer._id;
+                                        window.__storyInitialIndex = index;
+                                        window.__storyInitialData = farmerStories;
+                                        navigate('stories');
+                                    }}>
+                                        <video src={story.videoUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                                            <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg">
+                                                <Play size={20} className="text-white fill-white ml-1" />
+                                            </div>
+                                        </div>
+                                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                                            <p className="text-white text-[10px] font-bold line-clamp-2">{story.caption || 'Story'}</p>
+                                        </div>
+                                        {(user?.role === 'admin' || user?._id === farmer._id) && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteStory(story._id); }}
+                                                className="absolute top-2 right-2 w-8 h-8 bg-red-500/80 hover:bg-red-600 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-md transition-colors"
+                                                title="Delete Story"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Products Section ── */}
+                {(farmerStories.length === 0 || activeTab === 'products') && (
+                    <div className="animate-fade-in-up">
+                        {farmerStories.length === 0 && (
+                            <div className="flex items-center justify-between mb-5">
+                                <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                    <ShoppingBag size={22} className="text-green-600" />
+                                    Products
+                                    <span className="text-sm font-bold text-gray-400 dark:text-gray-600">({farmerProducts.length})</span>
+                                </h2>
+                            </div>
+                        )}
+
+                        {/* Search + Sort + Category filters */}
                     <div className="flex flex-col sm:flex-row gap-3 mb-5">
                         {/* Search */}
                         <div className="relative flex-1">
@@ -504,11 +725,13 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                                             setCurrentMediaIndex(0);
                                         }
                                     }} 
+                                    onAddToCartAnim={handleFlyingAddToCart}
                                 />
                             ))}
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* ── Customer Reviews ── */}
                 {allReviews.length > 0 && (
@@ -607,6 +830,7 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                 </div>
 
             </div>
+
             {/* ── Local Product Details Modal ── */}
             {selectedProduct && (() => {
                 const isWishlisted = wishlist?.some(w => w._id === selectedProduct._id);

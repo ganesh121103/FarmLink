@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck, Calendar, Clock, AlertTriangle, Video, Store } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import Input from '../../components/ui/Input';
 import DeleteConfirmationModal from '../../components/modals/DeleteConfirmationModal';
 import CropScannerModal from '../../components/modals/CropScannerModal';
 import VerificationModal from '../../components/modals/VerificationModal';
+import UploadStoryModal from '../../components/modals/UploadStoryModal';
 import { CATEGORIES, LOCATIONS } from '../../constants';
 import { ConversationSkeleton } from '../../components/ui/Skeletons';
 import DashboardGreeting from '../../components/ui/DashboardGreeting';
@@ -17,7 +18,7 @@ import { askGemini } from '../../api/geminiAI';
 import { useAppContext } from '../../context/AppContext';
 
 const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
-    const { user, addToast, t, openChat } = useAppContext();
+    const { user, addToast, t, openChat, navigate } = useAppContext();
     const [activeTab, setActiveTab] = useState('inventory');
     const [conversations, setConversations] = useState([]);
     const [loadingConversations, setLoadingConversations] = useState(false);
@@ -34,6 +35,8 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [expenses, setExpenses] = useState([]);
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
     const [newExpense, setNewExpense] = useState({ cropName: '', amount: '', description: '' });
+    
+    const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
 
     // ── Revenue Chart State ───────────────────────────────────────────
     const [revenueChartData, setRevenueChartData] = useState([]);
@@ -268,7 +271,12 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
             <DashboardGreeting
                 user={user}
                 extra={<>
+                    <Button variant="outline" onClick={() => {
+                        if (window.__setSelectedFarmer) window.__setSelectedFarmer(user);
+                        navigate('farmer-storefront');
+                    }} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"><Store size={18} /> My Store</Button>
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
+                    <Button variant="outline" onClick={() => setIsStoryModalOpen(true)} className="flex items-center gap-2 text-green-600 border-green-600 hover:bg-green-50"><Video size={18} /> Post a Story</Button>
                     <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
                 </>}
             />
@@ -693,6 +701,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     // Optional: refresh user or show some update
                 }}
             />
+            <UploadStoryModal isOpen={isStoryModalOpen} onClose={() => setIsStoryModalOpen(false)} onSuccess={() => {}} />
         </div>
     );
 };

@@ -6,8 +6,9 @@ import WishlistDrawer from '../ui/WishlistDrawer';
 import UserAvatar from '../ui/UserAvatar';
 import LogoutConfirmationModal from '../modals/LogoutConfirmationModal';
 import { useAppContext } from '../../context/AppContext';
+import VoiceAssistant from '../voice/VoiceAssistant';
 
-const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
+const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer, products = [] }) => {
     const { user, cart, wishlist, t, isDarkMode, toggleDarkMode, language, setLanguage, navigate, handleLogout, view } = useAppContext();
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const wishlistCount = wishlist?.length || 0;
@@ -28,6 +29,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
         { key: 'home', label: t('home') },
         { key: 'farmers', label: t('farmers') },
         { key: 'products', label: t('marketplace') },
+        { key: 'stories', label: 'Stories' },
         { key: 'about', label: t('about') },
     ];
 
@@ -96,7 +98,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         {/* Dark Mode Toggle */}
                         <button
                             onClick={toggleDarkMode}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
                             {isDarkMode
@@ -114,7 +116,7 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                         {user && user.role !== 'admin' && (
                             <button
                                 onClick={() => setIsWishlistOpen(true)}
-                                className="relative p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
+                                className="hidden sm:flex relative p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
                                 aria-label={`Wishlist: ${wishlistCount} items`}
                                 title="My Wishlist"
                             >
@@ -129,6 +131,9 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                                 )}
                             </button>
                         )}
+
+                        {/* Voice Assistant */}
+                        <VoiceAssistant products={products} />
 
                         {/* Cart Button */}
                         {(!user || user?.role !== 'admin') && (
@@ -254,6 +259,18 @@ const Navbar = ({ isMenuOpen, setIsMenuOpen, setSelectedFarmer }) => {
                             </>
                         )}
                         <div className="w-full text-left px-4 py-2">
+                            <div className="flex items-center justify-between mb-4 mt-2">
+                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Dark Mode</span>
+                                <button
+                                    onClick={toggleDarkMode}
+                                    className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 transition-colors"
+                                >
+                                    {isDarkMode
+                                        ? <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                        : <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                                    }
+                                </button>
+                            </div>
                             <div className="flex items-center gap-2 mb-2 text-sm font-bold text-gray-500 dark:text-gray-400"><Globe size={16} /> Language</div>
                             <div className="flex gap-2">
                                 {[ {code: 'en', label: 'EN'}, {code: 'hi', label: 'HI'}, {code: 'mr', label: 'MR'} ].map(lang => (
