@@ -6,6 +6,7 @@ const adminSchema = new mongoose.Schema({
   password: { type: String, default: "" },
   firebaseUid: { type: String, default: "" },
   role: { type: String, default: "admin" },
+  emailVerified: { type: Boolean, default: false },
   phone: { type: String, default: "" },
   address: { type: String, default: "" },
   image: { type: String, default: "" },

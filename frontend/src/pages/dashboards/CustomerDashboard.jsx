@@ -105,7 +105,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
             className="flex items-center gap-2 mb-6 text-stone-500 hover:text-green-700 dark:hover:text-green-400 font-bold transition-colors group"
         >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-            Back to Dashboard
+            {t('backToDashboard')}
         </button>
     );
 
@@ -114,7 +114,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         <div className="animate-fade-in-up">
             <DrilldownBackBtn />
             <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
-                <Package size={28} className="text-green-600" /> All Orders ({orders.length})
+                <Package size={28} className="text-green-600" /> {t('allOrders')} ({orders.length})
             </h2>
             {orders.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
@@ -151,7 +151,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                                     <span className="text-xs font-bold text-green-600 dark:text-green-400 flex items-center px-2">+{order.items.length - 4} more</span>
                                 )}
                             </div>
-                            <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3 flex items-center gap-1">Tap to view full details →</p>
+                            <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3 flex items-center gap-1">{t('tapToViewDetails')}</p>
                         </div>
                     ))}
                 </div>
@@ -168,14 +168,14 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
             </h2>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-stone-100 dark:border-slate-700 shadow-sm mb-6">
                 <div className="text-center mb-6">
-                    <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Spent</p>
+                    <p className="text-sm text-stone-500 font-bold uppercase mb-1">{t('totalSpent')}</p>
                     <p className="text-5xl font-black text-green-700 dark:text-green-400">₹{totalSpent}</p>
-                    <p className="text-sm text-stone-400 mt-1">{validOrders.length} valid orders placed</p>
+                    <p className="text-sm text-stone-400 mt-1">{validOrders.length} {t('validOrdersPlaced')}</p>
                 </div>
             </div>
             {orders.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
-                    <p className="text-stone-500 text-lg font-bold">No spending yet</p>
+                    <p className="text-stone-500 text-lg font-bold">{t('noSpendingYet')}</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -247,12 +247,12 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         <div className="animate-fade-in-up">
             <DrilldownBackBtn />
             <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
-                <CheckCircle2 size={28} className="text-purple-500" /> Delivered Orders ({deliveredOrders})
+                <CheckCircle2 size={28} className="text-purple-500" /> {t('deliveredOrders')} ({deliveredOrders})
             </h2>
             {deliveredOrders === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
                     <CheckCircle2 size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
-                    <p className="text-stone-500 text-xl font-bold">No delivered orders yet</p>
+                    <p className="text-stone-500 text-xl font-bold">{t('noDeliveredOrdersYet')}</p>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -302,7 +302,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
                     <MessageSquare size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
                     <p className="text-stone-500 text-xl font-bold mb-4">No messages yet</p>
-                    <Button onClick={() => navigate('farmers')} variant="outline">Find Farmers</Button>
+                    <Button onClick={() => navigate('farmers')} variant="outline">{t('findFarmers')}</Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -361,15 +361,15 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         <div className="animate-fade-in-up">
             <DrilldownBackBtn />
             <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
-                <Video size={28} className="text-red-500" /> Saved Reels ({savedStories.length})
+                <Video size={28} className="text-red-500" /> {t('savedReels')} ({savedStories.length})
             </h2>
             {loadingSavedStories ? (
                 <div className="flex justify-center py-12"><Loader2 className="animate-spin text-green-500" size={32} /></div>
             ) : savedStories.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
                     <Video size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
-                    <p className="text-stone-500 text-xl font-bold mb-4">No saved reels yet</p>
-                    <Button onClick={() => navigate('stories')} variant="outline">Watch Stories</Button>
+                    <p className="text-stone-500 text-xl font-bold mb-4">{t('noSavedReelsYet')}</p>
+                    <Button onClick={() => navigate('stories')} variant="outline">{t('watchStories')}</Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -401,15 +401,15 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
         <div className="animate-fade-in-up">
             <DrilldownBackBtn />
             <h2 className="text-2xl font-black text-black dark:text-white mb-6 flex items-center gap-3">
-                <Users size={28} className="text-teal-500" /> Following ({user?.following?.length || 0})
+                <Users size={28} className="text-teal-500" /> {t('following')} \({user?.following?.length || 0})
             </h2>
             {loadingFollowing ? (
                 <div className="flex justify-center py-12"><Loader2 className="animate-spin text-green-500" size={32} /></div>
             ) : followedFarmers.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
                     <Users size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
-                    <p className="text-stone-500 text-xl font-bold mb-4">You aren't following any farmers yet</p>
-                    <Button onClick={() => navigate('farmers')} variant="outline">Browse Farmers</Button>
+                    <p className="text-stone-500 text-xl font-bold mb-4">{t('notFollowingFarmers')}</p>
+                    <Button onClick={() => navigate('farmers')} variant="outline">{t('browseFarmers')}</Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -492,7 +492,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                 </Card>
                 <Card className="p-5 text-center border-l-4 border-l-yellow-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('spent')}>
                     <div className="text-3xl font-black text-green-700 dark:text-green-400">₹{totalSpent}</div>
-                    <p className="text-xs text-stone-500 font-bold uppercase mt-1">Total Spent</p>
+                    <p className="text-xs text-stone-500 font-bold uppercase mt-1">{t('totalSpent')}</p>
                 </Card>
                 <Card className="p-5 text-center border-l-4 border-l-blue-500 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onClick={() => setActiveDrilldown('wishlist')}>
                     <div className="text-3xl font-black text-black dark:text-white">{wishlist.length}</div>
@@ -533,7 +533,7 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
             </div>
 
             {/* Recent Orders */}
-            <h2 className="text-2xl font-black text-black dark:text-white mb-6">Recent Orders</h2>
+            <h2 className="text-2xl font-black text-black dark:text-white mb-6">{t('recentOrders')}</h2>
             <div className="space-y-4">
                 {orders.length === 0 ? (
                     <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
@@ -565,12 +565,12 @@ const CustomerDashboard = ({ orders, setOrders, BackBtn, setIsCheckoutOpen }) =>
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3">Tap to view details →</p>
+                        <p className="text-xs text-green-600 dark:text-green-400 font-bold mt-3">{t('tapToViewDetails')}</p>
                     </div>
                 ))}
                 {orders.length > 3 && (
                     <div className="text-center">
-                        <Button variant="outline" onClick={() => setActiveDrilldown('orders')} className="mx-auto">View all {orders.length} orders</Button>
+                        <Button variant="outline" onClick={() => setActiveDrilldown('orders')} className="mx-auto">{t('viewAllOrdersTemplate').replace('{count}', orders.length)}</Button>
                     </div>
                 )}
             </div>

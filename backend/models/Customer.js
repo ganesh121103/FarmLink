@@ -13,6 +13,7 @@ const customerSchema = new mongoose.Schema({
   firebaseUid: { type: String, default: "" },
 
   role: { type: String, default: "customer" },
+  emailVerified: { type: Boolean, default: false },
 
   // ✅ ADD DEFAULTS (prevents undefined issues)
   phone: { type: String, default: "" },

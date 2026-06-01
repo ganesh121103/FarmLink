@@ -6,6 +6,7 @@ const farmerSchema = new mongoose.Schema({
   password: { type: String, default: "" },
   firebaseUid: { type: String, default: "" },
   role: { type: String, default: "farmer" },
+  emailVerified: { type: Boolean, default: false },
   phone: { type: String, default: "" },
   address: { type: String, default: "" },
   location: { type: String, default: "" },

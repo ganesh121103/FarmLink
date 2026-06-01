@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const Customer = require("../models/Customer");
 const Farmer = require("../models/Farmer");
 const Admin = require("../models/Admin");
+const OTP = require("../models/OTP");
 const { sendEmail, buildHtmlEmail } = require("../services/emailService");
 
 const signToken = (user) =>
@@ -38,12 +39,103 @@ exports.registerUser = async (req, res) => {
                 '+91' + cleanPhone;
     }
 
+    // Clean up any stale OTP records for this email first
+    await OTP.deleteMany({ email });
+
+    const modelMap = [
+      { model: Customer, label: 'customer' },
+      { model: Farmer,   label: 'farmer'   },
+      { model: Admin,    label: 'admin'    },
+    ];
+    require('fs').appendFileSync(require('path').join(__dirname, '../logs/debug_register.txt'), `[DEBUG] Checking: "${email}" (len: ${email ? email.length : 0})\n`);
+    for (const { model: M, label } of modelMap) {
+      const exists = await M.findOne({ email });
+      if (exists) {
+        require('fs').appendFileSync(require('path').join(__dirname, '../logs/debug_register.txt'), `[DEBUG] MATCHED in ${label}: "${exists.email}" (ID: ${exists._id})\n`);
+        return res.status(400).json({
+          message: `An account with this email already exists (as ${label}). Please login instead, or use a different email.`
+        });
+      }
+    }
+
+    // Generate 6-digit OTP
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = crypto.createHash("sha256").update(plainOtp).digest("hex");
+
+    // Store OTP and userData
+    const targetRole = role || 'customer';
+    const userData = {
+      name,
+      email,
+      password,
+      role: targetRole,
+      image: image || "",
+      phone: phone || "",
+      fcmToken: fcmToken || ""
+    };
+
+    await OTP.create({
+      email,
+      otp: otpHash,
+      userData
+    });
+
+    // Send OTP email
+    setImmediate(async () => {
+      try {
+        const otpHtml = buildHtmlEmail(
+          `Verify Your Email - FarmLink`,
+          `
+            <h2>Email Verification 📧</h2>
+            <p>Hi <strong>${name}</strong>,</p>
+            <p>Thank you for registering on FarmLink. To complete your registration, please use the OTP below to verify your email address. It is valid for <strong>10 minutes</strong>.</p>
+            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+              ${plainOtp}
+            </div>
+            <p>If you did not attempt to register, please ignore this email.</p>
+          `
+        );
+        await sendEmail(email, `Verify Your Email - FarmLink 📧`, otpHtml);
+      } catch (e) {
+        console.error("[OTP Email] Failed:", e.message);
+      }
+    });
+
+    res.status(200).json({
+      message: "OTP sent successfully. Please verify your email.",
+      email
+    });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ---------------- VERIFY EMAIL & COMPLETE REGISTRATION ---------------- */
+exports.verifyEmailRegistration = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const otpHash = crypto.createHash("sha256").update(otp.toString().trim()).digest("hex");
+    const otpRecord = await OTP.findOne({ email, otp: otpHash });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP." });
+    }
+
+    const { userData } = otpRecord;
+    const { name, password, role, image, phone, fcmToken } = userData;
     const targetRole = role || 'customer';
     const Model = getModelByRole(targetRole);
 
+    // Double check if user exists (just in case they somehow verified twice)
     const exists = await Model.findOne({ email });
     if (exists) {
-      return res.status(400).json({ message: "An account already exists with this email for this role" });
+       await OTP.deleteMany({ email });
+       return res.status(400).json({ message: "User already registered." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,12 +149,16 @@ exports.registerUser = async (req, res) => {
       phone: phone || "",
       address: "",
       fcmToken: fcmToken || "",
+      emailVerified: true,
       ...(targetRole !== 'admin' && { bio: "", specialization: "" })
     });
 
+    // Delete OTP records for this email
+    await OTP.deleteMany({ email });
+
     const token = signToken(user);
 
-    // ✅ Send welcome email (non-blocking)
+    // Send Welcome Email
     setImmediate(async () => {
       try {
         const welcomeHtml = buildHtmlEmail(
@@ -77,7 +173,6 @@ exports.registerUser = async (req, res) => {
               Role: ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)}
             </div>
             <p>Start exploring and support local farmers today!</p>
-            <p style="color:#888;font-size:13px;">If you did not create this account, please ignore this email.</p>
           `
         );
         await sendEmail(email, `Welcome to FarmLink, ${name}! 🌱`, welcomeHtml);
@@ -98,14 +193,79 @@ exports.registerUser = async (req, res) => {
       specialization: user.specialization,
       verified: user.verified || false,
       verificationStatus: user.verificationStatus || 'Unverified',
+      emailVerified: user.emailVerified,
       documents: user.documents || {},
       token,
     });
   } catch (err) {
-    console.error("REGISTER ERROR:", err);
+    console.error("VERIFY EMAIL ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
+/* ---------------- RESEND OTP ---------------- */
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Check if user already registered
+    const models = [Customer, Farmer, Admin];
+    for (const M of models) {
+      if (await M.findOne({ email })) {
+        return res.status(400).json({ message: "User already registered." });
+      }
+    }
+
+    const existingOtp = await OTP.findOne({ email });
+    if (!existingOtp) {
+       return res.status(400).json({ message: "No pending registration found. Please register again." });
+    }
+
+    // Check 60-second cooldown
+    const timeSinceCreation = Date.now() - new Date(existingOtp.createdAt).getTime();
+    if (timeSinceCreation < 60000) {
+      const waitTime = Math.ceil((60000 - timeSinceCreation) / 1000);
+      return res.status(400).json({ message: `Please wait ${waitTime} seconds before requesting a new OTP.` });
+    }
+
+    // Generate new OTP
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = crypto.createHash("sha256").update(plainOtp).digest("hex");
+
+    existingOtp.otp = otpHash;
+    existingOtp.createdAt = Date.now();
+    await existingOtp.save();
+
+    // Send new OTP email
+    setImmediate(async () => {
+      try {
+        const otpHtml = buildHtmlEmail(
+          `Your New OTP - FarmLink`,
+          `
+            <h2>Email Verification 📧</h2>
+            <p>Hi <strong>${existingOtp.userData.name}</strong>,</p>
+            <p>Here is your new OTP to verify your email address. It is valid for <strong>10 minutes</strong>.</p>
+            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+              ${plainOtp}
+            </div>
+          `
+        );
+        await sendEmail(email, `Your New OTP - FarmLink 📧`, otpHtml);
+      } catch (e) {
+        console.error("[Resend OTP Email] Failed:", e.message);
+      }
+    });
+
+    res.json({ message: "A new OTP has been sent to your email." });
+  } catch (err) {
+    console.error("RESEND OTP ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 
 /* ---------------- LOGIN ---------------- */
@@ -120,6 +280,10 @@ exports.loginUser = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials or wrong role selected" });
+    }
+
+    if (user.emailVerified === false) {
+      return res.status(403).json({ message: "Please verify your email address before logging in." });
     }
 
     let isMatch = false;
@@ -298,6 +462,9 @@ exports.firebaseAuth = async (req, res) => {
         if (fcmToken) {
             user.fcmToken = fcmToken;
         }
+        if (!user.emailVerified) {
+            user.emailVerified = true;
+        }
         await user.save();
     } else {
       // 3. If not found, create new user in the specific role collection
@@ -311,6 +478,7 @@ exports.firebaseAuth = async (req, res) => {
         image: image || "",
         phone: phone || "",
         fcmToken: fcmToken || "",
+        emailVerified: true,
         address: "",
         ...(targetRole !== 'admin' && { bio: "", specialization: "" })
       });

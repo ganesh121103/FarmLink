@@ -274,9 +274,9 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     <Button variant="outline" onClick={() => {
                         if (window.__setSelectedFarmer) window.__setSelectedFarmer(user);
                         navigate('farmer-storefront');
-                    }} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"><Store size={18} /> My Store</Button>
+                    }} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"><Store size={18} /> {t('myStore')}</Button>
                     <Button variant="outline" onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2"><Bot size={18} /> {t('cropScanner')}</Button>
-                    <Button variant="outline" onClick={() => setIsStoryModalOpen(true)} className="flex items-center gap-2 text-green-600 border-green-600 hover:bg-green-50"><Video size={18} /> Post a Story</Button>
+                    <Button variant="outline" onClick={() => setIsStoryModalOpen(true)} className="flex items-center gap-2 text-green-600 border-green-600 hover:bg-green-50"><Video size={18} /> {t('postStory')}</Button>
                     <Button onClick={() => { setEditingId(null); setIsAddProductOpen(true); setNewProduct({ name: '', price: '', category: 'Vegetables', location: user?.location || 'Satara', stock: '', images: [], image: null, description: '', freshnessDays: 4, transparencyInfo: '', farmingType: '' }); }} className="flex items-center gap-2"><PlusCircle size={20} /> {t('addProduct')}</Button>
                 </>}
             />
@@ -286,12 +286,12 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     <div>
                         <h3 className="font-bold text-yellow-800 dark:text-yellow-500 flex items-center gap-2 mb-1">
                             <Shield className="w-5 h-5" />
-                            {user?.verificationStatus === 'Pending' ? 'Verification Pending' : 'Unverified Profile'}
+                            {user?.verificationStatus === 'Pending' ? t('verificationPendingProfile') : t('unverifiedProfile')}
                         </h3>
                         <p className="text-yellow-700 dark:text-yellow-600/80 text-sm">
                             {user?.verificationStatus === 'Pending'
-                                ? 'Your documents are currently under review by our team. This usually takes 1-2 business days.'
-                                : 'Upload your official documents to get verified and build trust with customers.'}
+                                ? t('verificationPendingDesc')
+                                : t('uploadDocsDesc')}
                         </p>
                     </div>
                     {user?.verificationStatus !== 'Pending' && (
@@ -315,9 +315,9 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
             <div className="flex overflow-x-auto gap-4 mb-8 border-b border-stone-200 dark:border-slate-700 hide-scrollbar pb-1">
                 <button onClick={() => setActiveTab('inventory')} className={tabClass('inventory')}>{t('myStock')}</button>
                 <button onClick={() => setActiveTab('orders')} className={tabClass('orders')}>{t('orders')} ({myOrders.length})</button>
-                <button onClick={() => setActiveTab('messages')} className={tabClass('messages')}>Messages</button>
-                <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>Financials <BarChart3 size={16} className="inline ml-1 mb-1" /></button>
-                <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>Weather & Forecast</button>
+                <button onClick={() => setActiveTab('messages')} className={tabClass('messages')}>{t('messages')}</button>
+                <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>{t('financials')} <BarChart3 size={16} className="inline ml-1 mb-1" /></button>
+                <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>{t('weatherForecast')}</button>
             </div>
 
             {activeTab === 'inventory' && (
@@ -427,8 +427,8 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     ) : conversations.length === 0 ? (
                         <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-stone-300 dark:border-slate-600">
                             <MessageSquare size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
-                            <h3 className="text-xl font-bold text-stone-500">No messages yet</h3>
-                            <p className="text-sm text-stone-400 mt-2">When customers ask about your products, they'll appear here.</p>
+                            <h3 className="text-xl font-bold text-stone-500">{t('noMessagesYet')}</h3>
+                            <p className="text-sm text-stone-400 mt-2">{t('messagesDesc')}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -448,7 +448,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                         <button
                                             className="absolute top-3 right-3 p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                             onClick={(e) => deleteConversation(conv._id, e)}
-                                            title="Delete Conversation"
+                                            title={t('deleteConversation')}
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -494,8 +494,8 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                         ))}
                     </div>
                     <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl p-6">
-                        <h3 className="font-bold text-green-800 dark:text-green-400 mb-3 text-lg">This Week's Farming Tip</h3>
-                        <p className="text-sm text-green-700 dark:text-green-500 leading-relaxed">Good conditions for spring planting. Soil moisture levels are optimal. Consider planting leafy greens and root vegetables. Mulching is recommended to retain moisture during the expected dry spell next week.</p>
+                        <h3 className="font-bold text-green-800 dark:text-green-400 mb-3 text-lg">{t('farmingTipTitle')}</h3>
+                        <p className="text-sm text-green-700 dark:text-green-500 leading-relaxed">{t('farmingTipDesc')}</p>
                     </div>
                 </div>
             )}
@@ -512,15 +512,15 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card className="p-6 border-l-4 border-l-blue-500">
-                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Earnings</p>
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">{t('totalEarnings')}</p>
                             <div className="text-3xl font-black text-blue-700 dark:text-blue-400">₹{totalRevenue}</div>
                         </Card>
                         <Card className="p-6 border-l-4 border-l-red-500">
-                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Total Expenses</p>
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">{t('totalExpenses')}</p>
                             <div className="text-3xl font-black text-red-700 dark:text-red-400">₹{totalExpense}</div>
                         </Card>
                         <Card className="p-6 border-l-4 border-l-green-500">
-                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">Net Profit</p>
+                            <p className="text-sm text-stone-500 font-bold uppercase mb-1">{t('netProfit')}</p>
                             <div className={`text-3xl font-black ${netProfit >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>₹{netProfit}</div>
                         </Card>
                     </div>
@@ -528,10 +528,10 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <Card className="p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-black dark:text-white">Crop-wise Profit</h3>
+                                <h3 className="font-bold text-lg text-black dark:text-white">{t('cropWiseProfit')}</h3>
                             </div>
                             {Object.keys(cropFinancials).length === 0 ? (
-                                <p className="text-stone-500 text-sm">No data available.</p>
+                                <p className="text-stone-500 text-sm">{t('noDataAvailable')}</p>
                             ) : (
                                 <div className="space-y-4">
                                     {Object.entries(cropFinancials).map(([crop, data]) => (
@@ -551,11 +551,11 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
                         <Card className="p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-black dark:text-white">Expense Tracking</h3>
+                                <h3 className="font-bold text-lg text-black dark:text-white">{t('expenseTracking')}</h3>
                                 <Button size="sm" onClick={() => setIsAddExpenseOpen(true)} className="flex items-center gap-1"><PlusCircle size={16} /> Add</Button>
                             </div>
                             {expenses.length === 0 ? (
-                                <p className="text-stone-500 text-sm">No expenses recorded yet.</p>
+                                <p className="text-stone-500 text-sm">{t('noExpensesYet')}</p>
                             ) : (
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                                     {expenses.map(e => (

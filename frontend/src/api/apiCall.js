@@ -23,7 +23,9 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
         const isPublicEndpoint = endpoint.includes('/login') ||
             endpoint.includes('/register') ||
             endpoint.includes('/forgot-password') ||
-            endpoint.includes('/reset-password');
+            endpoint.includes('/reset-password') ||
+            endpoint.includes('/verify-email') ||
+            endpoint.includes('/resend-otp');
 
         if (!isPublicEndpoint) {
             const userStr = localStorage.getItem('farmlink_user');

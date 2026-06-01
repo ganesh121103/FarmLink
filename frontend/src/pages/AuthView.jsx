@@ -28,6 +28,11 @@ const AuthView = ({ initialMode = 'login' }) => {
     }, []);
     // NOTE: Google redirect sign-in is already handled globally in AppContext.
 
+    // ─── Registration OTP State ─────────────────────────────────────────────
+    const [regOtp, setRegOtp] = useState('');
+    const [regOtpError, setRegOtpError] = useState('');
+    const [regResendCooldown, setRegResendCooldown] = useState(0);
+
     // ─── Forgot Password State ─────────────────────────────────────────────
     const [showForgotModal, setShowForgotModal]   = useState(false);
     // step: 'email' | 'verify' | 'reset' | 'success'
@@ -210,9 +215,9 @@ const AuthView = ({ initialMode = 'login' }) => {
         if (/[0-9]/.test(pass)) score += 1;
         if (/[^A-Za-z0-9]/.test(pass)) score += 1;
         
-        if (score <= 2) return { text: 'Weak', color: 'bg-red-500', width: 'w-1/3' };
-        if (score <= 4) return { text: 'Good', color: 'bg-amber-500', width: 'w-2/3' };
-        return { text: 'Strong', color: 'bg-green-500', width: 'w-full' };
+        if (score <= 2) return { text: 'Weak', color: 'bg-red-500', textColor: 'text-red-500', width: 'w-1/3' };
+        if (score <= 4) return { text: 'Good', color: 'bg-amber-500', textColor: 'text-amber-500', width: 'w-2/3' };
+        return { text: 'Strong', color: 'bg-green-500', textColor: 'text-green-500', width: 'w-full' };
     };
 
     // Helper: build user data from Firebase user + sync with backend
@@ -263,6 +268,97 @@ const AuthView = ({ initialMode = 'login' }) => {
         }
     };
 
+    // ─── Registration OTP Logic ─────────────────────────────────────────────
+    useEffect(() => {
+        if (regResendCooldown > 0) {
+            const timer = setTimeout(() => {
+                if (isMountedRef.current) setRegResendCooldown(c => c - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [regResendCooldown]);
+
+    const handleVerifyOtpChange = (index, value) => {
+        if (!/^\d*$/.test(value)) return;
+        
+        let newToken = regOtp.padEnd(6, ' ').split('');
+        
+        if (value.length <= 1) {
+            newToken[index] = value;
+            setRegOtp(newToken.join('').trim());
+            setRegOtpError('');
+            if (value && index < 5) {
+                const nextInput = document.getElementById(`reg-otp-${index + 1}`);
+                if (nextInput) nextInput.focus();
+            }
+        } else if (value.length === 6 && /^\d+$/.test(value)) {
+            setRegOtp(value);
+            setRegOtpError('');
+            const lastInput = document.getElementById(`reg-otp-5`);
+            if (lastInput) lastInput.focus();
+        }
+    };
+
+    const handleVerifyOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace') {
+            if (!regOtp[index] && index > 0) {
+                const prevInput = document.getElementById(`reg-otp-${index - 1}`);
+                if (prevInput) {
+                    prevInput.focus();
+                    let newToken = regOtp.padEnd(6, ' ').split('');
+                    newToken[index - 1] = ' ';
+                    setRegOtp(newToken.join('').trim());
+                }
+            } else {
+                 let newToken = regOtp.padEnd(6, ' ').split('');
+                 newToken[index] = ' ';
+                 setRegOtp(newToken.join('').trim());
+            }
+        }
+    };
+
+    const handleVerifySubmit = async (e) => {
+        e.preventDefault();
+        if (regOtp.length !== 6) {
+            setRegOtpError('Please enter a 6-digit OTP');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await apiCall('/users/verify-email', 'POST', {
+                email: formData.email.trim().toLowerCase(),
+                otp: regOtp
+            });
+            if (!isMountedRef.current) return;
+            setUser(data);
+            localStorage.setItem('farmlink_user', JSON.stringify(data));
+            addToast(`Welcome, ${data.name}! 🎉`);
+            navigate('dashboard');
+        } catch (err) {
+            if (isMountedRef.current) setRegOtpError(err.message || 'Invalid OTP');
+        } finally {
+            if (isMountedRef.current) setIsLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (regResendCooldown > 0) return;
+        setIsLoading(true);
+        try {
+            const { data } = await apiCall('/users/resend-otp', 'POST', {
+                email: formData.email.trim().toLowerCase()
+            });
+            if (!isMountedRef.current) return;
+            addToast(data.message || 'OTP resent successfully!');
+            setRegResendCooldown(60);
+        } catch (err) {
+            if (isMountedRef.current) addToast(err.message || 'Failed to resend OTP', 'error');
+        } finally {
+            if (isMountedRef.current) setIsLoading(false);
+        }
+    };
+
     // ─── Email/Password Submit ─────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -273,26 +369,23 @@ const AuthView = ({ initialMode = 'login' }) => {
         setIsLoading(true);
         try {
             if (mode === 'register') {
-                // Step 1: Register with Firebase
-                const firebaseResult = await registerWithEmail(formData.email, formData.password, formData.name);
-                if (firebaseResult.error) {
-                    if (isMountedRef.current) setErrors({ form: firebaseResult.error });
-                    return;
-                }
-                // Step 2: Sync with backend
-                const userData = await syncFirebaseUserWithBackend(firebaseResult.user, {
+                // Call our backend to send OTP
+                const payload = {
                     name: formData.name,
+                    email: formData.email.trim().toLowerCase(),
                     phone: formData.phone,
                     role,
                     image: formData.image,
                     password: formData.password,
-                    isRegister: true,
-                });
+                };
+                const { data } = await apiCall('/users/register', 'POST', payload);
                 if (!isMountedRef.current) return;
-                setUser(userData);
-                localStorage.setItem('farmlink_user', JSON.stringify(userData));
-                addToast(`Welcome, ${userData.name}! 🎉`);
-                navigate('dashboard');
+                
+                addToast(data.message || 'OTP sent successfully!');
+                setMode('verification');
+                setRegResendCooldown(60);
+            } else if (mode === 'verification') {
+                return; // handled separately
             } else {
                 // LOGIN — Try Firebase first, fall back to direct MongoDB if Firebase fails
                 // (handles seeded/admin accounts not registered in Firebase)
@@ -393,10 +486,76 @@ const AuthView = ({ initialMode = 'login' }) => {
 
                     {/* Title */}
                     <h2 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-6 tracking-tight">
-                        {mode === 'login' ? 'Login' : 'Register'}
+                        {mode === 'login' ? 'Login' : mode === 'register' ? 'Register' : 'Verify Email'}
                     </h2>
 
-                    {/* Role Tabs */}
+                    {mode === 'verification' ? (
+                        <div className="space-y-6">
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 mb-5">
+                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">📩 OTP sent to <span className="font-bold">{formData.email}</span></p>
+                                <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Enter the 6-digit OTP from your email. It expires in 10 minutes.</p>
+                            </div>
+                            
+                            <form onSubmit={handleVerifySubmit} className="space-y-4">
+                                <div>
+                                    <div className="flex gap-2 justify-between">
+                                        {Array.from({ length: 6 }).map((_, index) => (
+                                            <input
+                                                key={index}
+                                                id={`reg-otp-${index}`}
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={index === 0 ? 6 : 1}
+                                                value={regOtp[index] || ''}
+                                                onChange={e => handleVerifyOtpChange(index, e.target.value)}
+                                                onKeyDown={e => handleVerifyOtpKeyDown(index, e)}
+                                                onPaste={index === 0 ? (e) => {
+                                                    e.preventDefault();
+                                                    const pastedData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, 6);
+                                                    if (pastedData) {
+                                                        setRegOtp(pastedData);
+                                                        setRegOtpError('');
+                                                        const focusIndex = Math.min(pastedData.length, 5);
+                                                        const inputElement = document.getElementById(`reg-otp-${focusIndex === 6 ? 5 : focusIndex}`);
+                                                        if (inputElement) inputElement.focus();
+                                                    }
+                                                } : undefined}
+                                                className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl sm:text-3xl font-bold bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 outline-none text-gray-800 dark:text-white transition-all shadow-sm"
+                                                autoFocus={index === 0}
+                                            />
+                                        ))}
+                                    </div>
+                                    {regOtpError && <p className="text-red-500 text-xs mt-2 text-center">{regOtpError}</p>}
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full py-3.5 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-4"
+                                >
+                                    {isLoading ? <><Loader2 size={17} className="animate-spin" /> Verifying...</> : 'Verify Email'}
+                                </button>
+                                
+                                <div className="text-center mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendOtp}
+                                        disabled={regResendCooldown > 0 || isLoading}
+                                        className="text-sm font-semibold text-green-600 disabled:text-gray-400"
+                                    >
+                                        {regResendCooldown > 0 ? `Resend OTP in ${regResendCooldown}s` : 'Resend OTP'}
+                                    </button>
+                                </div>
+                                
+                                <button type="button" onClick={() => { setMode('register'); setRegOtp(''); setRegOtpError(''); }}
+                                    className="w-full py-2.5 mt-2 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition flex items-center justify-center gap-1">
+                                    <ArrowLeft size={14} /> Back to Registration
+                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Role Tabs */}
                     <div className="flex bg-gray-100 dark:bg-slate-700 rounded-2xl p-1 mb-6 gap-1 transition-colors duration-300">
                         {roles.map(r => (
                             <button
@@ -486,7 +645,7 @@ const AuthView = ({ initialMode = 'login' }) => {
                                 <div className="mt-2 text-xs font-semibold">
                                     <div className="flex justify-between items-center mb-1">
                                         <span className="text-gray-500 dark:text-gray-400">Password strength:</span>
-                                        <span className={getPasswordStrength(formData.password).color.replace('bg-', 'text-')}>{getPasswordStrength(formData.password).text}</span>
+                                        <span className={getPasswordStrength(formData.password).textColor}>{getPasswordStrength(formData.password).text}</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div className={`h-full transition-all duration-500 ${getPasswordStrength(formData.password).color} ${getPasswordStrength(formData.password).width}`}></div>
@@ -602,7 +761,6 @@ const AuthView = ({ initialMode = 'login' }) => {
                         </button>
                     </div>
 
-                    {/* Toggle mode */}
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 relative z-10">
                         {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                         <button
@@ -613,6 +771,7 @@ const AuthView = ({ initialMode = 'login' }) => {
                             {mode === 'login' ? 'Register' : 'Login'}
                         </button>
                     </p>
+                    </>)}
                 </div>
 
                 {/* Bottom branding */}

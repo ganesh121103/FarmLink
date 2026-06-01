@@ -11,7 +11,9 @@ const {
   firebaseAuth,
   forgotPassword,
   verifyResetToken,
-  resetPassword
+  resetPassword,
+  verifyEmailRegistration,
+  resendOtp
 } = require("../controllers/userController");
 
 const rateLimit = require("express-rate-limit");
@@ -28,6 +30,12 @@ router.get("/", getUsers);
 
 // REGISTER
 router.post("/register", authLimiter, registerUser);
+
+// VERIFY EMAIL REGISTRATION
+router.post("/verify-email", authLimiter, verifyEmailRegistration);
+
+// RESEND OTP
+router.post("/resend-otp", authLimiter, resendOtp);
 
 // LOGIN
 router.post("/login", authLimiter, loginUser);

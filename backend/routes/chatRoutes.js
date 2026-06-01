@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Message = require("../models/Message");
+const { decrypt } = require("../utils/encryption");
 
 // GET /api/chat/conversations?userId=xxx — list all conversations for a user
 router.get("/conversations", async (req, res) => {
@@ -63,7 +64,13 @@ router.get("/conversations", async (req, res) => {
       { $sort: { lastTime: -1 } },
     ]);
 
-    res.json(messages);
+    // Manually decrypt the lastMessage because Mongoose aggregation bypasses the schema getter
+    const decryptedMessages = messages.map(msg => ({
+      ...msg,
+      lastMessage: decrypt(msg.lastMessage)
+    }));
+
+    res.json(decryptedMessages);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
