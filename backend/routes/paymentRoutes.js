@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const { verifyToken, checkRole } = require("../middleware/authMiddleware");
+const { verifyToken, checkRole, isAdmin } = require("../middleware/authMiddleware");
 const Order = require("../models/Order");
 const { logOrderToBlockchain } = require("../utils/blockchainLogger");
 
@@ -207,7 +207,7 @@ router.post("/verify", verifyToken, async (req, res) => {
    Admin-triggered refund via Razorpay API.
    Body: { orderId, amount? }  (amount in INR, optional — full refund if omitted)
    ────────────────────────────────────────────────────────────────── */
-router.post("/refund", verifyToken, checkRole("admin"), async (req, res) => {
+router.post("/refund", verifyToken, isAdmin, async (req, res) => {
   try {
     const { orderId, amount } = req.body;
 
@@ -238,7 +238,7 @@ router.post("/refund", verifyToken, checkRole("admin"), async (req, res) => {
    GET /api/payment/transactions
    Admin: Fetch all orders with payment info + summary stats
    ────────────────────────────────────────────────────────────────── */
-router.get("/transactions", verifyToken, checkRole("admin"), async (req, res) => {
+router.get("/transactions", verifyToken, isAdmin, async (req, res) => {
   try {
     const { status } = req.query; // optional filter: paid | pending | failed | refunded
 

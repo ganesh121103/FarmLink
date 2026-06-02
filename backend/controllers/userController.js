@@ -64,6 +64,9 @@ exports.registerUser = async (req, res) => {
 
     // Store OTP and userData
     const targetRole = role || 'customer';
+    if (targetRole === 'admin') {
+      return res.status(403).json({ message: "Admin registration is not allowed." });
+    }
     const userData = {
       name,
       email,
@@ -451,6 +454,10 @@ exports.firebaseAuth = async (req, res) => {
     // 1. Check if user already exists by firebaseUid or email in their specific role collection
     let user = await Model.findOne({ $or: [{ firebaseUid }, { email }] });
     let isNewUser = false;
+
+    if (!user && targetRole === 'admin') {
+      return res.status(403).json({ message: "Admin registration is not allowed." });
+    }
 
     if (user) {
         if (!user.firebaseUid) {

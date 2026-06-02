@@ -561,7 +561,10 @@ const AuthView = ({ initialMode = 'login' }) => {
                             <button
                                 key={r.id}
                                 type="button"
-                                onClick={() => setRole(r.id)}
+                                onClick={() => {
+                                    setRole(r.id);
+                                    if (r.id === 'admin') setMode('login');
+                                }}
                                 className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
                                     role === r.id
                                         ? 'bg-white dark:bg-slate-600 text-green-700 dark:text-green-400 shadow-sm'
@@ -694,7 +697,7 @@ const AuthView = ({ initialMode = 'login' }) => {
                         )}
 
                         {/* Forgot Password (login only) */}
-                        {mode === 'login' && (
+                        {mode === 'login' && role !== 'admin' && (
                             <div className="flex justify-end">
                                 <button
                                     type="button"
@@ -730,47 +733,51 @@ const AuthView = ({ initialMode = 'login' }) => {
                         </div>
                     </form>
 
-                    {/* Social login divider */}
-                    <div className="flex items-center gap-3 my-6">
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">Or continue with</span>
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                    </div>
+                    {role !== 'admin' && (
+                        <>
+                            {/* Social login divider */}
+                            <div className="flex items-center gap-3 my-6">
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                                <span className="text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">Or continue with</span>
+                                <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                            </div>
 
-                    {/* Google Sign-In Button */}
-                    <div className="space-y-3">
-                        <button
-                            type="button"
-                            onClick={handleGoogleSignInClick}
-                            disabled={isLoading || isGoogleLoading}
-                            className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300 disabled:opacity-60"
-                        >
-                            {isGoogleLoading ? (
-                                <><Loader2 size={18} className="animate-spin" /> Signing in...</>
-                            ) : (
-                                <>
-                                    <svg width="18" height="18" viewBox="0 0 48 48">
-                                        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
-                                        <path fill="#4285F4" d="M46.5 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.7 7.2l7.5 5.8c4.4-4.1 7-10.1 7-17z"/>
-                                        <path fill="#FBBC05" d="M10.6 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6L2.7 13.3C1 16.5 0 20.1 0 24s1 7.5 2.7 10.7l7.9-6.1z"/>
-                                        <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.3-4.5 2.1-7.7 2.1-6.2 0-11.5-3.8-13.4-9.2l-7.9 6.1C6.7 42.6 14.7 48 24 48z"/>
-                                    </svg>
-                                    Continue with Google
-                                </>
-                            )}
-                        </button>
-                    </div>
+                            {/* Google Sign-In Button */}
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleSignInClick}
+                                    disabled={isLoading || isGoogleLoading}
+                                    className="relative z-10 w-full flex items-center justify-center gap-3 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700/50 active:scale-95 transition-all duration-200 text-sm font-semibold text-gray-700 dark:text-gray-300 disabled:opacity-60"
+                                >
+                                    {isGoogleLoading ? (
+                                        <><Loader2 size={18} className="animate-spin" /> Signing in...</>
+                                    ) : (
+                                        <>
+                                            <svg width="18" height="18" viewBox="0 0 48 48">
+                                                <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.7 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
+                                                <path fill="#4285F4" d="M46.5 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.7 7.2l7.5 5.8c4.4-4.1 7-10.1 7-17z"/>
+                                                <path fill="#FBBC05" d="M10.6 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6L2.7 13.3C1 16.5 0 20.1 0 24s1 7.5 2.7 10.7l7.9-6.1z"/>
+                                                <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.3-4.5 2.1-7.7 2.1-6.2 0-11.5-3.8-13.4-9.2l-7.9 6.1C6.7 42.6 14.7 48 24 48z"/>
+                                            </svg>
+                                            Continue with Google
+                                        </>
+                                    )}
+                                </button>
+                            </div>
 
-                    <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 relative z-10">
-                        {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                        <button
-                            type="button"
-                            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErrors({}); }}
-                            className="text-green-600 dark:text-green-500 font-semibold hover:text-green-800 dark:hover:text-green-400 transition ml-1"
-                        >
-                            {mode === 'login' ? 'Register' : 'Login'}
-                        </button>
-                    </p>
+                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 relative z-10">
+                                {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                                <button
+                                    type="button"
+                                    onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErrors({}); }}
+                                    className="text-green-600 dark:text-green-500 font-semibold hover:text-green-800 dark:hover:text-green-400 transition ml-1"
+                                >
+                                    {mode === 'login' ? 'Register' : 'Login'}
+                                </button>
+                            </p>
+                        </>
+                    )}
                     </>)}
                 </div>
 
