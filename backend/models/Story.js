@@ -8,6 +8,14 @@ const storySchema = new mongoose.Schema({
     caption: { type: String, default: '' },
     likes: { type: Number, default: 0 },
     likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Track who liked it to prevent multiple likes
+    comments: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        userName: String,
+        userImage: String,
+        text: String,
+        createdAt: { type: Date, default: Date.now }
+    }],
+    shares: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now }
 });
 

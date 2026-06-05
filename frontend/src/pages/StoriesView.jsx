@@ -1,7 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/apiCall';
 import { useAppContext } from '../context/AppContext';
-import { Heart, MessageCircle, Share2, Store, ChevronLeft, Loader2, Volume2, VolumeX, Trash2, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Store, ChevronLeft, Loader2, Volume2, VolumeX, Trash2, Bookmark, X } from 'lucide-react';
+
+const CommentsPanel = ({ isOpen, onClose, storyId, comments, setComments }) => {
+    const { user, addToast } = useAppContext();
+    const [newComment, setNewComment] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!newComment.trim()) return;
+        if (!user) {
+            addToast("Please log in to comment.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { data } = await apiCall(`/stories/${storyId}/comment`, 'POST', {
+                text: newComment,
+                userName: user.name,
+                userImage: user.image
+            });
+            setComments(data);
+            setNewComment("");
+        } catch (err) {
+            addToast("Failed to post comment.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white dark:bg-stone-900 rounded-t-3xl z-[60] flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] animate-fade-in-up" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex justify-between items-center">
+                <h3 className="font-bold text-lg text-black dark:text-white">Comments ({comments.length})</h3>
+                <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full">
+                    <X size={20} className="text-stone-500" />
+                </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {comments.length === 0 ? (
+                    <p className="text-center text-stone-500 mt-10 font-bold">No comments yet. Be the first!</p>
+                ) : (
+                    comments.map((c, i) => (
+                        <div key={i} className="flex gap-3 animate-fade-in-up">
+                            <img src={c.userImage || `https://ui-avatars.com/api/?name=${c.userName}&background=random`} alt={c.userName} className="w-8 h-8 rounded-full" />
+                            <div>
+                                <p className="text-xs font-bold text-stone-500">{c.userName} <span className="font-normal text-[10px] ml-2">{new Date(c.createdAt).toLocaleDateString()}</span></p>
+                                <p className="text-sm text-black dark:text-white mt-0.5">{c.text}</p>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-4 border-t border-stone-200 dark:border-stone-800 flex gap-2">
+                <input 
+                    type="text" 
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="flex-1 bg-stone-100 dark:bg-stone-800 border-none rounded-full px-4 py-2 text-sm outline-none text-black dark:text-white focus:ring-2 focus:ring-green-500"
+                />
+                <button type="submit" disabled={loading || !newComment.trim()} className="bg-green-600 text-white rounded-full px-5 font-bold text-sm disabled:opacity-50 transition-colors hover:bg-green-500">
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : "Post"}
+                </button>
+            </form>
+        </div>
+    );
+};
 
 const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
     const videoRef = useRef(null);
@@ -9,6 +82,8 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
     const [likes, setLikes] = useState(story.likes || 0);
     const [isLiked, setIsLiked] = useState(story.likedBy?.includes(user?._id) || false);
     const [isSaved, setIsSaved] = useState(user?.savedStories?.includes(story._id) || false);
+    const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState(story.comments || []);
 
     useEffect(() => {
         if (!videoRef.current) return;
@@ -20,34 +95,43 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
         }
     }, [isActive]);
 
-    const handleLike = async () => {
+    const handleLike = async (e) => {
+        if (e) e.stopPropagation();
         if (!user) {
             addToast("Please log in to like stories.");
             return;
         }
+
+        const prevIsLiked = isLiked;
+        const prevLikes = likes;
+
         try {
             // Optimistic update
-            setIsLiked(!isLiked);
-            setLikes(isLiked ? likes - 1 : likes + 1);
+            setIsLiked(!prevIsLiked);
+            setLikes(prevIsLiked ? prevLikes - 1 : prevLikes + 1);
             
             const { data } = await apiCall(`/stories/${story._id}/like`, "PUT");
             setLikes(data.likes);
             setIsLiked(data.likedByMe);
         } catch (err) {
             // Revert on error
-            setIsLiked(!isLiked);
-            setLikes(isLiked ? likes + 1 : likes - 1);
+            setIsLiked(prevIsLiked);
+            setLikes(prevLikes);
             addToast("Failed to like story.");
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (e) => {
+        if (e) e.stopPropagation();
         if (!user) {
             addToast("Please log in to save stories.");
             return;
         }
+
+        const prevIsSaved = isSaved;
+
         try {
-            setIsSaved(!isSaved); // Optimistic UI
+            setIsSaved(!prevIsSaved); // Optimistic UI
             const { data } = await apiCall(`/stories/${story._id}/save`, "PUT");
             setIsSaved(data.saved);
             
@@ -57,19 +141,47 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                 localStorage.setItem('farmlink_user', JSON.stringify(updatedUser));
             }
         } catch (err) {
-            setIsSaved(!isSaved); // Revert
+            setIsSaved(prevIsSaved); // Revert
             addToast("Failed to save story.");
         }
     };
 
-    const handleVisitStore = () => {
+    const handleVisitStore = (e) => {
+        if (e) e.stopPropagation();
         if (window.__setSelectedFarmer) {
             window.__setSelectedFarmer({ _id: story.farmerId, name: story.farmerName });
             navigate('farmer-storefront');
         }
     };
 
-    const handleDelete = async () => {
+    const handleShare = async (e) => {
+        if (e) e.stopPropagation();
+        try {
+            // Optimistic copy since Web Share can abort
+            const shareUrl = `${window.location.origin}?story=${story._id}`;
+            await apiCall(`/stories/${story._id}/share`, 'PUT');
+            
+            if (navigator.share) {
+                await navigator.share({
+                    title: `Check out this farm story!`,
+                    text: `${story.farmerName}'s story on FarmLink`,
+                    url: shareUrl
+                });
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                addToast("Link copied to clipboard!");
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                const shareUrl = `${window.location.origin}?story=${story._id}`;
+                navigator.clipboard.writeText(shareUrl).catch(() => {});
+                addToast("Link copied to clipboard!");
+            }
+        }
+    };
+
+    const handleDelete = async (e) => {
+        if (e) e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this story?")) return;
         try {
             await apiCall(`/stories/${story._id}`, 'DELETE');
@@ -111,7 +223,7 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={toggleMute}>
+                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={(e) => { e.stopPropagation(); toggleMute(); }}>
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         {isMuted ? <VolumeX size={24} className="text-white" /> : <Volume2 size={24} className="text-white" />}
                     </div>
@@ -125,11 +237,11 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     <span className="text-white text-xs font-bold drop-shadow-md">{likes}</span>
                 </div>
 
-                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={() => addToast("Comments coming soon!")}>
+                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={(e) => { e.stopPropagation(); setShowComments(true); }}>
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         <MessageCircle size={24} className="text-white" />
                     </div>
-                    <span className="text-white text-xs font-bold drop-shadow-md">0</span>
+                    <span className="text-white text-xs font-bold drop-shadow-md">{comments.length}</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={handleSave}>
@@ -139,7 +251,7 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     <span className="text-white text-xs font-bold drop-shadow-md">Save</span>
                 </div>
 
-                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={() => addToast("Share link copied!")}>
+                <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={handleShare}>
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         <Share2 size={24} className="text-white" />
                     </div>
@@ -157,7 +269,7 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
             </div>
 
             {/* Bottom Info */}
-            <div className="absolute left-4 bottom-6 right-20 z-10">
+            <div className="absolute left-4 bottom-6 right-20 z-10 pointer-events-none">
                 <h3 className="text-white font-bold text-lg drop-shadow-md flex items-center gap-2">
                     {story.farmerName}
                     <span className="text-xs bg-green-500/80 backdrop-blur-sm px-2 py-0.5 rounded-md">Farmer</span>
@@ -166,6 +278,15 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     {story.caption}
                 </p>
             </div>
+
+            {/* Comments Sliding Panel */}
+            <CommentsPanel 
+                isOpen={showComments} 
+                onClose={() => setShowComments(false)} 
+                storyId={story._id} 
+                comments={comments} 
+                setComments={setComments} 
+            />
         </div>
     );
 };

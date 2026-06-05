@@ -144,11 +144,8 @@ router.post("/", verifyToken, checkRole("farmer", "admin"), async (req, res) => 
           );
         }
 
-        // ── Farmers who also bought in this category (email cross-ref) ──
-        const customerEmails   = customers.map((c) => c.email?.toLowerCase()).filter(Boolean);
-        if (customerEmails.length === 0) return;
-
-        const matchingFarmers = await Farmer.find({ email: { $in: customerEmails } })
+        // ── Farmers who also bought in this category ──
+        const matchingFarmers = await Farmer.find({ _id: { $in: customerIds } })
                                             .select("_id name email fcmToken");
 
         const farmerNotifs = matchingFarmers.map((f) => ({
