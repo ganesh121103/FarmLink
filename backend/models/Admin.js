@@ -14,6 +14,9 @@ const adminSchema = new mongoose.Schema({
   // Firebase Cloud Messaging token (admins can receive push notifications)
   fcmToken: { type: String, default: "" },
 
+  // ✅ SAVED STORIES
+  savedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }],
+
   // ✅ PASSWORD RESET
   passwordResetToken: { type: String, default: "" },
   passwordResetExpires: { type: Date, default: null },

@@ -138,6 +138,7 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
             // Update local storage user context
             if (data.savedStories) {
                 const updatedUser = { ...user, savedStories: data.savedStories };
+                setUser(updatedUser);
                 localStorage.setItem('farmlink_user', JSON.stringify(updatedUser));
             }
         } catch (err) {
@@ -234,7 +235,9 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         <Heart size={24} className={`transition-all ${isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />
                     </div>
-                    <span className="text-white text-xs font-bold drop-shadow-md">{likes}</span>
+                    <span className="text-white text-xs font-bold drop-shadow-md">
+                        {isLiked ? "Liked" : "Like"} <span className="opacity-80">({likes})</span>
+                    </span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={(e) => { e.stopPropagation(); setShowComments(true); }}>
@@ -248,7 +251,7 @@ const Story = ({ story, isActive, isMuted, toggleMute, onDelete }) => {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
                         <Bookmark size={24} className={`transition-all ${isSaved ? 'fill-blue-500 text-blue-500 scale-110' : 'text-white'}`} />
                     </div>
-                    <span className="text-white text-xs font-bold drop-shadow-md">Save</span>
+                    <span className="text-white text-xs font-bold drop-shadow-md">{isSaved ? "Saved" : "Save"}</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={handleShare}>

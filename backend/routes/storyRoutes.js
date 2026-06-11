@@ -57,8 +57,13 @@ router.get("/saved", verifyToken, async (req, res) => {
     try {
         const Customer = require("../models/Customer");
         const Farmer = require("../models/Farmer");
+        const Admin = require("../models/Admin");
 
-        let userModel = req.user.role === "farmer" ? Farmer : Customer;
+        let userModel;
+        if (req.user.role === "farmer") userModel = Farmer;
+        else if (req.user.role === "admin") userModel = Admin;
+        else userModel = Customer;
+
         const user = await userModel.findById(req.user.id).populate({
             path: "savedStories",
             select: "-videoUrl"
@@ -200,8 +205,12 @@ router.put("/:id/save", verifyToken, async (req, res) => {
     try {
         const Customer = require("../models/Customer");
         const Farmer = require("../models/Farmer");
+        const Admin = require("../models/Admin");
 
-        let userModel = req.user.role === "farmer" ? Farmer : Customer;
+        let userModel;
+        if (req.user.role === "farmer") userModel = Farmer;
+        else if (req.user.role === "admin") userModel = Admin;
+        else userModel = Customer;
         const userId = req.user.id;
         const storyId = req.params.id;
 

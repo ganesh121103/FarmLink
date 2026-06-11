@@ -6,7 +6,7 @@ import { useAppContext } from '../../context/AppContext';
 const ToastContainer = () => {
     const { toasts } = useAppContext();
     return (
-        <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+        <div className="fixed bottom-8 right-8 z-[9999] flex flex-col gap-3 pointer-events-none">
             {toasts.map(toast => (
                 <div key={toast.id} className="bg-stone-800 dark:bg-slate-800 text-white rounded-lg shadow-xl flex flex-col animate-fade-in-up border-l-4 border-green-500 pointer-events-auto overflow-hidden min-w-[280px]">
                     <div className="px-6 py-4 flex items-center gap-3">

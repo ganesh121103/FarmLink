@@ -3,7 +3,7 @@ import { PlusCircle, CheckCircle, ShoppingCart, Lock } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 export const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, type = "button", ...props }) => {
-    const baseStyle = "px-6 py-2.5 rounded-lg font-bold transition-all duration-300 transform flex items-center justify-center gap-2 active:scale-95";
+    const baseStyle = "px-6 py-2.5 rounded-lg font-bold transition-all duration-300 transform inline-flex items-center justify-center gap-2 active:scale-95";
     const variants = {
         primary: "bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-500 text-white shadow-lg shadow-green-200 dark:shadow-green-900/30 border-none",
         secondary: "bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30",

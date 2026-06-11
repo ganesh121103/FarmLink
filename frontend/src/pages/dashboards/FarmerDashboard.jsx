@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck, Calendar, Clock, AlertTriangle, Video, Store } from 'lucide-react';
+import { Sprout, Package, TrendingUp, Activity, BarChart3, CloudSun, Droplets, Wind, PlusCircle, Edit, Trash2, Bot, Loader2, X, ImageIcon, Shield, Receipt, MessageSquare, BadgeCheck, Calendar, Clock, AlertTriangle, Video, Store, Play } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -37,6 +37,30 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [newExpense, setNewExpense] = useState({ cropName: '', amount: '', description: '' });
     
     const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
+
+    // ── Stories Activity State ─────────────────────────────────────────
+    const [storyTab, setStoryTab] = useState('saved'); // 'saved', 'liked', 'commented'
+    const [savedStories, setSavedStories] = useState([]);
+    const [likedStories, setLikedStories] = useState([]);
+    const [commentedStories, setCommentedStories] = useState([]);
+    const [loadingStories, setLoadingStories] = useState(false);
+
+    useEffect(() => {
+        if (activeTab === 'storiesActivity' && user?._id) {
+            setLoadingStories(true);
+            const fetchEndpoint = storyTab === 'saved' ? '/stories/saved' : storyTab === 'liked' ? '/stories/liked' : '/stories/commented';
+            
+            apiCall(fetchEndpoint)
+                .then(({ data }) => {
+                    if (storyTab === 'saved') setSavedStories(data || []);
+                    if (storyTab === 'liked') setLikedStories(data || []);
+                    if (storyTab === 'commented') setCommentedStories(data || []);
+                })
+                .catch(console.error)
+                .finally(() => setLoadingStories(false));
+        }
+    }, [activeTab, user?._id, storyTab]);
+    // ─────────────────────────────────────────────────────────────────
 
     // ── Revenue Chart State ───────────────────────────────────────────
     const [revenueChartData, setRevenueChartData] = useState([]);
@@ -318,6 +342,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                 <button onClick={() => setActiveTab('messages')} className={tabClass('messages')}>{t('messages')}</button>
                 <button onClick={() => setActiveTab('financials')} className={tabClass('financials')}>{t('financials')} <BarChart3 size={16} className="inline ml-1 mb-1" /></button>
                 <button onClick={() => setActiveTab('weather')} className={tabClass('weather')}>{t('weatherForecast')}</button>
+                <button onClick={() => setActiveTab('storiesActivity')} className={tabClass('storiesActivity')}>Story Activity <Video size={16} className="inline ml-1 mb-1" /></button>
             </div>
 
             {activeTab === 'inventory' && (
@@ -499,6 +524,66 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                     </div>
                 </div>
             )}
+
+            {activeTab === 'storiesActivity' && (() => {
+                const currentStories = storyTab === 'saved' ? savedStories : storyTab === 'liked' ? likedStories : commentedStories;
+                
+                return (
+                    <div className="animate-fade-in-up">
+                        <div className="flex gap-4 mb-6 border-b border-stone-200 dark:border-stone-800 pb-2 overflow-x-auto scrollbar-hide">
+                            <button 
+                                onClick={() => setStoryTab('saved')} 
+                                className={`font-bold pb-2 whitespace-nowrap transition-colors ${storyTab === 'saved' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}
+                            >
+                                Saved Stories
+                            </button>
+                            <button 
+                                onClick={() => setStoryTab('liked')} 
+                                className={`font-bold pb-2 whitespace-nowrap transition-colors ${storyTab === 'liked' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}
+                            >
+                                Liked Stories
+                            </button>
+                            <button 
+                                onClick={() => setStoryTab('commented')} 
+                                className={`font-bold pb-2 whitespace-nowrap transition-colors ${storyTab === 'commented' ? 'text-black dark:text-white border-b-2 border-black dark:border-white' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}
+                            >
+                                Commented Stories
+                            </button>
+                        </div>
+
+                        {loadingStories ? (
+                            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-green-500" size={32} /></div>
+                        ) : currentStories.length === 0 ? (
+                            <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-stone-300 dark:border-slate-600">
+                                <Video size={48} className="mx-auto text-stone-300 dark:text-slate-600 mb-4" />
+                                <p className="text-stone-500 text-xl font-bold mb-4">No stories found here yet.</p>
+                                <Button onClick={() => navigate('stories')} variant="outline">Watch Stories</Button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {currentStories.map((story, i) => (
+                                    <div key={story._id} className="relative w-full aspect-[9/16] flex-shrink-0 rounded-2xl overflow-hidden bg-black group shadow-sm cursor-pointer border border-stone-200 dark:border-slate-700" onClick={() => {
+                                        window.__storyInitialData = currentStories;
+                                        window.__storyInitialIndex = i;
+                                        navigate('stories');
+                                    }}>
+                                        <video src={story.videoUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                                            <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg">
+                                                <Play size={20} className="text-white fill-white ml-1" />
+                                            </div>
+                                        </div>
+                                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                            <p className="text-white text-xs font-bold truncate">{story.farmerName}</p>
+                                            <p className="text-white/80 text-[10px] line-clamp-1">{story.caption}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {activeTab === 'financials' && (
                 <div className="animate-fade-in-up space-y-8">
