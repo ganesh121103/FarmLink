@@ -175,9 +175,43 @@ router.put("/:id/like", verifyToken, async (req, res) => {
             { _id: storyId, likedBy: { $ne: userId } },
             { $push: { likedBy: userId }, $inc: { likes: 1 } },
             { new: true }
-        );
+        ).populate('farmerId', 'name email');
 
         let likedByMe = true;
+
+        if (story) {
+            // ✅ Send Notification & Email to Farmer
+            const Notification = require("../models/Notification");
+            const { sendEmail } = require("../services/emailService");
+            
+            // Get the user's name
+            const Customer = require("../models/Customer");
+            const Admin = require("../models/Admin");
+            let user = await Customer.findById(userId) || await Farmer.findById(userId) || await Admin.findById(userId);
+            const userName = user ? user.name : "A user";
+
+            if (story.farmerId && story.farmerId._id.toString() !== userId.toString()) {
+                await Notification.create({
+                    userId: story.farmerId._id,
+                    title: "Story Like!",
+                    message: `${userName} liked your story.`,
+                    type: "Social",
+                });
+
+                const emailHtml = `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #16a34a;">New Like on your Story! ❤️</h2>
+                    <p>Hi ${story.farmerId.name},</p>
+                    <p><strong>${userName}</strong> just liked one of your stories.</p>
+                    <p>Keep posting great updates for your followers!</p>
+                    <br/>
+                    <p>Best regards,</p>
+                    <p><strong>The FarmLink Team</strong></p>
+                    </div>
+                `;
+                sendEmail(story.farmerId.email, "Someone liked your story! ❤️", emailHtml).catch(console.error);
+            }
+        }
 
         if (!story) {
             // They were already in the array, so we should UNLIKE

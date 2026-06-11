@@ -150,6 +150,31 @@ router.put("/:id/follow/:farmerId", verifyToken, async (req, res) => {
       customer.following.push(farmerId);
       farmer.followers.push(customerId);
       action = "followed";
+      
+      // ✅ Send Notification & Email to Farmer
+      const Notification = require("../models/Notification");
+      const { sendEmail } = require("../services/emailService");
+      
+      await Notification.create({
+        userId: farmer._id,
+        title: "New Follower!",
+        message: `${customer.name} started following you.`,
+        type: "Social",
+      });
+
+      const emailHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #16a34a;">New Follower on FarmLink! 🌱</h2>
+          <p>Hi ${farmer.name},</p>
+          <p>Great news! <strong>${customer.name}</strong> just started following your store.</p>
+          <p>Keep posting stories and updates to engage with your growing audience.</p>
+          <br/>
+          <p>Best regards,</p>
+          <p><strong>The FarmLink Team</strong></p>
+        </div>
+      `;
+      // Don't await email to avoid blocking the response
+      sendEmail(farmer.email, "You have a new follower! 🎉", emailHtml).catch(console.error);
     }
 
     await customer.save();
@@ -168,6 +193,18 @@ router.get("/:id/following", verifyToken, async (req, res) => {
     const customer = await Customer.findById(req.params.id).populate('following', 'name image location specialization verified followers');
     if (!customer) return res.status(404).json({ message: "User not found" });
     res.json({ following: customer.following });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET farmer's followers list (populated)
+router.get("/farmer/:id/followers", verifyToken, async (req, res) => {
+  try {
+    const Farmer = require("../models/Farmer");
+    const farmer = await Farmer.findById(req.params.id).populate('followers', 'name email image location');
+    if (!farmer) return res.status(404).json({ message: "Farmer not found" });
+    res.json({ followers: farmer.followers });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

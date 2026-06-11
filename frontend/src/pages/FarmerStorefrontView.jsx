@@ -171,6 +171,26 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
     
     // Optimistic follower count state
     const [followerCount, setFollowerCount] = useState(farmer?.followers?.length || 0);
+    const [showFollowersModal, setShowFollowersModal] = useState(false);
+    const [followersList, setFollowersList] = useState([]);
+    const [loadingFollowers, setLoadingFollowers] = useState(false);
+
+    const handleViewFollowers = async () => {
+        if (!user || (user.role !== 'admin' && user._id !== farmer._id)) {
+            // Only the farmer themselves or an admin can view the followers list
+            return;
+        }
+        setShowFollowersModal(true);
+        setLoadingFollowers(true);
+        try {
+            const { data } = await apiCall(`/users/farmer/${farmer._id}/followers`);
+            setFollowersList(data.followers || []);
+        } catch (err) {
+            addToast("Failed to fetch followers");
+        } finally {
+            setLoadingFollowers(false);
+        }
+    };
 
     useEffect(() => {
         if (farmer?.followers) {
@@ -518,9 +538,9 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
                         { icon: Package, label: 'Products Listed', value: farmerProducts.length, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
                         { icon: CheckCircle2, label: 'In Stock', value: inStockCount, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
                         { icon: Star, label: 'Avg Rating', value: avgRating > 0 ? avgRating : '—', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                        { icon: Users, label: 'Followers', value: followerCount, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-                    ].map(({ icon: Icon, label, value, color, bg }) => (
-                        <div key={label} className={`${bg} rounded-2xl p-4 flex items-center gap-3 border border-white dark:border-gray-800 shadow-sm`}>
+                        { icon: Users, label: 'Followers', value: followerCount, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', onClick: handleViewFollowers },
+                    ].map(({ icon: Icon, label, value, color, bg, onClick }) => (
+                        <div key={label} onClick={onClick} className={`${bg} rounded-2xl p-4 flex items-center gap-3 border border-white dark:border-gray-800 shadow-sm ${onClick && (user?.role === 'admin' || user?._id === farmer._id) ? 'cursor-pointer hover:opacity-80' : ''}`}>
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} bg-white dark:bg-gray-900 shadow-sm flex-shrink-0`}>
                                 <Icon size={20} />
                             </div>
@@ -952,6 +972,53 @@ const FarmerStorefrontView = ({ farmer, products = [], BackBtn }) => {
             })()}
 
             <TransparencyModal isOpen={!!transparencyProduct} onClose={() => setTransparencyProduct(null)} product={transparencyProduct} />
+
+            {/* ── Followers Modal ── */}
+            {showFollowersModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowFollowersModal(false)} />
+                    
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-md max-h-[80vh] overflow-hidden rounded-3xl shadow-2xl relative z-10 animate-slide-up border border-gray-200 dark:border-gray-800 flex flex-col">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                <Users size={20} className="text-purple-600 dark:text-purple-400" /> Followers
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowFollowersModal(false)}
+                                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+                            {loadingFollowers ? (
+                                <div className="py-12 flex justify-center"><div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div></div>
+                            ) : followersList.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Users size={40} className="mx-auto text-gray-300 dark:text-gray-700 mb-3" />
+                                    <p className="text-gray-500 font-bold">No followers yet.</p>
+                                    <p className="text-xs text-gray-400">Keep posting stories to gain followers!</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {followersList.map(f => (
+                                        <div key={f._id} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                                            <UserAvatar name={f.name} image={f.image} size="w-12 h-12" textSize="text-lg" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-gray-900 dark:text-white truncate">{f.name}</p>
+                                                {f.location && <p className="text-xs text-gray-500 truncate flex items-center gap-1"><MapPin size={10} /> {f.location}</p>}
+                                            </div>
+                                            {f.email && <div className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-1 rounded-md font-bold truncate max-w-[100px]" title={f.email}>{f.email}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

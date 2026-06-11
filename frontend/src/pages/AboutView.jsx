@@ -41,7 +41,7 @@ const AboutView = ({ BackBtn, farmers, setSelectedFarmer }) => {
                             className="p-6 flex flex-col items-center text-center border-transparent hover:border-green-300 cursor-pointer"
                             onClick={() => {
                                 setSelectedFarmer(farmer);
-                                navigate('farmer-details');
+                                navigate('farmer-storefront');
                             }}
                         >
                             <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-700 dark:text-green-500 mb-3 text-2xl font-black flex-shrink-0 overflow-hidden">
