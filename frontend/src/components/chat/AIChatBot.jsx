@@ -163,6 +163,16 @@ const AIChatBot = () => {
         }
     }, [messages, isTyping, isOpen, isMinimized]);
 
+    // Listen for custom event to open chatbot externally (e.g. from VoiceAssistant)
+    useEffect(() => {
+        const handleExternalOpen = () => {
+            setIsOpen(true);
+            setIsMinimized(false);
+        };
+        window.addEventListener('farmlink:open-chatbot', handleExternalOpen);
+        return () => window.removeEventListener('farmlink:open-chatbot', handleExternalOpen);
+    }, []);
+
     const addBotMessage = (text, quickReplies) => {
         setMessages(prev => [...prev, {
             id: `bot_${Date.now()}`,

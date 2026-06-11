@@ -17,59 +17,14 @@ const VoiceAssistant = ({ products }) => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             setIsSupported(false);
-            return;
         }
-
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        
-        // Map language to speech recognition locales
-        const langMap = {
-            'en': 'en-US',
-            'hi': 'hi-IN',
-            'mr': 'mr-IN'
-        };
-        recognition.lang = langMap[language] || 'en-US';
-
-        recognition.onstart = () => {
-            setIsListening(true);
-            setTranscript('');
-        };
-
-        recognition.onresult = (event) => {
-            let currentTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                currentTranscript += event.results[i][0].transcript;
-            }
-            setTranscript(currentTranscript);
-        };
-
-        recognition.onerror = (event) => {
-            console.error('Speech recognition error', event.error);
-            setIsListening(false);
-            if (event.error !== 'no-speech') {
-                addToast('Voice recognition error: ' + event.error);
-            }
-        };
-
-        recognition.onend = () => {
-            setIsListening(false);
-            // Don't process immediately in onend if we are processing in handleResult
-        };
-
-        recognitionRef.current = recognition;
-
         return () => {
             if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.abort();
-                } catch (e) {}
+                try { recognitionRef.current.abort(); } catch (e) {}
             }
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [language]);
+    }, []);
 
     // Process transcript when listening stops and we have text
     useEffect(() => {
@@ -98,8 +53,13 @@ const VoiceAssistant = ({ products }) => {
                 break;
             }
             case 'navigate':
-                navigate(view);
-                addToast(`Navigating to ${view}...`);
+                if (view === 'chatbot') {
+                    window.dispatchEvent(new CustomEvent('farmlink:open-chatbot'));
+                    addToast('Opening AI Assistant...');
+                } else {
+                    navigate(view);
+                    addToast(`Navigating to ${view}...`);
+                }
                 break;
             case 'add_to_cart':
                 addToCart(product);
@@ -118,19 +78,59 @@ const VoiceAssistant = ({ products }) => {
     };
 
     const toggleListening = () => {
-        if (!isSupported) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec || !isSupported) {
             addToast('Voice recognition is not supported in this browser.');
             return;
         }
 
         if (isListening) {
-            recognitionRef.current?.stop();
-        } else {
-            try {
-                recognitionRef.current?.start();
-            } catch (e) {
-                console.error(e);
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch (e) {}
             }
+            setIsListening(false);
+            return;
+        }
+
+        try {
+            const recognition = new SpeechRec();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            
+            const langMap = { 'en': 'en-US', 'hi': 'hi-IN', 'mr': 'mr-IN' };
+            recognition.lang = langMap[language] || 'en-US';
+
+            recognition.onstart = () => {
+                setIsListening(true);
+                setTranscript('');
+            };
+
+            recognition.onresult = (event) => {
+                let currentTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    currentTranscript += event.results[i][0].transcript;
+                }
+                setTranscript(currentTranscript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                setIsListening(false);
+                if (event.error !== 'no-speech') {
+                    addToast('Voice recognition error: ' + event.error);
+                }
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = recognition;
+            recognition.start();
+        } catch (e) {
+            console.error('Failed to start voice recognition:', e);
+            setIsListening(false);
+            addToast('Failed to start voice recognition. Please try again.');
         }
     };
 

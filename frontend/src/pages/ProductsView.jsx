@@ -136,6 +136,7 @@ const ProductsView = ({ selectedFarmer, filterByLocation, showBack, BackBtn, far
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [isListening, setIsListening] = useState(false);
+    const voiceRecognitionRef = useRef(null);
     const [isLocating, setIsLocating] = useState(false);
     const [dynamicLocations, setDynamicLocations] = useState(LOCATIONS);
     const [exactUserLocation, setExactUserLocation] = useState(null);
@@ -369,13 +370,48 @@ ${productList}`;
 
     const handleVoiceSearch = () => {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) return;
-        const recognition = new SpeechRec();
-        recognition.lang = 'en-IN';
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onresult = (e) => setLocalSearch(e.results[0][0].transcript.replace(/\.$/, ''));
-        recognition.start();
+        if (!SpeechRec) {
+            addToast('Voice recognition is not supported in your browser.');
+            return;
+        }
+
+        if (isListening) {
+            if (voiceRecognitionRef.current) {
+                try { voiceRecognitionRef.current.stop(); } catch (e) {}
+            }
+            setIsListening(false);
+            return;
+        }
+
+        try {
+            const recognition = new SpeechRec();
+            recognition.lang = 'en-IN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => setIsListening(true);
+            recognition.onend = () => setIsListening(false);
+            
+            recognition.onerror = (e) => {
+                console.error('Speech recognition error', e.error);
+                setIsListening(false);
+                if (e.error !== 'no-speech') {
+                    addToast('Voice recognition error: ' + e.error);
+                }
+            };
+
+            recognition.onresult = (e) => {
+                if (e.results && e.results[0] && e.results[0][0]) {
+                    setLocalSearch(e.results[0][0].transcript.replace(/\.$/, ''));
+                }
+            };
+
+            voiceRecognitionRef.current = recognition;
+            recognition.start();
+        } catch (error) {
+            console.error('Failed to start voice recognition:', error);
+            setIsListening(false);
+        }
     };
 
     const handleLocateMe = () => {

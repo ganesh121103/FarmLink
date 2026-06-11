@@ -20,6 +20,7 @@ export const parseSpeechCommand = (transcript, products) => {
         'products': ['marketplace', 'shop', 'store', 'market', 'products', 'produce', 'बाज़ार', 'बाजार', 'खरेदी'],
         'about': ['about', 'about us', 'mission', 'के बारे में', 'बद्दल'],
         'farmers': ['farmers', 'local farmers', 'farmer list', 'किसान', 'शेतकरी'],
+        'chatbot': ['chatbot', 'chat bot', 'ai', 'ai chatbot', 'assistant', 'चैटबॉट', 'चॅटबॉट'],
         'home': ['home', 'home page', 'start', 'होम']
     };
 
@@ -68,14 +69,17 @@ export const parseSpeechCommand = (transcript, products) => {
     }
 
     // ─── 4. Language Change Intent ──────────────────────────────────────────
-    const langKeywords = ['change language', 'speak in', 'switch to', 'भाषा', 'मराठीत', 'हिंदी में', 'english', 'hindi', 'marathi', 'मराठी', 'हिंदी'];
+    const langKeywords = [
+        'change language', 'speak in', 'switch to', 'language', 'भाषा', 'मराठीत', 'हिंदी में', 
+        'english', 'hindi', 'marathi', 'मराठी', 'हिंदी', 'हिन्दी', 'इंग्लिश', 'अंग्रेजी', 'इंग्रजी'
+    ];
     
     if (langKeywords.some(kw => text.includes(kw))) {
-        if (text.includes('hindi') || text.includes('हिंदी')) {
+        if (text.includes('hindi') || text.includes('हिंदी') || text.includes('हिन्दी')) {
             return { intent: 'change_language', langCode: 'hi', match: text };
         } else if (text.includes('marathi') || text.includes('मराठी')) {
             return { intent: 'change_language', langCode: 'mr', match: text };
-        } else if (text.includes('english') || text.includes('अंग्रेजी') || text.includes('इंग्रजी')) {
+        } else if (text.includes('english') || text.includes('अंग्रेजी') || text.includes('इंग्रजी') || text.includes('इंग्लिश')) {
             return { intent: 'change_language', langCode: 'en', match: text };
         }
     }
