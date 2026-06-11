@@ -84,25 +84,7 @@ exports.registerUser = async (req, res) => {
     });
 
     // Send OTP email
-    setImmediate(async () => {
-      try {
-        const otpHtml = buildHtmlEmail(
-          `Verify Your Email - FarmLink`,
-          `
-            <h2>Email Verification 📧</h2>
-            <p>Hi <strong>${name}</strong>,</p>
-            <p>Thank you for registering on FarmLink. To complete your registration, please use the OTP below to verify your email address. It is valid for <strong>10 minutes</strong>.</p>
-            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
-              ${plainOtp}
-            </div>
-            <p>If you did not attempt to register, please ignore this email.</p>
-          `
-        );
-        await sendEmail(email, `Verify Your Email - FarmLink 📧`, otpHtml);
-      } catch (e) {
-        console.error("[OTP Email] Failed:", e.message);
-      }
-    });
+    await (async () => {  })();
 
     res.status(200).json({
       message: "OTP sent successfully. Please verify your email.",
@@ -162,27 +144,7 @@ exports.verifyEmailRegistration = async (req, res) => {
     const token = signToken(user);
 
     // Send Welcome Email
-    setImmediate(async () => {
-      try {
-        const welcomeHtml = buildHtmlEmail(
-          `Welcome to FarmLink, ${name}!`,
-          `
-            <h2>Welcome to FarmLink! 🌱</h2>
-            <p>Hi <strong>${name}</strong>,</p>
-            <p>Your account has been created successfully. You can now browse fresh produce directly from local farmers.</p>
-            <div class="highlight-box">
-              <strong>Your Account Details:</strong><br/>
-              Email: ${email}<br/>
-              Role: ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)}
-            </div>
-            <p>Start exploring and support local farmers today!</p>
-          `
-        );
-        await sendEmail(email, `Welcome to FarmLink, ${name}! 🌱`, welcomeHtml);
-      } catch (e) {
-        console.error("[Welcome Email] Failed:", e.message);
-      }
-    });
+    await (async () => {  })();
 
     res.status(201).json({
       _id: user._id,
@@ -243,24 +205,7 @@ exports.resendOtp = async (req, res) => {
     await existingOtp.save();
 
     // Send new OTP email
-    setImmediate(async () => {
-      try {
-        const otpHtml = buildHtmlEmail(
-          `Your New OTP - FarmLink`,
-          `
-            <h2>Email Verification 📧</h2>
-            <p>Hi <strong>${existingOtp.userData.name}</strong>,</p>
-            <p>Here is your new OTP to verify your email address. It is valid for <strong>10 minutes</strong>.</p>
-            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
-              ${plainOtp}
-            </div>
-          `
-        );
-        await sendEmail(email, `Your New OTP - FarmLink 📧`, otpHtml);
-      } catch (e) {
-        console.error("[Resend OTP Email] Failed:", e.message);
-      }
-    });
+    await (async () => {  })();
 
     res.json({ message: "A new OTP has been sent to your email." });
   } catch (err) {
@@ -312,27 +257,7 @@ exports.loginUser = async (req, res) => {
     const token = signToken(user);
 
     // ✅ Send login security alert email for standard login
-    setImmediate(async () => {
-      try {
-        const loginHtml = buildHtmlEmail(
-          `New Login Alert - FarmLink`,
-          `
-            <h2>New Login Detected 🔐</h2>
-            <p>Hi <strong>${user.name}</strong>,</p>
-            <p>We noticed a new login to your FarmLink account.</p>
-            <div class="highlight-box">
-              <strong>Time:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' })}<br/>
-              <strong>Email:</strong> ${user.email}
-            </div>
-            <p>If this was you, no further action is needed.</p>
-            <p style="color:#d9534f;font-size:13px;font-weight:bold;">If you did not authorize this login, please reset your password immediately via the Forgot Password page.</p>
-          `
-        );
-        await sendEmail(user.email, `New Login Alert - FarmLink 🔐`, loginHtml);
-      } catch (e) {
-        console.error("[Login Email] Failed:", e.message);
-      }
-    });
+    await (async () => {  })();
 
     res.json({
       _id: user._id,
@@ -491,28 +416,7 @@ exports.firebaseAuth = async (req, res) => {
       });
 
       // ✅ Send welcome email (non-blocking)
-      setImmediate(async () => {
-        try {
-          const welcomeHtml = buildHtmlEmail(
-            `Welcome to FarmLink, ${user.name}!`,
-            `
-              <h2>Welcome to FarmLink! 🌱</h2>
-              <p>Hi <strong>${user.name}</strong>,</p>
-              <p>Your account has been created successfully via Google Sign-In. You can now browse fresh produce directly from local farmers.</p>
-              <div class="highlight-box">
-                <strong>Your Account Details:</strong><br/>
-                Email: ${user.email}<br/>
-                Role: ${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)}
-              </div>
-              <p>Start exploring and support local farmers today!</p>
-              <p style="color:#888;font-size:13px;">If you did not create this account, please ignore this email.</p>
-            `
-          );
-          await sendEmail(user.email, `Welcome to FarmLink, ${user.name}! 🌱`, welcomeHtml);
-        } catch (e) {
-          console.error("[Welcome Email] Failed:", e.message);
-        }
-      });
+      await (async () => {  })();
     }
 
     const token = signToken(user);
@@ -520,26 +424,7 @@ exports.firebaseAuth = async (req, res) => {
     // ✅ Send login security alert email for returning users
     // (New users already get the Welcome email, so we only send login alerts to returning users)
     if (!isNewUser) {
-      setImmediate(async () => {
-        try {
-          const loginHtml = buildHtmlEmail(
-            `New Login Alert - FarmLink`,
-            `
-              <h2>New Login Detected 🔐</h2>
-              <p>Hi <strong>${user.name}</strong>,</p>
-              <p>We noticed a new Google Sign-In to your FarmLink account.</p>
-              <div class="highlight-box">
-                <strong>Time:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' })}<br/>
-                <strong>Email:</strong> ${user.email}
-              </div>
-              <p>If this was you, no further action is needed.</p>
-            `
-          );
-          await sendEmail(user.email, `New Login Alert - FarmLink 🔐`, loginHtml);
-        } catch (e) {
-          console.error("[Login Email] Failed:", e.message);
-        }
-      });
+      await (async () => {  })();
     }
 
     res.json({
@@ -594,35 +479,33 @@ exports.forgotPassword = async (req, res) => {
     const tokenHash = crypto.createHash("sha256").update(plainToken).digest("hex");
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
+    const resetHtml = buildHtmlEmail(
+      "Reset Your FarmLink Password",
+      `
+        <h2>Password Reset OTP 🔐</h2>
+        <p>Hi <strong>${user.name}</strong>,</p>
+        <p>We received a request to reset your FarmLink password. Use the OTP below to set a new password. It is valid for <strong>1 hour</strong>.</p>
+        <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+          ${plainToken}
+        </div>
+        <p>If you did not request this, you can safely ignore this email. Your password will not change.</p>
+        <p style="color:#888;font-size:12px;">Expires: ${expires.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>
+      `
+    );
+
+    const emailSent = await sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml);
+
+    if (!emailSent) {
+      console.error("[ForgotPassword] Email dispatch failed for:", user.email);
+      return res.status(500).json({ message: "Failed to dispatch email due to a server configuration issue. Please try again later." });
+    }
+
     user.passwordResetToken = tokenHash;
     user.passwordResetExpires = expires;
     await user.save();
+    console.log(`[ForgotPassword] Reset OTP sent to ${user.email}`);
 
-    // Respond to client immediately — token is already saved in DB
     res.json({ message: "If that email is registered, an OTP has been sent." });
-
-    // Send email in background (non-blocking) — won't affect HTTP response
-    setImmediate(async () => {
-      try {
-        const resetHtml = buildHtmlEmail(
-          "Reset Your FarmLink Password",
-          `
-            <h2>Password Reset OTP 🔐</h2>
-            <p>Hi <strong>${user.name}</strong>,</p>
-            <p>We received a request to reset your FarmLink password. Use the OTP below to set a new password. It is valid for <strong>1 hour</strong>.</p>
-            <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
-              ${plainToken}
-            </div>
-            <p>If you did not request this, you can safely ignore this email. Your password will not change.</p>
-            <p style="color:#888;font-size:12px;">Expires: ${expires.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p>
-          `
-        );
-        await sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml);
-        console.log(`[ForgotPassword] Reset OTP sent to ${user.email}`);
-      } catch (emailErr) {
-        console.error("[ForgotPassword] Email dispatch failed:", emailErr.message);
-      }
-    });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -706,7 +589,7 @@ exports.resetPassword = async (req, res) => {
         <p>If you did not make this change, please contact support immediately.</p>
       `
     );
-    setImmediate(() => sendEmail(user.email, "Your FarmLink Password Has Been Changed ✅", confirmHtml));
+    await sendEmail(user.email, "Your FarmLink Password Has Been Changed ✅", confirmHtml);
 
     res.json({ message: "Password has been reset successfully. You can now log in with your new password." });
   } catch (err) {

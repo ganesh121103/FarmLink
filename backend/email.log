@@ -112,3 +112,11 @@
 [2026-06-11T19:10:31.445Z] ✅ Gmail SMTP transporter initialized for: pratikpawar0603@gmail.com
 [2026-06-11T19:10:31.453Z] 📤 Sending email → ganeshp121103@gmail.com | Subject: "New Login Alert - FarmLink 🔐"
 [2026-06-11T19:10:35.372Z] ✅ Email sent successfully: <0479e9b9-f843-7639-e863-efc8d60e13d7@gmail.com>
+[2026-06-11T20:24:55.051Z] ⚠️ Gmail SMTP disabled: GMAIL_USER or GMAIL_APP_PASS missing in .env.
+[2026-06-11T20:24:55.061Z] 📧 [MOCK EMAIL] No transporter. To: test@gmail.com | Subject: Test
+[2026-06-11T20:25:13.318Z] ✅ Gmail SMTP transporter initialized for: pratikpawar0603@gmail.com
+[2026-06-11T20:25:13.320Z] 📤 Sending email → pratikpawar0603@gmail.com | Subject: "Test"
+[2026-06-11T20:25:16.809Z] ✅ Email sent successfully: <599bec1d-c0f0-8749-807e-a9ec4f1cf4d6@gmail.com>
+[2026-06-11T20:35:45.828Z] ✅ Gmail SMTP connection verified for: pratikpawar0603@gmail.com
+[2026-06-11T20:35:45.842Z] 📤 Sending email → ganeshp121103@gmail.com | Subject: "Your FarmLink Password Reset OTP 🔐"
+[2026-06-11T20:35:49.719Z] ✅ Email sent successfully: <ffd1fe38-c2fa-730e-40de-6046fd2396bc@gmail.com>

@@ -1,6 +1,12 @@
 const nodemailer = require("nodemailer");
 const fs = require('fs');
 const path = require('path');
+const dns = require('dns');
+
+// Force IPv4 in Node 18+ to prevent ENETUNREACH IPv6 connection issues on Render
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 const logEmail = (msg) => {
     try {
@@ -20,33 +26,43 @@ const logEmailError = (msg, err) => {
 
 let transporter;
 
-const initTransporter = () => {
-    if (transporter) return;
+const initTransporter = async () => {
+    if (transporter) return true;
 
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASS) {
         logEmail("⚠️ Gmail SMTP disabled: GMAIL_USER or GMAIL_APP_PASS missing in .env.");
-        return;
+        return false;
     }
 
     try {
         transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASS,
-        },
-        pool: true,              // reuse connections
-        maxConnections: 3,
-        connectionTimeout: 10000, // 10s to establish connection
-        greetingTimeout: 8000,   // 8s for SMTP greeting
-        socketTimeout: 15000,    // 15s for socket inactivity
-    });
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // Use STARTTLS on port 587
+            requireTLS: true, // Force TLS
+            family: 4, // Force IPv4 to prevent ENETUNREACH
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASS,
+            },
+            tls: {
+                rejectUnauthorized: true,
+            },
+            pool: true,              // reuse connections
+            maxConnections: 3,
+            connectionTimeout: 10000, // 10s to establish connection
+            greetingTimeout: 8000,   // 8s for SMTP greeting
+            socketTimeout: 15000,    // 15s for socket inactivity
+        });
 
+        await transporter.verify();
+        logEmail(`✅ Gmail SMTP connection verified for: ${process.env.GMAIL_USER}`);
+        return true;
     } catch(err) {
-        logEmailError("Failed to create transport", err);
+        logEmailError("Failed to verify SMTP connection", err);
+        transporter = null;
+        return false;
     }
-
-    logEmail(`✅ Gmail SMTP transporter initialized for: ${process.env.GMAIL_USER}`);
 };
 
 /**
@@ -97,7 +113,7 @@ const buildHtmlEmail = (subject, innerHtml) => {
  * @param {string} bodyHtml - HTML body (plain text is auto-wrapped in FarmLink template)
  */
 const sendEmail = async (to, subject, bodyHtml) => {
-    initTransporter();
+    const isReady = await initTransporter();
 
     try {
         if (!to) {
@@ -111,9 +127,9 @@ const sendEmail = async (to, subject, bodyHtml) => {
         const isFullHtml = typeof bodyHtml === "string" && bodyHtml.trim().toLowerCase().startsWith("<!doctype");
         const finalHtml = isFullHtml ? bodyHtml : buildHtmlEmail(subject, `<p>${bodyHtml}</p>`);
 
-        if (!transporter) {
-            logEmail(`📧 [MOCK EMAIL] No transporter. To: ${to} | Subject: ${subject}`);
-            return true;
+        if (!isReady || !transporter) {
+            logEmail(`❌ SMTP transporter unavailable. To: ${to} | Subject: ${subject}`);
+            return false;
         }
 
         logEmail(`📤 Sending email → ${to} | Subject: "${subject}"`);
