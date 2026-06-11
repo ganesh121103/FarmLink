@@ -111,8 +111,8 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
         }
     };
 
-    const myProducts = products.filter(p => p.farmer === user?._id || p.farmerName === user?.name);
-    const myOrders = orders.filter(o => o.items?.some(item => item.farmerName === user?.name || item.farmer === user?._id));
+    const myProducts = products.filter(p => p.farmer === user?._id);
+    const myOrders = orders.filter(o => o.items?.some(item => item.farmer === user?._id));
 
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
@@ -267,14 +267,14 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const tabClass = (tab) => `py-3 px-4 font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-green-600 text-green-700 dark:text-green-400' : 'border-transparent text-stone-500 hover:text-black dark:hover:text-white'}`;
 
     const totalRevenue = useMemo(() => myOrders.reduce((sum, o) => {
-        const farmerItems = o.items?.filter(item => item.farmerName === user?.name || item.farmer === user?._id) || [];
+        const farmerItems = o.items?.filter(item => item.farmer === user?._id) || [];
         return sum + farmerItems.reduce((s, item) => s + (parseInt(item.price || 0) * (item.quantity || 1)), 0);
     }, 0), [myOrders, user]);
 
     const cropFinancials = useMemo(() => {
         const data = {};
         myOrders.forEach(o => {
-            const farmerItems = o.items?.filter(item => item.farmerName === user?.name || item.farmer === user?._id) || [];
+            const farmerItems = o.items?.filter(item => item.farmer === user?._id) || [];
             farmerItems.forEach(item => {
                 if (!data[item.name]) data[item.name] = { revenue: 0, expense: 0 };
                 data[item.name].revenue += (parseInt(item.price || 0) * (item.quantity || 1));
@@ -426,7 +426,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                             <div key={i} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-stone-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
                                 <div>
                                     <p className="font-bold text-black dark:text-white">Order #{o._id} — <span className="text-stone-500 font-medium">{o.userName}</span></p>
-                                    <p className="text-sm text-stone-500 mt-1 mb-3">{o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => `${i.name} x${i.quantity}`).join(', ')}</p>
+                                    <p className="text-sm text-stone-500 mt-1 mb-3">{o.items?.filter(i => i.farmer === user?._id).map(i => `${i.name} x${i.quantity}`).join(', ')}</p>
                                     <button
                                         onClick={() => openChat({ _id: o.userId, name: o.userName, role: 'customer' })}
                                         className="text-xs font-bold flex items-center gap-1.5 text-green-700 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-800 transition-colors w-max"
@@ -762,7 +762,7 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
                                 <label className="text-sm font-bold text-black dark:text-slate-300">Crop Name</label>
                                 <select value={newExpense.cropName} onChange={(e) => setNewExpense({ ...newExpense, cropName: e.target.value })} className="w-full px-4 py-3 border border-stone-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-600 outline-none bg-white dark:bg-slate-800 text-black dark:text-white" required>
                                     <option value="">Select a crop</option>
-                                    {Array.from(new Set([...myProducts.map(p => p.name), ...myOrders.flatMap(o => o.items?.filter(i => i.farmerName === user?.name || i.farmer === user?._id).map(i => i.name))].filter(Boolean))).map(c => <option key={c} value={c}>{c}</option>)}
+                                    {Array.from(new Set([...myProducts.map(p => p.name), ...myOrders.flatMap(o => o.items?.filter(i => i.farmer === user?._id).map(i => i.name))].filter(Boolean))).map(c => <option key={c} value={c}>{c}</option>)}
                                     <option value="General">General/Other</option>
                                 </select>
                             </div>

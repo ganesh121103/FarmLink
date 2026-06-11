@@ -130,7 +130,7 @@ const RevenueChart = ({ data = [], loading = false, totalRevenue = 0 }) => {
                     {/* Total badge */}
                     <div className="hidden sm:flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-xl border border-green-200 dark:border-green-900/40">
                         <IndianRupee size={14} className="text-green-600 dark:text-green-400" />
-                        <span className="font-black text-green-700 dark:text-green-400 text-sm">{totalRevenue.toLocaleString('en-IN')}</span>
+                        <span className="font-black text-green-700 dark:text-green-400 text-sm">{data.reduce((sum, d) => sum + (d.revenue || 0), 0).toLocaleString('en-IN')}</span>
                         <span className="text-xs text-stone-400 font-medium">total</span>
                     </div>
 

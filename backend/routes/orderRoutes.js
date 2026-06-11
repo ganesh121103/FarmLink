@@ -71,11 +71,9 @@ router.get("/revenue-chart/:farmerId", verifyToken, async (req, res) => {
     // Build OR conditions for farmer matching:
     //  - items.farmer stored as ObjectId  (normal case)
     //  - items.farmer stored as string    (legacy/edge case)
-    //  - items.farmerName string match    (most reliable fallback)
     const farmerMatchConditions = [];
     if (farmerObjId) farmerMatchConditions.push({ "items.farmer": farmerObjId });
     if (farmerId) farmerMatchConditions.push({ "items.farmer": farmerId });
-    if (farmerName) farmerMatchConditions.push({ "items.farmerName": farmerName });
 
     if (farmerMatchConditions.length === 0) {
       return res.status(400).json({ message: "farmerId or farmerName required" });
