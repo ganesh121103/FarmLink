@@ -45,6 +45,69 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
     const [commentedStories, setCommentedStories] = useState([]);
     const [loadingStories, setLoadingStories] = useState(false);
 
+    // ── Weather & Forecast State ─────────────────────────────────────
+    const [weatherData, setWeatherData] = useState(null);
+    const [loadingWeather, setLoadingWeather] = useState(false);
+    const [farmingTip, setFarmingTip] = useState('');
+
+    useEffect(() => {
+        if (activeTab === 'weather' && !weatherData) {
+            const fetchWeather = async () => {
+                const searchLocation = user?.location || 'Satara';
+                setLoadingWeather(true);
+                try {
+                    // Geocode location
+                    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchLocation)}&count=1`);
+                    const geoData = await geoRes.json();
+                    
+                    if (geoData.results && geoData.results.length > 0) {
+                        const { latitude, longitude } = geoData.results[0];
+                        // Fetch weather
+                        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&daily=precipitation_probability_max&timezone=auto`);
+                        const weather = await weatherRes.json();
+                        
+                        const temp = Math.round(weather.current.temperature_2m);
+                        const wind = Math.round(weather.current.wind_speed_10m);
+                        const rain = Math.round(weather.current.precipitation);
+                        const rainProb = weather.daily?.precipitation_probability_max?.[0] || 0;
+                        
+                        setWeatherData({
+                            temperature: `${temp}°C`,
+                            tempTip: temp > 35 ? 'Too hot for some crops' : temp < 10 ? 'Frost warning' : 'Ideal for most crops',
+                            rainfall: `${rain}mm`,
+                            rainTip: rain > 10 ? 'Heavy rain expected' : rainProb > 50 ? 'High chance of rain' : 'Low chance of rain today',
+                            windSpeed: `${wind} km/h`,
+                            windTip: wind > 25 ? 'High winds, secure crops' : 'Calm conditions',
+                            locationName: searchLocation
+                        });
+
+                        // Ask Gemini for a personalized farming tip!
+                        try {
+                            const tip = await askGemini(`Act as an expert Indian agronomist. The current weather in ${searchLocation} is ${temp}°C, with ${wind} km/h wind and ${rain}mm rainfall. Provide a short, practical 2-sentence farming tip for local farmers based on this exact weather.`);
+                            setFarmingTip(tip.replace(/[\*\_]/g, ''));
+                        } catch (e) {
+                            setFarmingTip(t('farmingTipDesc'));
+                        }
+                    } else {
+                        throw new Error("Location not found");
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch weather:", err);
+                    setWeatherData({
+                        temperature: "28°C", tempTip: "Ideal for most vegetables",
+                        rainfall: "0mm", rainTip: "No rain expected",
+                        windSpeed: "10 km/h", windTip: "Calm conditions",
+                        locationName: searchLocation
+                    });
+                    setFarmingTip(t('farmingTipDesc'));
+                } finally {
+                    setLoadingWeather(false);
+                }
+            };
+            fetchWeather();
+        }
+    }, [activeTab, user?.location, weatherData, t]);
+
     useEffect(() => {
         if (activeTab === 'storiesActivity' && user?._id) {
             setLoadingStories(true);
@@ -510,18 +573,33 @@ const FarmerDashboard = ({ products, setProducts, orders, setOrders }) => {
 
             {activeTab === 'weather' && (
                 <div className="animate-fade-in-up">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        {[{ icon: CloudSun, label: "Temperature", value: "28°C", tip: "Ideal for most vegetables", color: "text-yellow-500" }, { icon: Droplets, label: "Rainfall", value: "7mm", tip: "Low chance of rain today", color: "text-blue-500" }, { icon: Wind, label: "Wind Speed", value: "15 km/h", tip: "Calm conditions", color: "text-green-500" }].map(w => (
-                            <Card key={w.label} className="p-6 flex items-center gap-5">
-                                <div className={`p-4 bg-stone-50 dark:bg-slate-900 rounded-xl ${w.color}`}><w.icon size={28} /></div>
-                                <div><p className="text-xs font-bold text-stone-400 uppercase mb-1">{w.label}</p><p className="text-2xl font-black text-black dark:text-white">{w.value}</p><p className="text-sm text-stone-500 mt-1">{w.tip}</p></div>
-                            </Card>
-                        ))}
-                    </div>
-                    <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl p-6">
-                        <h3 className="font-bold text-green-800 dark:text-green-400 mb-3 text-lg">{t('farmingTipTitle')}</h3>
-                        <p className="text-sm text-green-700 dark:text-green-500 leading-relaxed">{t('farmingTipDesc')}</p>
-                    </div>
+                    {loadingWeather ? (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <Loader2 size={40} className="animate-spin text-green-500 mb-4" />
+                            <p className="text-stone-500 font-bold">Analyzing weather patterns for {user?.location || 'your area'}...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                {[
+                                    { icon: CloudSun, label: "Temperature", value: weatherData?.temperature || "28°C", tip: weatherData?.tempTip || "Ideal for most vegetables", color: "text-yellow-500" }, 
+                                    { icon: Droplets, label: "Rainfall", value: weatherData?.rainfall || "7mm", tip: weatherData?.rainTip || "Low chance of rain today", color: "text-blue-500" }, 
+                                    { icon: Wind, label: "Wind Speed", value: weatherData?.windSpeed || "15 km/h", tip: weatherData?.windTip || "Calm conditions", color: "text-green-500" }
+                                ].map(w => (
+                                    <Card key={w.label} className="p-6 flex items-center gap-5">
+                                        <div className={`p-4 bg-stone-50 dark:bg-slate-900 rounded-xl ${w.color}`}><w.icon size={28} /></div>
+                                        <div><p className="text-xs font-bold text-stone-400 uppercase mb-1">{w.label}</p><p className="text-2xl font-black text-black dark:text-white">{w.value}</p><p className="text-sm text-stone-500 mt-1">{w.tip}</p></div>
+                                    </Card>
+                                ))}
+                            </div>
+                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl p-6">
+                                <h3 className="font-bold text-green-800 dark:text-green-400 mb-3 text-lg flex items-center gap-2">
+                                    <Bot size={20} className="text-green-600 dark:text-green-500" /> AI Agronomist Tip
+                                </h3>
+                                <p className="text-sm text-green-700 dark:text-green-500 leading-relaxed">{farmingTip || t('farmingTipDesc')}</p>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
