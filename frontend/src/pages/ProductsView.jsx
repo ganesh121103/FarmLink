@@ -55,10 +55,17 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
         let center = CITY_COORDINATES[activeLocation] || [19.7515, 75.7139];
         let zoom = activeLocation === 'All' ? 6 : 11;
 
-        // If the user's city matches their active filter, use their EXACT high-precision street coordinates and zoom in closer
-        if (exactUserLocation && (activeLocation !== 'All')) {
+        // Prioritize exact user location
+        if (exactUserLocation) {
             center = exactUserLocation;
-            zoom = 13; // Higher zoom for neighborhood level
+            zoom = activeLocation === 'All' ? 11 : 13;
+        } else if (activeLocation === 'All' && filteredProducts.length > 0) {
+            // If no user location and 'All' is selected, center on the first product's city
+            const firstProductCoords = CITY_COORDINATES[filteredProducts[0].location];
+            if (firstProductCoords) {
+                center = firstProductCoords;
+                zoom = 9;
+            }
         }
 
         mapInstance.current.flyTo(center, zoom, { duration: 1.5 });
@@ -91,8 +98,8 @@ const VanillaMap = ({ activeLocation, filteredProducts, handleSelectProduct, exa
 
         filteredProducts.slice(0, 50).forEach((p, i) => {
             const baseCoords = CITY_COORDINATES[p.location] || [19.7515, 75.7139];
-            const offsetLat = baseCoords[0] + (Math.sin(i * 10) * 0.02);
-            const offsetLng = baseCoords[1] + (Math.cos(i * 10) * 0.02);
+            const offsetLat = baseCoords[0] + (Math.sin(i * 10) * 0.0015);
+            const offsetLng = baseCoords[1] + (Math.cos(i * 10) * 0.0015);
 
             const marker = L.marker([offsetLat, offsetLng], { icon: productIcon }).addTo(mapInstance.current);
             const popupContent = document.createElement('div');

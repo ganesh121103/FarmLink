@@ -3010,3 +3010,7 @@
 [REQ] GET /api/farmers
 [REQ] POST /api/users/forgot-password
 [REQ] POST /api/users/verify-otp
+[REQ] GET /api/farmers
+[REQ] GET /api/products
+[REQ] GET /api/products
+[REQ] GET /api/farmers
