@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiCall } from '../api/apiCall';
 import { useAppContext } from '../context/AppContext';
-import { Heart, MessageCircle, Share2, Store, ChevronLeft, Loader2, Volume2, VolumeX, Trash2, Bookmark, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Store, ChevronLeft, ChevronUp, ChevronDown, Loader2, Volume2, VolumeX, Trash2, Bookmark, X } from 'lucide-react';
 
 const CommentsPanel = ({ isOpen, onClose, storyId, comments, setComments }) => {
     const { user, addToast } = useAppContext();
@@ -377,6 +377,39 @@ const StoriesView = () => {
         }
     };
 
+    const scrollToNext = () => {
+        if (activeIndex < stories.length - 1 && containerRef.current) {
+            const children = containerRef.current.children;
+            if (children[activeIndex + 1]) {
+                children[activeIndex + 1].scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
+    const scrollToPrev = () => {
+        if (activeIndex > 0 && containerRef.current) {
+            const children = containerRef.current.children;
+            if (children[activeIndex - 1]) {
+                children[activeIndex - 1].scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                scrollToNext();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                scrollToPrev();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [activeIndex, stories.length]);
+
     const handleDeleteStory = (id) => {
         setStories(prev => prev.filter(s => s._id !== id));
     };
@@ -405,35 +438,70 @@ const StoriesView = () => {
     }
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black">
-            {/* Header */}
-            <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
-                <button 
-                    onClick={goBack}
-                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+        <div className="fixed inset-0 z-[100] bg-stone-900/95 backdrop-blur-md flex justify-center items-center">
+            
+            {/* Phone-like Container */}
+            <div className="relative w-full max-w-md h-full sm:h-[90vh] sm:rounded-[2.5rem] sm:border-[8px] sm:border-stone-800 overflow-hidden bg-black shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col">
+                
+                {/* Header */}
+                <div className="absolute top-0 left-0 right-0 p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
+                    <button 
+                        onClick={goBack}
+                        className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors sm:hidden"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    {/* Empty div for spacing when back button is hidden on desktop */}
+                    <div className="w-10 hidden sm:block"></div>
+                    <h1 className="text-white font-black text-xl drop-shadow-lg tracking-wider">FARM STORIES</h1>
+                    <div className="w-10"></div> {/* Spacer */}
+                </div>
+
+                {/* Scroll Container */}
+                <div 
+                    ref={containerRef}
+                    onScroll={handleScroll}
+                    className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
                 >
-                    <ChevronLeft size={24} />
-                </button>
-                <h1 className="text-white font-black text-xl drop-shadow-lg tracking-wider">FARM STORIES</h1>
-                <div className="w-10"></div> {/* Spacer */}
+                    {stories.map((story, index) => (
+                        <Story 
+                            key={story._id} 
+                            story={story} 
+                            isActive={index === activeIndex} 
+                            isMuted={isMuted}
+                            toggleMute={() => setIsMuted(!isMuted)}
+                            onDelete={handleDeleteStory}
+                        />
+                    ))}
+                </div>
             </div>
 
-            {/* Scroll Container */}
-            <div 
-                ref={containerRef}
-                onScroll={handleScroll}
-                className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+            {/* Desktop close button outside the phone frame */}
+            <button 
+                onClick={goBack}
+                className="hidden sm:flex absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md items-center justify-center text-white transition-colors border border-white/20 shadow-xl"
             >
-                {stories.map((story, index) => (
-                    <Story 
-                        key={story._id} 
-                        story={story} 
-                        isActive={index === activeIndex} 
-                        isMuted={isMuted}
-                        toggleMute={() => setIsMuted(!isMuted)}
-                        onDelete={handleDeleteStory}
-                    />
-                ))}
+                <X size={28} />
+            </button>
+
+            {/* Desktop Scroll Navigation Buttons */}
+            <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col gap-4 z-50">
+                <button 
+                    onClick={scrollToPrev}
+                    disabled={activeIndex === 0}
+                    className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20 shadow-xl"
+                    title="Previous Story (Up Arrow)"
+                >
+                    <ChevronUp size={32} />
+                </button>
+                <button 
+                    onClick={scrollToNext}
+                    disabled={activeIndex === stories.length - 1}
+                    className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md flex items-center justify-center text-white transition-colors border border-white/20 shadow-xl"
+                    title="Next Story (Down Arrow)"
+                >
+                    <ChevronDown size={32} />
+                </button>
             </div>
         </div>
     );
