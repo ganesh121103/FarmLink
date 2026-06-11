@@ -424,6 +424,7 @@ ${productList}`;
     const handleLocateMe = () => {
         setIsLocating(true);
         if (!navigator.geolocation) {
+            addToast("Geolocation is not supported by your browser.", "error");
             setIsLocating(false);
             return;
         }
@@ -432,22 +433,43 @@ ${productList}`;
                 try {
                     const { latitude, longitude } = pos.coords;
                     setExactUserLocation([latitude, longitude]);
+                    
                     const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
                     const data = await res.json();
 
                     const city = data.city || data.locality || data.principalSubdivision;
                     if (city) {
-                        if (!dynamicLocations.includes(city)) setDynamicLocations([...dynamicLocations, city]);
-                        setActiveLocation(city);
+                        // Dynamically register the user's exact coordinate to the city so the map doesn't fallback to Jalna
+                        CITY_COORDINATES[city] = [latitude, longitude];
+                        
+                        if (!dynamicLocations.includes(city)) {
+                            setDynamicLocations([...dynamicLocations, city]);
+                        }
+                        
+                        // Check if we actually have products in this city
+                        const hasProductsHere = products.some(p => p.location.toLowerCase() === city.toLowerCase());
+                        
+                        if (hasProductsHere) {
+                            setActiveLocation(city);
+                            addToast(`Located you in ${city}. Showing local products.`, "success");
+                        } else {
+                            setActiveLocation('All');
+                            addToast(`Located you in ${city}, but no products found here yet. Showing all products.`, "info");
+                        }
                     } else {
-                        setActiveLocation(dynamicLocations[0]);
+                        addToast("Location found, but couldn't determine city name.", "info");
                     }
+                    setShowMap(true); // Automatically open the map so they can see where they are
                 } catch (err) {
-                    setActiveLocation(dynamicLocations[0]); // Fallback
+                    addToast("Failed to determine your city from coordinates.", "error");
                 }
                 setIsLocating(false);
             },
-            () => { setIsLocating(false); }
+            (err) => { 
+                addToast("Location access denied or failed.", "error");
+                setIsLocating(false); 
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     };
 
