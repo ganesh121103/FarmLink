@@ -10,8 +10,7 @@ const AboutView = ({ BackBtn, farmers, setSelectedFarmer }) => {
     const { t, navigate } = useAppContext();
     const stats = [
         { label: t('farmersOnboarded'), value: '500+', icon: '👨‍🌾' },
-        { label: t('happyCustomers'), value: '10K+', icon: '😊' },
-        { label: t('co2Saved'), value: '2T+', icon: '🌿' },
+        { label: t('happyCustomers'), value: '10K+', icon: '😊' }
     ];
 
     return (
@@ -22,7 +21,7 @@ const AboutView = ({ BackBtn, farmers, setSelectedFarmer }) => {
                 <p className="text-stone-600 dark:text-slate-400 text-lg leading-relaxed">{t('missionText')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
                 {stats.map(stat => (
                     <div key={stat.label} className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-stone-100 dark:border-slate-700 shadow-sm text-center">
                         <div className="text-4xl mb-3">{stat.icon}</div>

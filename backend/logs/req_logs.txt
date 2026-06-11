@@ -3014,3 +3014,14 @@
 [REQ] GET /api/products
 [REQ] GET /api/products
 [REQ] GET /api/farmers
+[REQ] GET /api/farmers
+[REQ] GET /api/products
+[REQ] GET /api/products
+[REQ] GET /api/farmers
+[REQ] GET /api/stories
+[REQ] GET /api/stories
+[REQ] GET /api/stories/6a13567530d08282d59acbfc/video
+[REQ] GET /api/farmers
+[REQ] GET /api/products
+[REQ] GET /api/products
+[REQ] GET /api/farmers
