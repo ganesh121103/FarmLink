@@ -90,7 +90,7 @@ router.get("/:id/video", async (req, res) => {
             return res.status(404).send("Video not found");
         }
 
-        const matches = story.videoUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        const matches = story.videoUrl.match(/^data:([A-Za-z0-9-+\/]+);base64,(.+)$/);
         
         if (matches && matches.length === 3) {
             const contentType = matches[1];
