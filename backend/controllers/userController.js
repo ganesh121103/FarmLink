@@ -95,10 +95,13 @@ exports.registerUser = async (req, res) => {
         <p>If you did not initiate this request, please ignore this email.</p>
       `
     );
-    // Send OTP email asynchronously to prevent frontend timeouts
-    sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml).catch(err => {
-      console.error("Failed to send OTP email in background:", err);
-    });
+    // Send OTP email before responding
+    const emailSent = await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
+    
+    if (!emailSent) {
+      await OTP.deleteMany({ email }); // Rollback OTP creation
+      return res.status(500).json({ message: "Failed to send OTP email. Please check the email address or try again later." });
+    }
 
     res.status(200).json({
       message: "OTP sent successfully. Please verify your email.",
@@ -242,10 +245,12 @@ exports.resendOtp = async (req, res) => {
         <p>If you did not request this, please ignore this email.</p>
       `
     );
-    // Send new OTP email asynchronously
-    sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml).catch(err => {
-      console.error("Failed to resend OTP email in background:", err);
-    });
+    // Send new OTP email before responding
+    const emailSent = await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
+
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to resend OTP email. Please try again later." });
+    }
 
     res.json({ message: "A new OTP has been sent to your email." });
   } catch (err) {
@@ -565,9 +570,10 @@ exports.forgotPassword = async (req, res) => {
       `
     );
 
-    sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml).catch(err => {
-      console.error("[ForgotPassword] Email dispatch failed for:", user.email, err);
-    });
+    const emailSent = await sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml);
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP email. Please try again later." });
+    }
 
     user.passwordResetToken = tokenHash;
     user.passwordResetExpires = expires;
