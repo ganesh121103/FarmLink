@@ -27,12 +27,14 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
             endpoint.includes('/verify-email') ||
             endpoint.includes('/resend-otp');
 
+        let currentRequestToken = null;
         if (!isPublicEndpoint) {
             const userStr = localStorage.getItem('farmlink_user');
             if (userStr && userStr !== "undefined") {
                 try {
                     const userObj = JSON.parse(userStr);
                     if (userObj?.token) {
+                        currentRequestToken = userObj.token;
                         options.headers['Authorization'] = `Bearer ${userObj.token}`;
                     }
                 } catch { /* ignore invalid json */ }
@@ -54,12 +56,14 @@ const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = fals
         clearTimeout(timeoutId);
 
         if (response.status === 401 && !isPublicEndpoint) {
-            // Only fire auth-expired if user actually has a token — avoids false logouts from
-            // background polls (e.g. notifications) that fire after the session is already cleared
-            const hasToken = (() => {
-                try { return !!JSON.parse(localStorage.getItem('farmlink_user'))?.token; } catch { return false; }
+            // Only fire auth-expired if the token that failed is STILL the active token.
+            // This prevents old requests from logging out a newly logged-in user.
+            const currentStorageToken = (() => {
+                try { return JSON.parse(localStorage.getItem('farmlink_user'))?.token; } catch { return null; }
             })();
-            if (hasToken) document.dispatchEvent(new CustomEvent('auth-expired'));
+            if (currentStorageToken && currentStorageToken === currentRequestToken) {
+                document.dispatchEvent(new CustomEvent('auth-expired'));
+            }
             throw new Error('Session expired. Please log in again.');
         }
 

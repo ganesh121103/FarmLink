@@ -395,8 +395,13 @@ const AuthView = ({ initialMode = 'login' }) => {
                     // Firebase login succeeded — sync with backend
                     const userData = await syncFirebaseUserWithBackend(firebaseResult.user, { role, password: formData.password });
                     if (!isMountedRef.current) return;
+                    // Strip base64 image and documents to prevent QuotaExceededError
+                    const userToStore = { ...userData };
+                    if (userToStore.image && userToStore.image.startsWith('data:image')) userToStore.image = '';
+                    if (userToStore.documents) userToStore.documents = undefined;
+                    
                     setUser(userData);
-                    localStorage.setItem('farmlink_user', JSON.stringify(userData));
+                    localStorage.setItem('farmlink_user', JSON.stringify(userToStore));
                     addToast(`Welcome back, ${userData.name}! 👋`);
                     navigate('dashboard');
                 } else {
@@ -408,8 +413,13 @@ const AuthView = ({ initialMode = 'login' }) => {
                             role,
                         });
                         if (!isMountedRef.current) return;
+                        // Strip base64 image and documents to prevent QuotaExceededError
+                        const dataToStore = { ...data };
+                        if (dataToStore.image && dataToStore.image.startsWith('data:image')) dataToStore.image = '';
+                        if (dataToStore.documents) dataToStore.documents = undefined;
+
                         setUser(data);
-                        localStorage.setItem('farmlink_user', JSON.stringify(data));
+                        localStorage.setItem('farmlink_user', JSON.stringify(dataToStore));
                         addToast(`Welcome back, ${data.name}! 👋`);
                         navigate('dashboard');
                     } catch (mongoErr) {
@@ -456,8 +466,13 @@ const AuthView = ({ initialMode = 'login' }) => {
             const userData = await syncFirebaseUserWithBackend(firebaseUser, { role: selectedRole });
             // If the user already has an account, the backend will return their actual role
             if (!isMountedRef.current) return;
+            // Strip base64 image and documents to prevent QuotaExceededError
+            const userToStore = { ...userData };
+            if (userToStore.image && userToStore.image.startsWith('data:image')) userToStore.image = '';
+            if (userToStore.documents) userToStore.documents = undefined;
+
             setUser(userData);
-            localStorage.setItem('farmlink_user', JSON.stringify(userData));
+            localStorage.setItem('farmlink_user', JSON.stringify(userToStore));
             addToast(`Welcome, ${userData.name}! 🎉`);
             navigate('dashboard');
         } catch (err) {
