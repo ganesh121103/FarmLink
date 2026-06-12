@@ -95,7 +95,10 @@ exports.registerUser = async (req, res) => {
         <p>If you did not initiate this request, please ignore this email.</p>
       `
     );
-    await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
+    // Send OTP email asynchronously to prevent frontend timeouts
+    sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml).catch(err => {
+      console.error("Failed to send OTP email in background:", err);
+    });
 
     res.status(200).json({
       message: "OTP sent successfully. Please verify your email.",
@@ -164,7 +167,10 @@ exports.verifyEmailRegistration = async (req, res) => {
         <p>You can now log in and explore our platform.</p>
       `
     );
-    await sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml);
+    // Send Welcome Email asynchronously
+    sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml).catch(err => {
+      console.error("Failed to send welcome email in background:", err);
+    });
 
     res.status(201).json({
       _id: user._id,
@@ -236,7 +242,10 @@ exports.resendOtp = async (req, res) => {
         <p>If you did not request this, please ignore this email.</p>
       `
     );
-    await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
+    // Send new OTP email asynchronously
+    sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml).catch(err => {
+      console.error("Failed to resend OTP email in background:", err);
+    });
 
     res.json({ message: "A new OTP has been sent to your email." });
   } catch (err) {
@@ -297,7 +306,10 @@ exports.loginUser = async (req, res) => {
         <p>If this was you, you can safely ignore this email. If you did not log in, please reset your password immediately.</p>
       `
     );
-    await sendEmail(user.email, "New Login to Your FarmLink Account 🚨", loginHtml);
+    // ✅ Send login security alert email asynchronously
+    sendEmail(user.email, "New Login to Your FarmLink Account 🚨", loginHtml).catch(err => {
+      console.error("Failed to send login alert email in background:", err);
+    });
 
     res.json({
       _id: user._id,
@@ -464,7 +476,10 @@ exports.firebaseAuth = async (req, res) => {
           <p>Welcome to the FarmLink community! We are excited to have you on board.</p>
         `
       );
-      await sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml);
+      // ✅ Send welcome email asynchronously
+      sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml).catch(err => {
+        console.error("Failed to send firebase welcome email in background:", err);
+      });
     }
 
     const token = signToken(user);
@@ -550,12 +565,9 @@ exports.forgotPassword = async (req, res) => {
       `
     );
 
-    const emailSent = await sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml);
-
-    if (!emailSent) {
-      console.error("[ForgotPassword] Email dispatch failed for:", user.email);
-      return res.status(500).json({ message: "Failed to dispatch email due to a server configuration issue. Please try again later." });
-    }
+    sendEmail(user.email, "Your FarmLink Password Reset OTP 🔐", resetHtml).catch(err => {
+      console.error("[ForgotPassword] Email dispatch failed for:", user.email, err);
+    });
 
     user.passwordResetToken = tokenHash;
     user.passwordResetExpires = expires;
@@ -646,7 +658,9 @@ exports.resetPassword = async (req, res) => {
         <p>If you did not make this change, please contact support immediately.</p>
       `
     );
-    await sendEmail(user.email, "Your FarmLink Password Has Been Changed ✅", confirmHtml);
+    sendEmail(user.email, "Your FarmLink Password Has Been Changed ✅", confirmHtml).catch(err => {
+      console.error("Failed to send password reset confirmation email:", err);
+    });
 
     res.json({ message: "Password has been reset successfully. You can now log in with your new password." });
   } catch (err) {
