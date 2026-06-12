@@ -84,7 +84,18 @@ exports.registerUser = async (req, res) => {
     });
 
     // Send OTP email
-    await (async () => {  })();
+    const otpHtml = buildHtmlEmail(
+      "Verify Your FarmLink Account",
+      `
+        <h2>Welcome to FarmLink, ${name}! 🌱</h2>
+        <p>Thank you for registering. To complete your registration, please use the OTP below to verify your email address. It is valid for a limited time.</p>
+        <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+          ${plainOtp}
+        </div>
+        <p>If you did not initiate this request, please ignore this email.</p>
+      `
+    );
+    await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
 
     res.status(200).json({
       message: "OTP sent successfully. Please verify your email.",
@@ -144,7 +155,16 @@ exports.verifyEmailRegistration = async (req, res) => {
     const token = signToken(user);
 
     // Send Welcome Email
-    await (async () => {  })();
+    const welcomeHtml = buildHtmlEmail(
+      "Welcome to FarmLink! 🎉",
+      `
+        <h2>Registration Complete! ✅</h2>
+        <p>Hi <strong>${user.name}</strong>,</p>
+        <p>Your email has been successfully verified. Welcome to the FarmLink community! We are excited to have you on board.</p>
+        <p>You can now log in and explore our platform.</p>
+      `
+    );
+    await sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml);
 
     res.status(201).json({
       _id: user._id,
@@ -205,7 +225,18 @@ exports.resendOtp = async (req, res) => {
     await existingOtp.save();
 
     // Send new OTP email
-    await (async () => {  })();
+    const otpHtml = buildHtmlEmail(
+      "Verify Your FarmLink Account",
+      `
+        <h2>Your New OTP 🌱</h2>
+        <p>You requested a new OTP to verify your email address. Please use the OTP below. It is valid for a limited time.</p>
+        <div class="highlight-box" style="font-size:32px;text-align:center;letter-spacing:12px;font-weight:bold;color:#2d6a4f;margin:30px 0;">
+          ${plainOtp}
+        </div>
+        <p>If you did not request this, please ignore this email.</p>
+      `
+    );
+    await sendEmail(email, "Your FarmLink Registration OTP 🔐", otpHtml);
 
     res.json({ message: "A new OTP has been sent to your email." });
   } catch (err) {
@@ -257,7 +288,16 @@ exports.loginUser = async (req, res) => {
     const token = signToken(user);
 
     // ✅ Send login security alert email for standard login
-    await (async () => {  })();
+    const loginHtml = buildHtmlEmail(
+      "New Login to Your FarmLink Account",
+      `
+        <h2>Security Alert: New Login</h2>
+        <p>Hi <strong>${user.name}</strong>,</p>
+        <p>We noticed a new login to your FarmLink account at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.</p>
+        <p>If this was you, you can safely ignore this email. If you did not log in, please reset your password immediately.</p>
+      `
+    );
+    await sendEmail(user.email, "New Login to Your FarmLink Account 🚨", loginHtml);
 
     res.json({
       _id: user._id,
@@ -416,7 +456,15 @@ exports.firebaseAuth = async (req, res) => {
       });
 
       // ✅ Send welcome email (non-blocking)
-      await (async () => {  })();
+      const welcomeHtml = buildHtmlEmail(
+        "Welcome to FarmLink! 🎉",
+        `
+          <h2>Registration Complete! ✅</h2>
+          <p>Hi <strong>${user.name}</strong>,</p>
+          <p>Welcome to the FarmLink community! We are excited to have you on board.</p>
+        `
+      );
+      await sendEmail(user.email, "Welcome to FarmLink! 🎉", welcomeHtml);
     }
 
     const token = signToken(user);
@@ -424,7 +472,16 @@ exports.firebaseAuth = async (req, res) => {
     // ✅ Send login security alert email for returning users
     // (New users already get the Welcome email, so we only send login alerts to returning users)
     if (!isNewUser) {
-      await (async () => {  })();
+      const loginHtml = buildHtmlEmail(
+        "New Login to Your FarmLink Account",
+        `
+          <h2>Security Alert: New Login</h2>
+          <p>Hi <strong>${user.name}</strong>,</p>
+          <p>We noticed a new login to your FarmLink account at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.</p>
+          <p>If this was you, you can safely ignore this email.</p>
+        `
+      );
+      await sendEmail(user.email, "New Login to Your FarmLink Account 🚨", loginHtml);
     }
 
     res.json({
