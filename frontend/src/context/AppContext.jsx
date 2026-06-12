@@ -37,7 +37,7 @@ export const AppProvider = ({ children }) => {
             try {
                 const { checkGoogleRedirectResult } = await import('../auth/firebaseAuth');
                 const { user: firebaseUser, error } = await checkGoogleRedirectResult();
-                
+
                 if (firebaseUser) {
                     const savedRole = sessionStorage.getItem('farmlink_pending_role') || 'customer';
                     sessionStorage.removeItem('farmlink_pending_role');
@@ -85,7 +85,7 @@ export const AppProvider = ({ children }) => {
             } catch (_) { /* silent — localStorage data is the fallback */ }
         };
         refreshUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
@@ -169,7 +169,7 @@ export const AppProvider = ({ children }) => {
         const userId = user._id || user.id;
         if (!userId) return;
 
-        let unsubscribeFCM = () => {};
+        let unsubscribeFCM = () => { };
 
         const setupFCM = async () => {
             try {
@@ -199,7 +199,7 @@ export const AppProvider = ({ children }) => {
         setupFCM();
 
         return () => { unsubscribeFCM(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?._id, user?.token]);
     // ────────────────────────────────────────────────────────────────────
 
@@ -254,13 +254,13 @@ export const AppProvider = ({ children }) => {
         });
     };
 
-    useEffect(() => { 
+    useEffect(() => {
         try {
             if (user) {
                 const userToStore = { ...user };
                 // Strip out huge base64 strings to prevent QuotaExceededError
                 if (userToStore.image && userToStore.image.startsWith('data:image')) {
-                    userToStore.image = ''; 
+                    userToStore.image = '';
                 }
                 if (userToStore.documents) {
                     userToStore.documents = undefined;
@@ -273,8 +273,43 @@ export const AppProvider = ({ children }) => {
             console.error('LocalStorage save failed:', e);
         }
     }, [user]);
-    useEffect(() => { localStorage.setItem('farmlink_cart', JSON.stringify(cart)); }, [cart]);
-    useEffect(() => { localStorage.setItem('farmlink_wishlist', JSON.stringify(wishlist)); }, [wishlist]);
+    useEffect(() => { 
+        try {
+            const cartToStore = cart.map(item => {
+                const strippedItem = { ...item };
+                if (strippedItem.image && strippedItem.image.startsWith('data:image')) {
+                    strippedItem.image = '';
+                }
+                if (strippedItem.images && Array.isArray(strippedItem.images)) {
+                    strippedItem.images = strippedItem.images.map(img => img.startsWith('data:image') ? '' : img);
+                }
+                return strippedItem;
+            });
+            localStorage.setItem('farmlink_cart', JSON.stringify(cartToStore)); 
+        } catch (e) {
+            console.error('LocalStorage save failed for cart:', e);
+            localStorage.removeItem('farmlink_cart');
+        }
+    }, [cart]);
+
+    useEffect(() => { 
+        try {
+            const wishlistToStore = wishlist.map(item => {
+                const strippedItem = { ...item };
+                if (strippedItem.image && strippedItem.image.startsWith('data:image')) {
+                    strippedItem.image = '';
+                }
+                if (strippedItem.images && Array.isArray(strippedItem.images)) {
+                    strippedItem.images = strippedItem.images.map(img => img.startsWith('data:image') ? '' : img);
+                }
+                return strippedItem;
+            });
+            localStorage.setItem('farmlink_wishlist', JSON.stringify(wishlistToStore)); 
+        } catch (e) {
+            console.error('LocalStorage save failed for wishlist:', e);
+            localStorage.removeItem('farmlink_wishlist');
+        }
+    }, [wishlist]);
     useEffect(() => { if (isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDarkMode]);
 
     const viewRef = useRef(view);
@@ -350,7 +385,7 @@ export const AppProvider = ({ children }) => {
             } catch (e) { /* silent */ }
         }
     };
-    
+
     // ── Follow Farmer ───────────────────────────────────────────────────
     const toggleFollow = async (farmerId, farmerName) => {
         if (!user) {
