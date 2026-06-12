@@ -3049,3 +3049,4 @@
 [REQ] GET /api/farmers
 [REQ] GET /api/stories?farmerId=69c2145cbe28c544baa82bce
 [REQ] GET /api/stories?farmerId=69c2145cbe28c544baa82bce
+[REQ] POST /api/users/register

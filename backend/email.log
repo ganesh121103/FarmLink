@@ -120,3 +120,6 @@
 [2026-06-11T20:35:45.828Z] ✅ Gmail SMTP connection verified for: pratikpawar0603@gmail.com
 [2026-06-11T20:35:45.842Z] 📤 Sending email → ganeshp121103@gmail.com | Subject: "Your FarmLink Password Reset OTP 🔐"
 [2026-06-11T20:35:49.719Z] ✅ Email sent successfully: <ffd1fe38-c2fa-730e-40de-6046fd2396bc@gmail.com>
+[2026-06-12T07:35:50.216Z] ✅ Gmail SMTP connection verified for: pratikpawar0603@gmail.com
+[2026-06-12T07:35:50.217Z] 📤 Sending email → test10@example.com | Subject: "Your FarmLink Registration OTP 🔐"
+[2026-06-12T07:35:53.191Z] ✅ Email sent successfully: <ef7efd49-f05c-98a4-9025-f002ed1150db@gmail.com>
