@@ -541,15 +541,17 @@ exports.forgotPassword = async (req, res) => {
       if (user) break;
     }
 
-    // Always respond the same way to prevent email enumeration
+    // For debugging: Give a clear error if the email doesn't exist
     if (!user) {
-      return res.json({ message: "If that email is registered, a reset link has been sent." });
+      return res.status(404).json({ message: "DEBUG: Email not found in database. Please register first." });
     }
 
-    // Check if this is a social-only account (no password set)
+    // For debugging: Give a clear error if this is a Firebase account
     if (user.firebaseUid && !user.password) {
-      return res.json({ message: "If that email is registered, a reset link has been sent." });
+      return res.status(400).json({ message: "DEBUG: This account was created via Firebase Auth. It does not have a password to reset. Please use a regular account to test OTP." });
     }
+
+    // Removed duplicate block
 
     // Generate a secure 6-digit OTP
     const plainToken = Math.floor(100000 + Math.random() * 900000).toString();
