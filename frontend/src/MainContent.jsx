@@ -87,7 +87,9 @@ const MainContent = () => {
         try {
             const { data } = await apiCall('/orders');
             setOrders(data || []);
-            localStorage.setItem(`farmlink_cached_orders_${user._id}`, JSON.stringify(data || []));
+            try { 
+                localStorage.setItem(`farmlink_cached_orders_${user._id}`, JSON.stringify(data || [])); 
+            } catch { /* quota exceeded — skip cache */ }
         } catch {
             const cached = localStorage.getItem(`farmlink_cached_orders_${user._id}`);
             if (cached) {
